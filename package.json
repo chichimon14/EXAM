@@ -10,7 +10,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "electron-dev": "electron .",
-    "build-win": "vite build && electron-builder --win --x64"
+    "dist": "electron-builder --win --x64"
   },
   "dependencies": {
     "react": "^19.2.7",
@@ -21,7 +21,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
-    "electron": "^33.0.2",
+    "electron": "^22.3.27",
     "electron-builder": "^24.13.3",
     "oxlint": "^1.71.0",
     "vite": "^8.1.1"
