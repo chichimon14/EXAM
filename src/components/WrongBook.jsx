@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { chapters } from '../data/physicsData';
+import { mathTopics } from '../data/mathData';
 
-export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll }) {
+export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, subject = 'physics' }) {
   const [activeChallengeId, setActiveChallengeId] = useState(null);
   const [selectedOption, setSelectedOption] = useState(null);
   const [hasChecked, setHasChecked] = useState(false);
@@ -48,7 +49,9 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll })
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
         <div>
           <h3 style={{ fontSize: '1.25rem' }}>错题集 ({wrongList.length} 道)</h3>
-          <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>中考物理提分最快的方法，就是彻底消灭错题！</p>
+          <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+            {subject === 'physics' ? '中考物理提分最快的方法，就是彻底消灭错题！' : '中考数学攻克马虎的终极法宝，就是错题彻底练熟！'}
+          </p>
         </div>
         <button className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', color: 'hsl(var(--color-danger))' }} onClick={onClearAll}>
           🗑️ 清空错题本
@@ -58,7 +61,7 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll })
       {/* 错题列表 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {wrongList.map((q, idx) => {
-          const ch = chapters[q.chapterId];
+          const ch = subject === 'physics' ? chapters[q.chapterId] : mathTopics[q.chapterId];
           const isChallenging = activeChallengeId === q.id;
 
           return (
@@ -67,7 +70,7 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll })
               {/* 板块和章节小标识 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-mech" style={{ backgroundColor: 'hsla(var(--color-heat) / 0.1)', color: 'hsl(var(--color-heat))', border: '1px solid hsla(var(--color-heat) / 0.2)' }}>
-                  {ch ? ch.name : '物理'} · {q.category}
+                  {ch ? ch.name.split(' ')[0] + ' ' + ch.name.split(' ')[1] : subject === 'physics' ? '物理' : '数学'} · {q.category}
                 </span>
                 <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>#错题 {idx + 1}</span>
               </div>
