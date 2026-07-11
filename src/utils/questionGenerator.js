@@ -651,7 +651,6 @@ export function generateMathQuestions(topicId, count = 100) {
           answer: ansIdx,
           explanation
         };
-        break;
       }
 
       default:
@@ -663,3 +662,338 @@ export function generateMathQuestions(topicId, count = 100) {
 
   return list;
 }
+
+// 导入英语和化学的数据以支持出题
+import { chemistryDays } from '../data/chemistryData';
+import { englishVocabList } from '../data/englishData';
+
+/**
+ * 3. 中考化学题库生成器
+ */
+export function generateChemistryQuestions(topicId, count = 20) {
+  const list = [];
+  const elementData1 = [
+    { name: '氢', symbol: 'H', pinyin: 'qīng', z: 1, val: '+1' },
+    { name: '氦', symbol: 'He', pinyin: 'hài', z: 2, val: '0' },
+    { name: '锂', symbol: 'Li', pinyin: 'lǐ', z: 3, val: '+1' },
+    { name: '铍', symbol: 'Be', pinyin: 'pí', z: 4, val: '+2' }
+  ];
+  const elementData2 = [
+    { name: '硼', symbol: 'B', pinyin: 'péng', z: 5, val: '+3' },
+    { name: '碳', symbol: 'C', pinyin: 'tàn', z: 6, val: '+4, -4' },
+    { name: '氮', symbol: 'N', pinyin: 'dàn', z: 7, val: '-3, +5' },
+    { name: '氧', symbol: 'O', pinyin: 'yǎng', z: 8, val: '-2' },
+    { name: '氟', symbol: 'F', pinyin: 'fú', z: 9, val: '-1' },
+    { name: '氖', symbol: 'Ne', pinyin: 'nǎi', z: 10, val: '0' }
+  ];
+  const elementData3 = [
+    { name: '钠', symbol: 'Na', pinyin: 'nà', z: 11, val: '+1' },
+    { name: '镁', symbol: 'Mg', pinyin: 'měi', z: 12, val: '+2' },
+    { name: '铝', symbol: 'Al', pinyin: 'lǚ', z: 13, val: '+3' },
+    { name: '硅', symbol: 'Si', pinyin: 'guī', z: 14, val: '+4' },
+    { name: '磷', symbol: 'P', pinyin: 'lín', z: 15, val: '-3, +5' },
+    { name: '硫', symbol: 'S', pinyin: 'liú', z: 16, val: '-2, +4, +6' },
+    { name: '氯', symbol: 'Cl', pinyin: 'lǜ', z: 17, val: '-1' },
+    { name: '氩', symbol: 'Ar', pinyin: 'yà', z: 18, val: '0' }
+  ];
+  const elementData4 = [
+    { name: '钾', symbol: 'K', pinyin: 'jiǎ', z: 19, val: '+1' },
+    { name: '钙', symbol: 'Ca', pinyin: 'gài', z: 20, val: '+2' }
+  ];
+  const elementData5 = [
+    { name: '铁', symbol: 'Fe', pinyin: 'tiě', z: 26, val: '+2, +3' },
+    { name: '铜', symbol: 'Cu', pinyin: 'tóng', z: 29, val: '+2' },
+    { name: '锌', symbol: 'Zn', pinyin: 'xīn', z: 30, val: '+2' },
+    { name: '锰', symbol: 'Mn', pinyin: 'měng', z: 25, val: '+2, +4, +7' },
+    { name: '钡', symbol: 'Ba', pinyin: 'bèi', z: 56, val: '+2' }
+  ];
+
+  for (let i = 0; i < count; i++) {
+    let qObj = {};
+    const qIdx = i + 1;
+
+    switch (topicId) {
+      // 1-4号元素
+      case 'chem_topic_elements1': {
+        const item = elementData1[randomInt(0, 3)];
+        const askSymbol = randomInt(0, 1) === 1;
+        if (askSymbol) {
+          qObj = {
+            id: 40000 + i,
+            question: `【化学题 ${qIdx}】前20号元素中，名称为“${item.name}”的元素符号是什么？其汉语拼音是：`,
+            options: [item.symbol, item.symbol.toUpperCase(), item.symbol.toLowerCase(), 'Hn'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n根据“青海里皮 (qīng hǎi lǐ pí)”口诀，${item.name}的拼音是【${item.pinyin}】。化学元素符号的书写原则是“一大二小”，所以其符号是 ${item.symbol}。`
+          };
+          qObj.answer = qObj.options.indexOf(item.symbol);
+        } else {
+          qObj = {
+            id: 40100 + i,
+            question: `【化学题 ${qIdx}】元素周期表中排在第 ${item.z} 位的元素名称及汉语拼音正确的是：`,
+            options: [`${item.name} (${item.pinyin})`, '氦 (hài)', '锂 (lǐ)', '氢 (qīng)'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n元素周期表中，排在第 ${item.z} 位的积木是“${item.name}”，拼音读作【${item.pinyin}】。`
+          };
+          qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+        }
+        break;
+      }
+      
+      // 5-10号元素
+      case 'chem_topic_elements2': {
+        const item = elementData2[randomInt(0, 5)];
+        const askSymbol = randomInt(0, 1) === 1;
+        if (askSymbol) {
+          qObj = {
+            id: 40200 + i,
+            question: `【化学题 ${qIdx}】前20号元素中，“${item.name}”的元素符号及拼音正确的是：`,
+            options: [`${item.symbol} (${item.pinyin})`, `C (${item.pinyin})`, `O (${item.pinyin})`, `N (${item.pinyin})`].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n“蓬碳蛋养拂奶”口诀中，${item.name}的拼音为【${item.pinyin}】，元素符号为 ${item.symbol}。`
+          };
+          qObj.answer = qObj.options.indexOf(`${item.symbol} (${item.pinyin})`);
+        } else {
+          qObj = {
+            id: 40300 + i,
+            question: `【化学题 ${qIdx}】质子数为 ${item.z} 的元素拼音及名称正确的是：`,
+            options: [`${item.name} (${item.pinyin})`, '氟 (fú)', '碳 (tàn)', '氧 (yǎng)'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n质子数等于原子序号。质子数为 ${item.z} 的元素是【${item.name}】，拼音是【${item.pinyin}】。`
+          };
+          qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+        }
+        break;
+      }
+
+      // 11-18号元素
+      case 'chem_topic_elements3': {
+        const item = elementData3[randomInt(0, 7)];
+        const askVal = randomInt(0, 1) === 1;
+        if (askVal) {
+          qObj = {
+            id: 40400 + i,
+            question: `【化学题 ${qIdx}】第 ${item.z} 号元素“${item.name}”(${item.symbol})在化合物中常见的化合价是：`,
+            options: [item.val, '+2', '+1', '-1'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n${item.name}的拼音是【${item.pinyin}】，序号是 ${item.z}。根据得失电子稳定魔咒，它在化合物里的常见化合价是 ${item.val}。`
+          };
+          qObj.answer = qObj.options.indexOf(item.val);
+        } else {
+          qObj = {
+            id: 40500 + i,
+            question: `【化学题 ${qIdx}】符号为“${item.symbol}”的元素中文名称及汉语拼音正确的是：`,
+            options: [`${item.name} (${item.pinyin})`, '铝 (lǚ)', '硅 (guī)', '硫 (liú)'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n元素符号“${item.symbol}”对应的是“${item.name}”元素，其汉语拼音是【${item.pinyin}】。`
+          };
+          qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+        }
+        break;
+      }
+
+      // 19-20号元素
+      case 'chem_topic_elements4': {
+        const item = elementData4[randomInt(0, 1)];
+        qObj = {
+          id: 40600 + i,
+          question: `【化学题 ${qIdx}】元素“${item.name}”在周期表中的序号、符号及拼音正确的是：`,
+          options: [`${item.z}号, ${item.symbol} (${item.pinyin})`, `19号, Ca (钙)`, `20号, K (钾)`, `18号, Ar (氩)`].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n口诀“家盖 (jiā gài)”中，${item.name}的拼音是【${item.pinyin}】，序号为 ${item.z}，符号为 ${item.symbol}。`
+        };
+        qObj.answer = qObj.options.indexOf(`${item.z}号, ${item.symbol} (${item.pinyin})`);
+        break;
+      }
+
+      // 常用重磅金属元素
+      case 'chem_topic_elements5': {
+        const item = elementData5[randomInt(0, 4)];
+        qObj = {
+          id: 40700 + i,
+          question: `【化学题 ${qIdx}】中考必背变价/重金属中，符号“${item.symbol}”的元素中文及拼音为：`,
+          options: [`${item.name} (${item.pinyin})`, '铜 (tóng)', '铁 (tiě)', '锌 (xīn)'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n中考常用金属中，符号“${item.symbol}”对应的是“${item.name}”，拼音是【${item.pinyin}】。`
+        };
+        qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+        break;
+      }
+
+      // 化学反应原理综合题型 (Day 6 - 15)
+      default: {
+        const reactions = [
+          { eq: 'C + O₂ ==(点燃)==> CO₂', type: '化合反应', desc: '木炭在氧气中剧烈燃烧，发出白光，生成使石灰水变浑浊的气体' },
+          { eq: 'S + O₂ ==(点燃)==> SO₂,', type: '化合反应', desc: '硫在纯氧中燃烧，发出明亮的蓝紫色火焰，产生有刺激性气味的气体' },
+          { eq: '4P + 5O₂ ==(点燃)==> 2P₂O₅', type: '化合反应', desc: '红磷在空气中燃烧，产生大量白烟' },
+          { eq: '3Fe + 2O₂ ==(点燃)==> Fe₃O₄', type: '化合反应', desc: '铁丝在氧气中剧烈燃烧，火星四射，生成黑色固体，集气瓶底部要放少量水防炸裂' },
+          { eq: '2Mg + O₂ ==(点燃)==> 2MgO', type: '化合反应', desc: '镁条在空气中燃烧，发出耀眼的白光，生成白色固体' },
+          { eq: '2H₂O ==(通电)==> 2H₂↑ + O₂↑', type: '分解反应', desc: '正极产生氧气，负极产生氢气，体积比为 1:2 (正氧负氢，氢二氧一)' },
+          { eq: '2H₂O₂ ==(MnO₂)==> 2H₂O + O₂↑', type: '分解反应', desc: '双氧水分解，二氧化锰作催化剂，反应不需要加热' },
+          { eq: 'CaCO₃ + 2HCl == CaCl₂ + H₂O + CO₂↑', type: '复分解反应', desc: '实验室制取二氧化碳，不能用稀硫酸代替稀盐酸' },
+          { eq: 'Fe + CuSO₄ == FeSO₄ + Cu', type: '置换反应', desc: '铁钉表面裹上红色固体，蓝色溶液变浅绿色 (湿法炼铜)' },
+          { eq: 'Fe₂O₃ + 6HCl == 2FeCl₃ + 3H₂O', type: '复分解反应', desc: '稀盐酸去铁锈，红褐色铁锈溶解，溶液变成黄色' }
+        ];
+        const react = reactions[randomInt(0, reactions.length - 1)];
+        const askType = randomInt(0, 1) === 1;
+
+        if (askType) {
+          qObj = {
+            id: 40800 + i,
+            question: `【化学题 ${qIdx}】关于化学反应式：${react.eq}，它的基本反应类型是：`,
+            options: [react.type, '化合反应', '分解反应', '置换反应'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n反应式中，该反应属于【${react.type}】。记住“多变一”为化合，“一变多”为分解，单质与化合物换位为置换。`
+          };
+          qObj.answer = qObj.options.indexOf(react.type);
+        } else {
+          qObj = {
+            id: 40900 + i,
+            question: `【化学题 ${qIdx}】关于反应方程式 ${react.eq.split('==')[0]} 反应的实验现象或防护，下列描述正确的是：`,
+            options: [react.desc, '反应没有任何明显现象', '反应剧烈产生大量黑烟', '不能在常温下制备'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n对于该化学反应，正确的实验现象及原理是：${react.desc}。中考常在此处考察实验安全细节。`
+          };
+          qObj.answer = qObj.options.indexOf(react.desc);
+        }
+        break;
+      }
+    }
+    list.push(qObj);
+  }
+  return list;
+}
+
+/**
+ * 4. 中考英语题库生成器
+ */
+export function generateEnglishQuestions(topicId, count = 20) {
+  const list = [];
+  // 提取当前Day切片下的词汇 (通过切片读取，也可以在引擎里按 topicId 进行词汇映射)
+  const dayNum = parseInt(topicId.replace('eng_topic_day', ''), 10) || 1;
+  const startIdx = (dayNum - 1) * 20;
+  const endIdx = dayNum * 20;
+  const dayWords = englishVocabList.slice(startIdx, endIdx);
+
+  // 兜底保护，如果英语词汇切片不够，使用前20个
+  const currentVocab = dayWords.length > 0 ? dayWords : englishVocabList.slice(0, 20);
+
+  for (let i = 0; i < count; i++) {
+    let qObj = {};
+    const qIdx = i + 1;
+
+    // 奇数题做词汇英汉匹配，偶数题做当天语法选择题
+    if (i % 2 === 0) {
+      // 词汇选择题
+      const seedItem = currentVocab[i % currentVocab.length];
+      const askChinese = randomInt(0, 1) === 1;
+
+      if (askChinese) {
+        qObj = {
+          id: 50000 + i,
+          question: `【英语词汇题 ${qIdx}】请选择单词/短语“${seedItem.word}”对应的正确中文解释：`,
+          options: [seedItem.translation, 'n. 黑板', 'prep. 在...里面', 'v. 放弃'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `中考名师记词诀窍：\n“${seedItem.word}”的音标为 ${seedItem.phonetic}，中文意思是【${seedItem.translation}】。\n💡记忆捷径：${seedItem.tip}\n📖例句：${seedItem.sentence} (${seedItem.sentence_translation})`
+        };
+        qObj.answer = qObj.options.indexOf(seedItem.translation);
+      } else {
+        qObj = {
+          id: 50100 + i,
+          question: `【英语词汇题 ${qIdx}】根据中文意思“${seedItem.translation.split(' ')[1] || seedItem.translation}”，选出对应的英文单词/短语：`,
+          options: [seedItem.word, 'beautiful', 'student', 'classroom'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `中考名师记词诀窍：\n中文“${seedItem.translation}”对应的英文写法为【${seedItem.word}】，音标是 ${seedItem.phonetic}。\n💡记忆捷径：${seedItem.tip}\n📖例句：${seedItem.sentence} (${seedItem.sentence_translation})`
+        };
+        qObj.answer = qObj.options.indexOf(seedItem.word);
+      }
+    } else {
+      // 语法/时态情景题 (根据 Day 的不同语法出题)
+      if (dayNum === 1) {
+        qObj = {
+          id: 50200 + i,
+          question: `【语法选择题 ${qIdx}】My mother bought a storybook for my sister and _______. She likes reading very much.`,
+          options: ['her', 'she', 'him', 'he'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\n空格位于介词 for 的后面。根据人称代词“座位表”口诀：【动介后面用宾格，动词前面用主格】。此处是介词后，必须选宾格。由于是给妹妹(my sister)，对应女性代词宾格 her。\n答案选 her。`
+        };
+        qObj.answer = qObj.options.indexOf('her');
+      } else if (dayNum === 2) {
+        qObj = {
+          id: 50300 + i,
+          question: `【语法选择题 ${qIdx}】We are looking forward to _______ the Great Wall during the summer holiday.`,
+          options: ['visiting', 'visit', 'to visit', 'visited'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\nlook forward to (期待) 中的 to 是介词，后面接动词必须变成动名词(doing)形式。这是中考常考易错地雷！\n答案选 visiting。`
+        };
+        qObj.answer = qObj.options.indexOf('visiting');
+      } else if (dayNum === 3) {
+        qObj = {
+          id: 50400 + i,
+          question: `【语法选择题 ${qIdx}】How much did you _______ for the new English dictionary?`,
+          options: ['pay', 'spend', 'cost', 'take'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\n空格后面搭配了介词 for (pay ... for ...)。主语是 you (人)。根据花费动词“主语心法”：人做主语且介词用 for 的只有 pay！\n答案选 pay。`
+        };
+        qObj.answer = qObj.options.indexOf('pay');
+      } else if (dayNum === 7) {
+        qObj = {
+          id: 50500 + i,
+          question: `【语法选择题 ${qIdx}】Although he was very tired, _______ he still finished writing his homework.`,
+          options: ['/', 'but', 'so', 'however'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\n句首已经有连词 although (虽然)。在英语里， although 和 but 是“不共戴天”的互斥连词，绝对不能同句共存！所以后半句开端不填任何词。\n答案选 /。`
+        };
+        qObj.answer = qObj.options.indexOf('/');
+      } else if (dayNum === 8) {
+        qObj = {
+          id: 50600 + i,
+          question: `【语法选择题 ${qIdx}】My father always _______ to work by subway every morning.`,
+          options: ['goes', 'go', 'going', 'went'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\n有 always (总是) 和 every morning (每天早晨) 表示平常的习惯，用一般现在时。主语 My father 是单数第三人称(单三)，动词 go 必须变成 goes。\n答案选 goes。`
+        };
+        qObj.answer = qObj.options.indexOf('goes');
+      } else if (dayNum === 12) {
+        qObj = {
+          id: 50700 + i,
+          question: `【语法选择题 ${qIdx}】- Have you finished reading the book _______?\n- Yes, I have _______ finished it.`,
+          options: ['yet; already', 'already; yet', 'yet; yet', 'already; already'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\n第一空是疑问句句尾，询问“已经...了吗”，用 yet ；第二空是肯定句中 haven/has 和 done 中间，用 already。\n答案选 yet; already。`
+        };
+        qObj.answer = qObj.options.indexOf('yet; already');
+      } else if (dayNum === 14) {
+        qObj = {
+          id: 50800 + i,
+          question: `【语法选择题 ${qIdx}】- Must I write down the notes now?\n- No, you _______. You can do it after school.`,
+          options: ['needn\'t', 'mustn\'t', 'can\'t', 'shouldn\'t'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\n以 Must I... (我必须...)开头的疑问句，否定回答表示“不必、不需要”，固定答语用 needn\'t 或者是 don\'t have to。 mustn\'t 表示“绝对禁止”，不符合常理。\n答案选 needn\'t。`
+        };
+        qObj.answer = qObj.options.indexOf('needn\'t');
+      } else if (dayNum === 18) {
+        qObj = {
+          id: 50900 + i,
+          question: `【语法选择题 ${qIdx}】We will go to the Shenzhen Bay Park if it _______ sunny tomorrow.`,
+          options: ['is', 'will be', 'are', 'was'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\n这是一个 if 引导的条件状语从句，主句是 will go (一般将来时)。根据“主将从现”原则， if 从句必须用一般现在时。主语是 it， be 动词用 is。\n答案选 is。`
+        };
+        qObj.answer = qObj.options.indexOf('is');
+      } else {
+        // 兜底时态题
+        qObj = {
+          id: 51000 + i,
+          question: `【语法选择题 ${qIdx}】I _______ my homework when my father came back yesterday.`,
+          options: ['was doing', 'did', 'am doing', 'will do'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `名师考点解析：\n时间状语为 when my father came back yesterday (昨晚爸爸回家的瞬间)，表示过去某一特定时刻正在发生的动作，使用过去进行时 (was/were + doing)。主语为 I，用 was doing。\n答案选 was doing。`
+        };
+        qObj.answer = qObj.options.indexOf('was doing');
+      }
+    }
+    list.push(qObj);
+  }
+  return list;
+}
+

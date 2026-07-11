@@ -22,8 +22,8 @@ export default function SubjectPortal({ onSelectSubject }) {
     {
       id: 'math',
       name: '中考数学计算特训',
-      subtitle: '三年级至初二 · 计算大通关',
-      desc: '锁定有理数、因式分解、方程组、一元二次方程、不等式等 9 大计算死穴，自带例题精讲与无限分步解题推导引擎！',
+      subtitle: '25天提分特训营 · 每日2小时',
+      desc: '锁定小学混合计算、去括号、一元二次方程、勾股几何、中考统计等 25 天提分日程，自带大白话本质解剖与无限分步推导！',
       icon: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'hsl(var(--color-work))' }}>
           <rect x="3" y="3" width="18" height="18" rx="2" fill="hsl(var(--color-work) / 0.15)" />
@@ -32,42 +32,40 @@ export default function SubjectPortal({ onSelectSubject }) {
           <line x1="9" y1="12" x2="15" y2="12" />
         </svg>
       ),
-      badge: '9大考点 · 900题',
+      badge: '25天特营 · 3000题',
       color: 'linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(239, 68, 68, 0.05) 100%)',
       borderColor: 'rgba(245, 158, 11, 0.18)'
     },
     {
       id: 'chemistry',
       name: '中考化学特训',
-      subtitle: '敬请期待 · 规划中',
-      desc: '酸碱盐转化链、化学方程式配平与物质鉴别。系统将通过互动实验展示化学反应微观分子变化，即将上线！',
+      subtitle: '初三暑假抢跑 · 前20元素与方程式',
+      desc: '前20个元素中英文拼音拼写及化合价，10大初三经典反应方程式底层原理拆解。配备15天每日金币测练，轻松抢跑！',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#a0aec0' }}>
-          <path d="M10 2v7.586a1 1 0 0 1-.293.707l-5.414 5.414A2 2 0 0 0 6 19.122A2 2 0 0 0 8 21.122h8a2 2 0 0 0 2-2a2 2 0 0 0 1.707-3.414l-5.414-5.414A1 1 0 0 1 14 9.586V2Z" />
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'hsl(var(--color-optics))' }}>
+          <path d="M10 2v7.586a1 1 0 0 1-.293.707l-5.414 5.414A2 2 0 0 0 6 19.122A2 2 0 0 0 8 21.122h8a2 2 0 0 0 2-2a2 2 0 0 0 1.707-3.414l-5.414-5.414A1 1 0 0 1 14 9.586V2Z" fill="rgba(16, 185, 129, 0.15)" />
           <line x1="8" y1="2" x2="16" y2="2" />
           <line x1="6" y1="12" x2="18" y2="12" strokeDasharray="2,2" />
         </svg>
       ),
-      locked: true,
-      badge: '未解锁',
-      color: 'rgba(160, 174, 192, 0.04)',
-      borderColor: 'rgba(160, 174, 192, 0.12)'
+      badge: '15天抢跑 · 1800题',
+      color: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
+      borderColor: 'rgba(16, 185, 129, 0.18)'
     },
     {
       id: 'english',
       name: '中考英语特训',
-      subtitle: '敬请期待 · 规划中',
-      desc: '核心语法时态辨析、高频阅读填空避坑词库与口语模拟特训。采用智能遗忘曲线强化词汇与完形填空技能，即将上线！',
+      subtitle: '时态口诀 · 600词真人读音',
+      desc: '覆盖小学至初二全部 600 必背单词短语及例句美音发音，集成 6 大核心时态名师口诀。配备30天金币奖励测练！',
       icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#a0aec0' }}>
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#a855f7' }}>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="rgba(168, 85, 247, 0.15)" />
           <text x="7" y="11" fill="currentColor" fontSize="6" fontWeight="bold" stroke="none">Hi</text>
         </svg>
       ),
-      locked: true,
-      badge: '未解锁',
-      color: 'rgba(160, 174, 192, 0.04)',
-      borderColor: 'rgba(160, 174, 192, 0.12)'
+      badge: '30天冲刺 · 3600题',
+      color: 'linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
+      borderColor: 'rgba(168, 85, 247, 0.18)'
     }
   ];
 

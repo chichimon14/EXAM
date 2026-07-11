@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import SubjectPortal from './components/SubjectPortal';
 import PhysicsModule from './components/PhysicsModule';
 import MathModule from './components/MathModule';
+import ChemistryModule from './components/ChemistryModule';
+import EnglishModule from './components/EnglishModule';
 
 export default function App() {
-  const [activeSubject, setActiveSubject] = useState(null); // null (门户首页) | 'physics' (物理) | 'math' (数学)
+  const [activeSubject, setActiveSubject] = useState(null); // null (门户首页) | 'physics' | 'math' | 'chemistry' | 'english'
 
   useEffect(() => {
     // 强制设置根节点为亮色暖白主题 (Light mode lock)
@@ -59,7 +61,12 @@ export default function App() {
               gap: '6px'
             }}>
               <span>/</span>
-              <span>当前学科：<b>{activeSubject === 'physics' ? '📖 中考物理宝典' : '📐 中考数学计算特训'}</b></span>
+              <span>当前学科：<b>
+                {activeSubject === 'physics' ? '📖 中考物理宝典' : 
+                 activeSubject === 'math' ? '📐 中考数学计算特训' :
+                 activeSubject === 'chemistry' ? '🧪 中考化学特训' :
+                 '🇬🇧 中考英语特训'}
+              </b></span>
             </span>
           </div>
 
@@ -69,7 +76,7 @@ export default function App() {
             color: 'hsl(var(--text-secondary))',
             opacity: 0.8
           }}>
-            💯 2026中考数理提分智能特训工作台
+            💯 2026中考数理化英语全科提分智能工作台
           </div>
         </header>
       )}
@@ -90,6 +97,12 @@ export default function App() {
         )}
         {activeSubject === 'math' && (
           <MathModule />
+        )}
+        {activeSubject === 'chemistry' && (
+          <ChemistryModule />
+        )}
+        {activeSubject === 'english' && (
+          <EnglishModule />
         )}
       </main>
 

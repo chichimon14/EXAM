@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { chapters } from '../data/physicsData';
 import { mathDays } from '../data/mathData';
+import { chemistryDays } from '../data/chemistryData';
+import { englishDays } from '../data/englishData';
 
 export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, subject = 'physics' }) {
   const [activeChallengeId, setActiveChallengeId] = useState(null);
@@ -50,7 +52,10 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, s
         <div>
           <h3 style={{ fontSize: '1.25rem' }}>错题集 ({wrongList.length} 道)</h3>
           <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>
-            {subject === 'physics' ? '中考物理提分最快的方法，就是彻底消灭错题！' : '中考数学攻克马虎的终极法宝，就是错题彻底练熟！'}
+            {subject === 'physics' ? '中考物理提分最快的方法，就是彻底消灭错题！' : 
+             subject === 'math' ? '中考数学攻克马虎的终极法宝，就是错题彻底练熟！' : 
+             subject === 'chemistry' ? '初三化学抢跑的核心，就是清空全部错漏元素与反应式！' :
+             '中考英语单词短语与时态，错一次重新挑战一次，加深声音记忆！'}
           </p>
         </div>
         <button className="btn btn-secondary" style={{ padding: '6px 14px', fontSize: '0.8rem', color: 'hsl(var(--color-danger))' }} onClick={onClearAll}>
@@ -61,7 +66,10 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, s
       {/* 错题列表 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {wrongList.map((q, idx) => {
-          const ch = subject === 'physics' ? chapters[q.chapterId] : mathDays[q.chapterId];
+          const ch = subject === 'physics' ? chapters[q.chapterId] : 
+                     subject === 'math' ? mathDays[q.chapterId] :
+                     subject === 'chemistry' ? chemistryDays[q.chapterId] :
+                     englishDays[q.chapterId];
           const isChallenging = activeChallengeId === q.id;
 
           return (
