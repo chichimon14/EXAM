@@ -1425,7 +1425,7 @@ export default function PhysicsModule() {
 
         {/* Tab 1: 基础知识精讲与20题测试 */}
         {activeTab === 'study' && (
-          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, height: '0', minHeight: '0' }}>
             {chapterStep === 'study' ? (
               <>
                 {/* 物理工作台双栏等高独立滚动布局 */}
@@ -1433,7 +1433,8 @@ export default function PhysicsModule() {
                   display: 'grid',
                   gridTemplateColumns: '1.2fr 1fr',
                   gap: '12px',
-                  height: '630px',
+                  flex: 1,
+                  minHeight: '0',
                   alignItems: 'stretch'
                 }}>
                   {/* 左侧大卡片：重点知识干货精讲 */}

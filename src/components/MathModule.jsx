@@ -778,8 +778,8 @@ export default function MathModule() {
 
         {/* Tab 1: 讲义与几何原理图 */}
         {activeTab === 'study' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '12px', height: '580px', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, height: '0', minHeight: '0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '12px', flex: 1, minHeight: '0', alignItems: 'stretch' }}>
               
               {/* 左栏：精讲大纲 */}
               <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px' }}>

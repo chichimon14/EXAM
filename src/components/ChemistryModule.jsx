@@ -954,9 +954,9 @@ export default function ChemistryModule() {
 
         {/* Tab 1: 讲义与化学图解 */}
         {activeTab === 'study' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, height: '0', minHeight: '0' }}>
             
-              <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '12px', height: '580px', alignItems: 'stretch' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '12px', flex: 1, minHeight: '0', alignItems: 'stretch' }}>
                 {/* 左栏 */}
                 <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px' }}>
                   <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 12px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>

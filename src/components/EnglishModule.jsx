@@ -588,8 +588,8 @@ export default function EnglishModule() {
 
         {/* Tab 1: 讲义与单词发音卡 */}
         {activeTab === 'study' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr', gap: '12px', height: '580px', alignItems: 'stretch' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, height: '0', minHeight: '0' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr', gap: '12px', flex: 1, minHeight: '0', alignItems: 'stretch' }}>
               
               {/* 左栏：语法精讲 */}
               <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px' }}>
