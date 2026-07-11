@@ -45,6 +45,21 @@ export default function ChemistryModule() {
   const [gameWon, setGameWon] = useState(false);
   const [gameErrorActive, setGameErrorActive] = useState(false); // 匹配错误时闪红灯状态
 
+  // 控制左侧周（二级目录）单项展开折叠状态（互斥折叠）
+  const [expandedBlockId, setExpandedBlockId] = useState(null);
+
+  // 自动展开当前选中 Day 所属的周大单元
+  useEffect(() => {
+    const curBlock = chemistryBlocks.find(b => b.days.includes(selectedDayId));
+    if (curBlock) {
+      setExpandedBlockId(curBlock.id);
+    }
+  }, [selectedDayId]);
+
+  const toggleBlock = (blockId) => {
+    setExpandedBlockId(prev => prev === blockId ? null : blockId);
+  };
+
   // 初始化加载错题与25天历史积分
   useEffect(() => {
     const savedWrongs = localStorage.getItem('chemistry-wrongs');
@@ -507,10 +522,12 @@ export default function ChemistryModule() {
   const todayGoldCoin = dayScores[selectedDayId] !== undefined ? dayScores[selectedDayId] : 0;
 
   return (
-    <div className="app-container fade-in">
-      {/* 侧边栏 */}
-      <div className="sidebar" style={{ minWidth: '240px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div className="app-container fade-in" style={{ display: 'flex', alignItems: 'stretch', gap: '20px', height: 'calc(100vh - 120px)' }}>
+      {/* 🌲 左侧二级与三级手风琴大纲树状目录 */}
+      <div className="sidebar" style={{ minWidth: '280px', maxWidth: '280px', display: 'flex', flexDirection: 'column', padding: '16px', gap: '12px', overflowY: 'auto' }}>
+        
+        {/* 学科名片 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
           <div style={{
             width: '36px',
             height: '36px',
@@ -527,36 +544,24 @@ export default function ChemistryModule() {
             化
           </div>
           <div>
-            <h2 style={{ fontSize: '0.98rem', border: 'none', padding: 0, margin: 0, letterSpacing: '0.5px' }}>中考化学抢跑营</h2>
-            <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>25天初三提分全课纲</span>
+            <h2 style={{ fontSize: '0.92rem', border: 'none', padding: 0, margin: 0, letterSpacing: '0.5px' }}>中考化学抢跑营</h2>
+            <span style={{ fontSize: '0.68rem', opacity: 0.6 }}>25天初三提分课纲</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, marginTop: '24px' }}>
-          <button
-            className={`btn btn-secondary ${activeTab === 'study' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'study' ? '' : 'transparent' }}
-            onClick={() => setActiveTab('study')}
-          >
-            📖 每日公式与拼音
-          </button>
-          <button
-            className={`btn btn-secondary ${activeTab === 'test' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'test' ? '' : 'transparent' }}
-            onClick={() => setActiveTab('test')}
-          >
-            ✍️ 20题过关小测试
-          </button>
-          <button
-            className={`btn btn-secondary ${activeTab === 'exercise' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'exercise' ? '' : 'transparent' }}
-            onClick={() => setActiveTab('exercise')}
-          >
-            📝 100题每日狂练
-          </button>
+        {/* 全局学科工具 (错题本与账单) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           <button
             className={`btn btn-secondary ${activeTab === 'wrongbook' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'wrongbook' ? '' : 'transparent', position: 'relative' }}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: activeTab === 'wrongbook' ? 'hsl(var(--color-optics))' : 'rgba(0,0,0,0.02)',
+              color: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--text-primary))',
+              fontSize: '0.78rem',
+              padding: '8px 12px',
+              position: 'relative'
+            }}
             onClick={() => setActiveTab('wrongbook')}
           >
             ❌ 化学错题重温本
@@ -566,109 +571,237 @@ export default function ChemistryModule() {
                 right: '12px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: 'hsl(var(--color-danger))',
-                color: '#fff',
-                fontSize: '0.75rem',
+                backgroundColor: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--color-danger))',
+                color: activeTab === 'wrongbook' ? 'hsl(var(--color-optics))' : '#fff',
+                fontSize: '0.68rem',
                 fontWeight: 'bold',
-                padding: '2px 6px',
-                borderRadius: '10px'
+                padding: '1px 5px',
+                borderRadius: '8px'
               }}>
                 {wrongList.length}
               </span>
             )}
           </button>
-        </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid hsla(var(--text-secondary) / 0.1)', paddingTop: '16px' }}>
           <button
             className="btn btn-secondary scale-up"
             style={{
-              padding: '8px',
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: 'rgba(16, 185, 129, 0.04)',
+              color: '#047857',
               fontSize: '0.78rem',
-              fontWeight: 'bold',
-              borderColor: 'rgba(16, 185, 129, 0.3)',
-              backgroundColor: 'rgba(16, 185, 129, 0.03)',
-              color: '#047857'
+              padding: '8px 12px',
+              fontWeight: 'bold'
             }}
             onClick={() => setShowBillModal(true)}
           >
             📊 25天历史金币账单
           </button>
-          <div style={{ fontSize: '0.68rem', opacity: 0.4, textAlign: 'center' }}>
-            做对+1, 做错-1, 小测后核算
-          </div>
+        </div>
+
+        {/* 二级与三级学习目录树 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>学习进度大纲</div>
+          
+          {chemistryBlocks.map((block) => {
+            const isExpanded = expandedBlockId === block.id;
+            const containsCurrent = block.days.includes(selectedDayId);
+            
+            return (
+              <div key={block.id} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {/* 二级菜单：周卡片 */}
+                <button
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: containsCurrent ? '1.5px solid rgba(16,185,129,0.3)' : '1px solid rgba(0,0,0,0.04)',
+                    backgroundColor: containsCurrent ? 'rgba(16,185,129,0.03)' : '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'left'
+                  }}
+                  onClick={() => toggleBlock(block.id)}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', maxWidth: '85%' }}>
+                    <span style={{ fontSize: '0.76rem', fontWeight: 'bold', color: containsCurrent ? '#047857' : 'hsl(var(--text-primary))' }}>
+                      {block.name.split('：')[0]}
+                    </span>
+                    <span style={{ fontSize: '0.64rem', opacity: 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {block.name.split('：')[1].split('(')[0]}
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease',
+                    opacity: 0.5
+                  }}>
+                    ▶
+                  </span>
+                </button>
+
+                {/* 三级菜单：当天子天数列表 */}
+                {isExpanded && (
+                  <div style={{
+                    paddingLeft: '10px',
+                    borderLeft: '1.5px dashed rgba(16, 185, 129, 0.15)',
+                    marginLeft: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                    marginTop: '2px',
+                    marginBottom: '4px'
+                  }}>
+                    {block.days.map((dayId) => {
+                      const dayData = chemistryDays[dayId];
+                      const isSelected = selectedDayId === dayId;
+                      const score = dayScores[dayId] || 0;
+                      const isPassed = score > 0;
+
+                      let itemBg = 'transparent';
+                      let itemColor = 'hsl(var(--text-secondary))';
+                      let fontW = 'normal';
+
+                      if (isSelected) {
+                        itemBg = 'linear-gradient(135deg, hsl(var(--color-optics)), #10b981)';
+                        itemColor = '#ffffff';
+                        fontW = 'bold';
+                      }
+
+                      return (
+                        <button
+                          key={dayId}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: itemBg,
+                            color: itemColor,
+                            cursor: 'pointer',
+                            fontSize: '0.72rem',
+                            fontWeight: fontW,
+                            textAlign: 'left',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onClick={() => {
+                            setSelectedDayId(dayId);
+                            if (activeTab === 'wrongbook') {
+                              setActiveTab('study');
+                            }
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', maxWidth: '80%' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                              {isPassed ? '✅' : '⚪'} Day {dayId.replace('day', '')}
+                            </span>
+                            <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.95 : 0.6, paddingLeft: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {dayData?.name.split('：')[1]}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.9 : 0.5, fontFamily: 'monospace' }}>
+                            {score > 0 ? `+${score}🪙` : score < 0 ? `${score}🪙` : '0🪙'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* 主面板内容 */}
-      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, padding: 0, overflowY: 'auto' }}>
         
+        {/* 📘 右侧顶部横向三合一特训功能卡 */}
         {activeTab !== 'wrongbook' && (
-          <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* 四周大阶段切换 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-              {chemistryBlocks.map((block) => {
-                const isCurrentBlock = block.days.includes(selectedDayId);
-                return (
-                  <button
-                    key={block.id}
-                    className={`btn ${isCurrentBlock ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{
-                      fontSize: '0.75rem',
-                      padding: '8px 4px',
-                      whiteSpace: 'nowrap',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '2px',
-                      alignItems: 'center',
-                      backgroundColor: isCurrentBlock ? 'hsl(var(--color-optics))' : '',
-                      borderColor: isCurrentBlock ? 'hsl(var(--color-optics))' : ''
-                    }}
-                    onClick={() => setSelectedDayId(block.days[0])}
-                  >
-                    <span style={{ fontWeight: 'bold' }}>{block.name.split('：')[0]}</span>
-                    <span style={{ fontSize: '0.64rem', opacity: 0.85, textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '100%' }}>{block.name.split('：')[1].split('(')[0]}</span>
-                  </button>
-                );
-              })}
+          <div className="glass-card" style={{
+            padding: '12px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: '#ffffff',
+            border: '1px solid rgba(0,0,0,0.03)',
+            borderRadius: 'var(--radius-md)'
+          }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className={`btn ${activeTab === 'study' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setActiveTab('study')}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  backgroundColor: activeTab === 'study' ? 'hsl(var(--color-optics))' : '',
+                  borderColor: activeTab === 'study' ? 'hsl(var(--color-optics))' : ''
+                }}
+              >
+                📖 今日名师讲义
+              </button>
+              <button
+                className={`btn ${activeTab === 'test' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => {
+                  setActiveTab('test');
+                  if (!testQuestions.length || testSubmitted) {
+                    handleStartTest();
+                  }
+                }}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  backgroundColor: activeTab === 'test' ? 'hsl(var(--color-optics))' : '',
+                  borderColor: activeTab === 'test' ? 'hsl(var(--color-optics))' : ''
+                }}
+              >
+                ✍️ 20题过关小测
+              </button>
+              <button
+                className={`btn ${activeTab === 'exercise' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setActiveTab('exercise')}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  backgroundColor: activeTab === 'exercise' ? 'hsl(var(--color-optics))' : '',
+                  borderColor: activeTab === 'exercise' ? 'hsl(var(--color-optics))' : ''
+                }}
+              >
+                📝 100题每日狂练
+              </button>
             </div>
-
-            {/* 天数徽章导航 */}
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
-              {(() => {
-                const currentBlock = chemistryBlocks.find(b => b.days.includes(selectedDayId)) || chemistryBlocks[0];
-                return currentBlock.days.map((dayId) => {
-                  const dayData = chemistryDays[dayId];
-                  const isSelected = selectedDayId === dayId;
-                  
-                  return (
-                    <button
-                      key={dayId}
-                      className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{
-                        padding: '5px 12px',
-                        fontSize: '0.74rem',
-                        borderRadius: '20px',
-                        whiteSpace: 'nowrap',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: isSelected ? 'hsl(var(--color-optics))' : '',
-                        borderColor: isSelected ? 'hsl(var(--color-optics))' : ''
-                      }}
-                      onClick={() => setSelectedDayId(dayId)}
-                    >
-                      <span style={{
-                        width: '6px',
-                        height: '6px',
-                        borderRadius: '50%',
-                        backgroundColor: isSelected ? '#fff' : 'hsl(var(--color-optics))'
-                      }}></span>
-                      Day {dayId.replace('day', '')}：{dayData?.name.split('：')[1]}
-                    </button>
-                  );
-                });
-              })()}
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
+              <span style={{
+                padding: '4px 10px',
+                backgroundColor: 'rgba(59, 130, 246, 0.06)',
+                color: 'hsl(var(--color-optics))',
+                borderRadius: '12px',
+                fontWeight: 'bold'
+              }}>
+                🗓️ Day {selectedDayId.replace('day', '')} · {currentDayData?.name.split('：')[1]}
+              </span>
+              <span style={{
+                padding: '4px 10px',
+                backgroundColor: '#fffbeb',
+                color: '#b45309',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                border: '1px solid #fde68a'
+              }}>
+                🪙 今日积分：{todayGoldCoin} 金币
+              </span>
             </div>
           </div>
         )}

@@ -45,6 +45,24 @@ export default function PhysicsModule() {
   const [activeStateChange, setActiveStateChange] = useState(null);
   const [pendulumPos, setPendulumPos] = useState('mid');
 
+  // 物理金币账单与大纲折叠管理
+  const [dayScores, setDayScores] = useState({});
+  const [showBillModal, setShowBillModal] = useState(false);
+  const [expandedBlockId, setExpandedBlockId] = useState(null);
+
+  // 自动展开当前选中 Day 所属的物理单元
+  useEffect(() => {
+    const curBlock = blocks.find(b => b.chapters.includes(selectedChapterId));
+    if (curBlock) {
+      setExpandedBlockId(curBlock.id);
+      setSelectedBlockId(curBlock.id);
+    }
+  }, [selectedChapterId]);
+
+  const toggleBlock = (blockId) => {
+    setExpandedBlockId(prev => prev === blockId ? null : blockId);
+  };
+
   // 初始化加载
   useEffect(() => {
     const savedAnswers = localStorage.getItem('physics-answers');
@@ -55,7 +73,31 @@ export default function PhysicsModule() {
 
     const savedWrongs = localStorage.getItem('physics-wrongs');
     if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
+
+    // 加载25天金币荣誉分值
+    const scores = {};
+    for (let i = 1; i <= 25; i++) {
+      const dayKey = `day${i}`;
+      const val = localStorage.getItem(`physics-score-${dayKey}`);
+      if (val !== null) {
+        scores[dayKey] = parseInt(val, 10);
+      } else {
+        scores[dayKey] = 0;
+      }
+    }
+    setDayScores(scores);
   }, []);
+
+  // 更新金币分值：做对 +1，做错 -1
+  const updateGoldCoin = (isCorrect) => {
+    const currentScore = dayScores[selectedChapterId] || 0;
+    const delta = isCorrect ? 1 : -1;
+    const newScore = currentScore + delta;
+    
+    const nextScores = { ...dayScores, [selectedChapterId]: newScore };
+    setDayScores(nextScores);
+    localStorage.setItem(`physics-score-${selectedChapterId}`, newScore.toString());
+  };
 
   // 获取当前章节题目列表 (20道测试题)
   const currentChapterQuestions = questions.filter(q => q.chapterId === selectedChapterId);
@@ -97,6 +139,9 @@ export default function PhysicsModule() {
 
     setUserAnswers(nextAnswers);
     setSubmittedAnswers(nextSubmissions);
+
+    // 金币扣减与累加
+    updateGoldCoin(isCorrect);
     
     localStorage.setItem('physics-answers', JSON.stringify(nextAnswers));
     localStorage.setItem('physics-submissions', JSON.stringify(nextSubmissions));
@@ -164,6 +209,9 @@ export default function PhysicsModule() {
       [currentQ.id]: { isCorrect, userOpt: optionIdx }
     };
     setExerciseAnswers(nextAnswers);
+
+    // 金币扣减与累加
+    updateGoldCoin(isCorrect);
 
     // 如果做错了，自动收录物理错题本
     if (!isCorrect) {
@@ -1056,11 +1104,12 @@ export default function PhysicsModule() {
   })();
 
   return (
-    <div className="app-container fade-in">
-      
-      {/* 侧边栏 */}
-      <div className="sidebar" style={{ minWidth: '240px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+    <div className="app-container fade-in" style={{ display: 'flex', alignItems: 'stretch', gap: '20px', height: 'calc(100vh - 120px)' }}>
+      {/* 🌲 左侧二级与三级手风琴大纲树状目录 */}
+      <div className="sidebar" style={{ minWidth: '280px', maxWidth: '280px', display: 'flex', flexDirection: 'column', padding: '16px', gap: '12px', overflowY: 'auto' }}>
+        
+        {/* 学科名片 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
           <div style={{
             width: '36px',
             height: '36px',
@@ -1077,94 +1126,304 @@ export default function PhysicsModule() {
             物
           </div>
           <div>
-            <h2 style={{ fontSize: '1.05rem', border: 'none', padding: 0, margin: 0, letterSpacing: '0.5px' }}>中考物理宝典</h2>
-            <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>八年级上下册中考复习</span>
+            <h2 style={{ fontSize: '0.92rem', border: 'none', padding: 0, margin: 0, letterSpacing: '0.5px' }}>中考物理宝典</h2>
+            <span style={{ fontSize: '0.68rem', opacity: 0.6 }}>八年级上下册中考复习</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, marginTop: '20px' }}>
-          <button
-            className={`btn btn-secondary ${activeTab === 'study' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'study' ? '' : 'transparent' }}
-            onClick={() => { setActiveTab('study'); }}
-          >
-            📖 重点知识干货精讲
-          </button>
-          <button
-            className={`btn btn-secondary ${activeTab === 'exercise' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'exercise' ? '' : 'transparent' }}
-            onClick={() => { setActiveTab('exercise'); }}
-          >
-            📝 100题专项练习集
-          </button>
-          <button
-            className={`btn btn-secondary ${activeTab === 'formulas' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'formulas' ? '' : 'transparent' }}
-            onClick={() => { setActiveTab('formulas'); }}
-          >
-            📐 中考金牌公式计算
-          </button>
-          <button
-            className={`btn btn-secondary ${activeTab === 'diagnosis' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'diagnosis' ? '' : 'transparent' }}
-            onClick={() => { setActiveTab('diagnosis'); }}
-          >
-            📊 智能雷达弱点评估
-          </button>
+        {/* 全局学科工具 (错题本、诊断、公式与账单) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
           <button
             className={`btn btn-secondary ${activeTab === 'wrongbook' ? 'btn-primary' : ''}`}
-            style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'wrongbook' ? '' : 'transparent', position: 'relative' }}
-            onClick={() => { setActiveTab('wrongbook'); }}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: activeTab === 'wrongbook' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
+              color: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--text-primary))',
+              fontSize: '0.74rem',
+              padding: '6px 10px',
+              position: 'relative'
+            }}
+            onClick={() => setActiveTab('wrongbook')}
           >
-            ❌ 提分错题重温本
+            ❌ 物理错题重温本
             {wrongList.length > 0 && (
               <span style={{
                 position: 'absolute',
-                right: '12px',
+                right: '10px',
                 top: '50%',
                 transform: 'translateY(-50%)',
-                backgroundColor: 'hsl(var(--color-danger))',
-                color: '#fff',
-                fontSize: '0.75rem',
+                backgroundColor: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--color-danger))',
+                color: activeTab === 'wrongbook' ? 'hsl(var(--color-mech))' : '#fff',
+                fontSize: '0.64rem',
                 fontWeight: 'bold',
-                padding: '2px 6px',
-                borderRadius: '10px'
+                padding: '1px 4px',
+                borderRadius: '6px'
               }}>
                 {wrongList.length}
               </span>
             )}
           </button>
+
+          <button
+            className={`btn btn-secondary ${activeTab === 'diagnosis' ? 'btn-primary' : ''}`}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: activeTab === 'diagnosis' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
+              color: activeTab === 'diagnosis' ? '#fff' : 'hsl(var(--text-primary))',
+              fontSize: '0.74rem',
+              padding: '6px 10px'
+            }}
+            onClick={() => setActiveTab('diagnosis')}
+          >
+            📊 智能雷达弱点评估
+          </button>
+
+          <button
+            className={`btn btn-secondary ${activeTab === 'formulas' ? 'btn-primary' : ''}`}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: activeTab === 'formulas' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
+              color: activeTab === 'formulas' ? '#fff' : 'hsl(var(--text-primary))',
+              fontSize: '0.74rem',
+              padding: '6px 10px'
+            }}
+            onClick={() => setActiveTab('formulas')}
+          >
+            📐 中考金牌公式计算
+          </button>
+
+          <button
+            className="btn btn-secondary scale-up"
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: 'rgba(139, 92, 246, 0.04)',
+              color: 'hsl(var(--color-mech))',
+              fontSize: '0.74rem',
+              padding: '6px 10px',
+              fontWeight: 'bold'
+            }}
+            onClick={() => setShowBillModal(true)}
+          >
+            🪙 25天历史金币账单
+          </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid hsla(var(--text-secondary) / 0.1)', paddingTop: '16px' }}>
-          <div style={{ fontSize: '0.72rem', opacity: 0.4, textAlign: 'center' }}>
-            人教版物理 · 100题极速突分
-          </div>
+        {/* 二级与三级学习目录树 */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+          <div style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>学习进度大纲</div>
+          
+          {blocks.map((block) => {
+            const isExpanded = expandedBlockId === block.id;
+            const containsCurrent = block.chapters.includes(selectedChapterId);
+            
+            return (
+              <div key={block.id} style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                {/* 二级菜单：单元卡片 */}
+                <button
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: '8px',
+                    border: containsCurrent ? '1.5px solid rgba(139, 92, 246, 0.3)' : '1px solid rgba(0,0,0,0.04)',
+                    backgroundColor: containsCurrent ? 'rgba(139, 92, 246, 0.03)' : '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    textAlign: 'left'
+                  }}
+                  onClick={() => toggleBlock(block.id)}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', maxWidth: '85%' }}>
+                    <span style={{ fontSize: '0.76rem', fontWeight: 'bold', color: containsCurrent ? 'hsl(var(--color-mech))' : 'hsl(var(--text-primary))' }}>
+                      {block.name.split(' ')[0]} {block.name.split(' ')[1]}
+                    </span>
+                    <span style={{ fontSize: '0.64rem', opacity: 0.6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {block.name.split(' ').slice(2).join(' ')}
+                    </span>
+                  </div>
+                  <span style={{
+                    fontSize: '0.7rem',
+                    transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s ease',
+                    opacity: 0.5
+                  }}>
+                    ▶
+                  </span>
+                </button>
+
+                {/* 三级菜单：当天子天数列表 */}
+                {isExpanded && (
+                  <div style={{
+                    paddingLeft: '10px',
+                    borderLeft: '1.5px dashed rgba(139, 92, 246, 0.15)',
+                    marginLeft: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2px',
+                    marginTop: '2px',
+                    marginBottom: '4px'
+                  }}>
+                    {block.chapters.map((chId) => {
+                      const chData = chapters.find(c => c.id === chId);
+                      const isSelected = selectedChapterId === chId;
+                      const score = dayScores[chId] || 0;
+                      const isPassed = score > 0;
+
+                      let itemBg = 'transparent';
+                      let itemColor = 'hsl(var(--text-secondary))';
+                      let fontW = 'normal';
+
+                      if (isSelected) {
+                        itemBg = 'linear-gradient(135deg, hsl(var(--color-mech)), #8b5cf6)';
+                        itemColor = '#ffffff';
+                        fontW = 'bold';
+                      }
+
+                      return (
+                        <button
+                          key={chId}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: itemBg,
+                            color: itemColor,
+                            cursor: 'pointer',
+                            fontSize: '0.72rem',
+                            fontWeight: fontW,
+                            textAlign: 'left',
+                            transition: 'all 0.15s ease'
+                          }}
+                          onClick={() => {
+                            setSelectedChapterId(chId);
+                            if (activeTab === 'wrongbook' || activeTab === 'diagnosis' || activeTab === 'formulas') {
+                              setActiveTab('study');
+                            }
+                          }}
+                        >
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', maxWidth: '80%' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                              {isPassed ? '✅' : '⚪'} Day {chId.replace('day', '')}
+                            </span>
+                            <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.95 : 0.6, paddingLeft: '14px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {chData?.name.split(' ').slice(1).join(' ')}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.9 : 0.5, fontFamily: 'monospace' }}>
+                            {score > 0 ? `+${score}🪙` : score < 0 ? `${score}🪙` : '0🪙'}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* 主内容区域 */}
-      <div className="main-content">
+      {/* 主面板内容 */}
+      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, padding: 0, overflowY: 'auto' }}>
         
+        {/* 📘 右侧顶部横向三合一特训功能卡 */}
+        {activeTab !== 'wrongbook' && activeTab !== 'diagnosis' && activeTab !== 'formulas' && (
+          <div className="glass-card" style={{
+            padding: '12px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            backgroundColor: '#ffffff',
+            border: '1px solid rgba(0,0,0,0.03)',
+            borderRadius: 'var(--radius-md)'
+          }}>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className={`btn ${activeTab === 'study' && chapterStep === 'study' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => {
+                  setActiveTab('study');
+                  setChapterStep('study');
+                }}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  backgroundColor: activeTab === 'study' && chapterStep === 'study' ? 'hsl(var(--color-mech))' : '',
+                  borderColor: activeTab === 'study' && chapterStep === 'study' ? 'hsl(var(--color-mech))' : ''
+                }}
+              >
+                📖 今日名师讲义
+              </button>
+              <button
+                className={`btn ${activeTab === 'study' && chapterStep === 'quiz' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => {
+                  setActiveTab('study');
+                  setChapterStep('quiz');
+                }}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  backgroundColor: activeTab === 'study' && chapterStep === 'quiz' ? 'hsl(var(--color-mech))' : '',
+                  borderColor: activeTab === 'study' && chapterStep === 'quiz' ? 'hsl(var(--color-mech))' : ''
+                }}
+              >
+                ✍️ 20题过关小测
+              </button>
+              <button
+                className={`btn ${activeTab === 'exercise' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setActiveTab('exercise')}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  backgroundColor: activeTab === 'exercise' ? 'hsl(var(--color-mech))' : '',
+                  borderColor: activeTab === 'exercise' ? 'hsl(var(--color-mech))' : ''
+                }}
+              >
+                📝 100题每日狂练
+              </button>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
+              <span style={{
+                padding: '4px 10px',
+                backgroundColor: 'rgba(139, 92, 246, 0.06)',
+                color: 'hsl(var(--color-mech))',
+                borderRadius: '12px',
+                fontWeight: 'bold'
+              }}>
+                🗓️ Day {selectedChapterId.replace('day', '')} · {chapters.find(c=>c.id===selectedChapterId)?.name.split(' ')[1]}
+              </span>
+              <span style={{
+                padding: '4px 10px',
+                backgroundColor: '#fffbeb',
+                color: '#b45309',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                border: '1px solid #fde68a'
+              }}>
+                🪙 今日积分：{todayGoldCoin} 金币
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* Tab 1: 基础知识精讲与20题测试 */}
         {activeTab === 'study' && (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {chapterStep === 'study' ? (
               <>
-                {/* 章节切换条 */}
-                <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                  {chapters.map((ch) => (
-                    <button
-                      key={ch.id}
-                      className={`btn ${selectedChapterId === ch.id ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', padding: '6px 12px' }}
-                      onClick={() => setSelectedChapterId(ch.id)}
-                    >
-                      {ch.name.split(' ')[0]} {ch.name.split(' ')[1]}
-                    </button>
-                  ))}
-                </div>
-
                 {/* 物理工作台双栏等高独立滚动布局 */}
                 <div style={{
                   display: 'grid',
@@ -1758,6 +2017,124 @@ export default function PhysicsModule() {
           />
         )}
       </div>
+
+      {/* 📊 历史金币积分荣誉账单 Modal */}
+      {showBillModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-card fade-in" style={{
+            width: '90%',
+            maxWidth: '560px',
+            maxHeight: '80vh',
+            overflowY: 'auto',
+            padding: '24px',
+            backgroundColor: '#ffffff',
+            borderRadius: 'var(--radius-lg)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '8px', color: 'hsl(var(--color-mech))' }}>
+                📊 物理 25天历史金币荣誉账单
+              </h3>
+              <button
+                className="btn btn-secondary"
+                style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '15px' }}
+                onClick={() => setShowBillModal(false)}
+              >
+                ✕ 关闭
+              </button>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(5, 1fr)',
+              gap: '8px',
+              padding: '4px'
+            }}>
+              {Array.from({ length: 25 }).map((_, idx) => {
+                const dayKey = `day${idx + 1}`;
+                const score = dayScores[dayKey] || 0;
+                const isPassed = score > 0;
+                
+                return (
+                  <div key={dayKey} style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '8px 4px',
+                    borderRadius: '8px',
+                    border: '1.5px solid rgba(0,0,0,0.03)',
+                    backgroundColor: isPassed ? 'rgba(16, 185, 129, 0.03)' : 'rgba(0,0,0,0.01)',
+                    transition: 'transform 0.15s ease'
+                  }}>
+                    <span style={{ fontSize: '0.66rem', opacity: 0.6 }}>Day {idx + 1}</span>
+                    <span style={{ fontSize: '1.2rem' }}>{isPassed ? '🪙' : '⚪'}</span>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 'bold', color: score > 0 ? '#10b981' : score < 0 ? '#ef4444' : 'hsl(var(--text-secondary))' }}>
+                      {score > 0 ? `+${score}` : score}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: 'rgba(139, 92, 246, 0.03)',
+              border: '1px solid rgba(139, 92, 246, 0.08)',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              fontSize: '0.8rem',
+              color: 'hsl(var(--text-secondary))'
+            }}>
+              <div>
+                🏆 物理累计总币：
+                <b style={{ fontSize: '1.1rem', color: 'hsl(var(--color-mech))' }}>
+                  {Object.values(dayScores).reduce((a, b) => a + b, 0)} 个金币
+                </b>
+              </div>
+              <button
+                className="btn btn-secondary"
+                style={{
+                  fontSize: '0.72rem',
+                  padding: '4px 10px',
+                  color: 'hsl(var(--color-danger))',
+                  borderColor: 'rgba(239, 68, 68, 0.15)'
+                }}
+                onClick={() => {
+                  if (window.confirm('确定要清空这25天的物理荣誉金币账单吗？此操作不可逆！')) {
+                    const nextScores = {};
+                    for (let i = 1; i <= 25; i++) {
+                      const dayKey = `day${i}`;
+                      localStorage.removeItem(`physics-score-${dayKey}`);
+                      nextScores[dayKey] = 0;
+                    }
+                    setDayScores(nextScores);
+                  }
+                }}
+              >
+                🗑️ 清空重置
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
