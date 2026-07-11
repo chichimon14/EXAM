@@ -3,23 +3,6 @@ import React from 'react';
 export default function SubjectPortal({ onSelectSubject }) {
   const subjects = [
     {
-      id: 'physics',
-      name: '中考物理宝典',
-      subtitle: '声光热力电 · 全景原理图解',
-      desc: '专为八年级数理提分设计，涵盖 24 幅中考高反差手绘 SVG 图解及 4 大经典交互大实验，打牢力学与电学基础！',
-      icon: (
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'hsl(var(--color-mech))' }}>
-          <circle cx="12" cy="12" r="10" strokeDasharray="3,3" />
-          <circle cx="12" cy="12" r="4" fill="hsl(var(--color-mech) / 0.15)" />
-          <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
-          <path d="M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83" />
-        </svg>
-      ),
-      badge: '12章 · 1200题',
-      color: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)',
-      borderColor: 'rgba(139, 92, 246, 0.18)'
-    },
-    {
       id: 'math',
       name: '中考数学计算特训',
       subtitle: '25天提分特训营 · 每日2小时',
@@ -37,10 +20,27 @@ export default function SubjectPortal({ onSelectSubject }) {
       borderColor: 'rgba(245, 158, 11, 0.18)'
     },
     {
+      id: 'physics',
+      name: '中考物理宝典',
+      subtitle: '声光热力电 · 全景原理图解',
+      desc: '专为八年级数理提分设计，涵盖 24 幅中考高反差手绘 SVG 图解及 4 大经典交互大实验，打牢力学与电学基础！',
+      icon: (
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'hsl(var(--color-mech))' }}>
+          <circle cx="12" cy="12" r="10" strokeDasharray="3,3" />
+          <circle cx="12" cy="12" r="4" fill="hsl(var(--color-mech) / 0.15)" />
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+          <path d="M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83" />
+        </svg>
+      ),
+      badge: '12章 · 1200题',
+      color: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)',
+      borderColor: 'rgba(139, 92, 246, 0.18)'
+    },
+    {
       id: 'chemistry',
       name: '中考化学特训',
       subtitle: '初三暑假抢跑 · 前20元素与方程式',
-      desc: '前20个元素中英文拼音拼写及化合价，10大初三经典反应方程式底层原理拆解。配备15天每日金币测练，轻松抢跑！',
+      desc: '前20个元素中英文拼音拼写及化合价，10大初三经典反应方程式底层原理拆解。配备25天每日金币测练，轻松抢跑！',
       icon: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'hsl(var(--color-optics))' }}>
           <path d="M10 2v7.586a1 1 0 0 1-.293.707l-5.414 5.414A2 2 0 0 0 6 19.122A2 2 0 0 0 8 21.122h8a2 2 0 0 0 2-2a2 2 0 0 0 1.707-3.414l-5.414-5.414A1 1 0 0 1 14 9.586V2Z" fill="rgba(16, 185, 129, 0.15)" />
@@ -48,7 +48,7 @@ export default function SubjectPortal({ onSelectSubject }) {
           <line x1="6" y1="12" x2="18" y2="12" strokeDasharray="2,2" />
         </svg>
       ),
-      badge: '15天抢跑 · 1800题',
+      badge: '25天特营 · 3000题',
       color: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%)',
       borderColor: 'rgba(16, 185, 129, 0.18)'
     },
@@ -122,7 +122,7 @@ export default function SubjectPortal({ onSelectSubject }) {
       {/* 学科选择网格 */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+        gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '24px',
         width: '100%',
         marginTop: '20px'

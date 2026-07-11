@@ -5,12 +5,12 @@ import WrongBook from './WrongBook';
 
 // Day 4 专属游戏所使用的核心元素种子
 const GAME_SEEDS = [
-  { id: 'H', symbol: 'H', pinyin: '氢 (qīng)', english: 'Hydrogen [ˈhaɪdrədʒən]' },
-  { id: 'O', symbol: 'O', pinyin: '氧 (yǎng)', english: 'Oxygen [ˈɑːksɪdʒən]' },
-  { id: 'Na', symbol: 'Na', pinyin: '钠 (nà)', english: 'Sodium [ˈsoʊdiəm]' },
-  { id: 'Fe', symbol: 'Fe', pinyin: '铁 (tiě)', english: 'Iron [ˈaɪərn]' },
-  { id: 'Cu', symbol: 'Cu', pinyin: '铜 (tóng)', english: 'Copper [ˈkɑːpər]' },
-  { id: 'Ca', symbol: 'Ca', pinyin: '钙 (gài)', english: 'Calcium [ˈkælsiəm]' }
+  { id: 'H', symbol: 'H', pinyin: '氢 (qīng)', english: 'Hydrogen' },
+  { id: 'O', symbol: 'O', pinyin: '氧 (yǎng)', english: 'Oxygen' },
+  { id: 'Na', symbol: 'Na', pinyin: '钠 (nà)', english: 'Sodium' },
+  { id: 'Fe', symbol: 'Fe', pinyin: '铁 (tiě)', english: 'Iron' },
+  { id: 'Cu', symbol: 'Cu', pinyin: '铜 (tóng)', english: 'Copper' },
+  { id: 'Ca', symbol: 'Ca', pinyin: '钙 (gài)', english: 'Calcium' }
 ];
 
 export default function ChemistryModule() {
@@ -275,12 +275,124 @@ export default function ChemistryModule() {
     }
   };
 
+  // 26 个中考高频与前20号元素数据库
+  const ALL_PERIODIC_ELEMENTS = [
+    { z: 1, symbol: 'H', name: '氢', pinyin: 'qīng', day: 'day1', group: 1 },
+    { z: 2, symbol: 'He', name: '氦', pinyin: 'hài', day: 'day1', group: 1 },
+    { z: 3, symbol: 'Li', name: '锂', pinyin: 'lǐ', day: 'day1', group: 1 },
+    { z: 4, symbol: 'Be', name: '铍', pinyin: 'pí', day: 'day1', group: 1 },
+    { z: 5, symbol: 'B', name: '硼', pinyin: 'péng', day: 'day1', group: 1 },
+    { z: 6, symbol: 'C', name: '碳', pinyin: 'tàn', day: 'day1', group: 2 },
+    { z: 7, symbol: 'N', name: '氮', pinyin: 'dàn', day: 'day1', group: 2 },
+    { z: 8, symbol: 'O', name: '氧', pinyin: 'yǎng', day: 'day1', group: 2 },
+    { z: 9, symbol: 'F', name: '氟', pinyin: 'fú', day: 'day1', group: 2 },
+    { z: 10, symbol: 'Ne', name: '氖', pinyin: 'nǎi', day: 'day1', group: 2 },
+    { z: 11, symbol: 'Na', name: '钠', pinyin: 'nà', day: 'day2', group: 3 },
+    { z: 12, symbol: 'Mg', name: '镁', pinyin: 'měi', day: 'day2', group: 3 },
+    { z: 13, symbol: 'Al', name: '铝', pinyin: 'lǚ', day: 'day2', group: 3 },
+    { z: 14, symbol: 'Si', name: '硅', pinyin: 'guī', day: 'day2', group: 3 },
+    { z: 15, symbol: 'P', name: '磷', pinyin: 'lín', day: 'day2', group: 3 },
+    { z: 16, symbol: 'S', name: '硫', pinyin: 'liú', day: 'day2', group: 4 },
+    { z: 17, symbol: 'Cl', name: '氯', pinyin: 'lǜ', day: 'day2', group: 4 },
+    { z: 18, symbol: 'Ar', name: '氩', pinyin: 'yà', day: 'day2', group: 4 },
+    { z: 19, symbol: 'K', name: '钾', pinyin: 'jiǎ', day: 'day2', group: 4 },
+    { z: 20, symbol: 'Ca', name: '钙', pinyin: 'gài', day: 'day2', group: 4 },
+    { z: 26, symbol: 'Fe', name: '铁', pinyin: 'tiě', day: 'day3', group: 5 },
+    { z: 29, symbol: 'Cu', name: '铜', pinyin: 'tóng', day: 'day3', group: 5 },
+    { z: 30, symbol: 'Zn', name: '锌', pinyin: 'xīn', day: 'day3', group: 5 },
+    { z: 47, symbol: 'Ag', name: '银', pinyin: 'yín', day: 'day3', group: 5 },
+    { z: 56, symbol: 'Ba', name: '钡', pinyin: 'bèi', day: 'day3', group: 5 },
+    { z: 25, symbol: 'Mn', name: '锰', pinyin: 'měng', day: 'day3', group: 5 }
+  ];
+
   // 渲染化学实验/原子微观原理图 (含 Day 8 氧气、Day 14 水电解、Day 15 引流过滤、Day 12 钠电子轨道)
   const renderChemistryIllustrations = (dayId) => {
     const list = [];
     
-    // 1. 原子微观核电排布 (Day 1 - 3, Day 12 - 13)
-    if (['day1', 'day2', 'day3', 'day12', 'day13'].includes(dayId)) {
+    // 前三天：展示全局高亮周期表网格，教他口诀记忆，不放轨道模型
+    if (['day1', 'day2', 'day3'].includes(dayId)) {
+      let currentMnemonic = '';
+      if (dayId === 'day1') currentMnemonic = '🔥 今日口诀组：青海里皮蓬(1-5)，碳蛋养拂奶(6-10)';
+      else if (dayId === 'day2') currentMnemonic = '🔥 今日口诀组：那美驴归临(11-15)，留绿亚家盖(16-20)';
+      else if (dayId === 'day3') currentMnemonic = '🔥 今日口诀组：铁铜锌银钡锰(重金属常用组)';
+
+      list.push(
+        <div key="c-day-periodic" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ 
+            fontSize: '0.78rem', 
+            color: '#b45309', 
+            fontWeight: 'bold', 
+            backgroundColor: '#fffbeb', 
+            padding: '8px 12px', 
+            borderLeft: '4px solid #f59e0b', 
+            borderRadius: '4px',
+            lineHeight: '1.4'
+          }}>
+            {currentMnemonic}
+          </div>
+          
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(5, 1fr)',
+            gap: '6px',
+            backgroundColor: '#f8fafc',
+            padding: '10px',
+            borderRadius: 'var(--radius-md)',
+            border: '1px solid #edf2f7'
+          }}>
+            {ALL_PERIODIC_ELEMENTS.map((el) => {
+              const isTodayElement = el.day === dayId;
+              
+              let cellBg = '#f1f5f9';
+              let border = '1px solid #e2e8f0';
+              let glowStyle = {};
+              let opacity = 0.35; // 其它元素淡化
+
+              if (isTodayElement) {
+                opacity = 1;
+                cellBg = 'linear-gradient(135deg, #fffdf5 0%, #fff9db 100%)';
+                border = '2px solid #f59e0b';
+                glowStyle = {
+                  boxShadow: '0 0 10px rgba(245, 158, 11, 0.2)',
+                };
+              }
+
+              return (
+                <div
+                  key={el.z}
+                  style={{
+                    padding: '8px 2px',
+                    borderRadius: '8px',
+                    background: cellBg,
+                    border: border,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '1px',
+                    opacity: opacity,
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                    ...glowStyle
+                  }}
+                >
+                  <span style={{ position: 'absolute', top: '2px', left: '3px', fontSize: '0.58rem', opacity: 0.5 }}>{el.z}</span>
+                  <span style={{ fontSize: '1.15rem', fontWeight: 'bold', color: isTodayElement ? '#b45309' : 'hsl(var(--text-primary))' }}>{el.symbol}</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>{el.name}</span>
+                  <span style={{ fontSize: '0.6rem', opacity: 0.8, fontFamily: 'monospace' }}>{el.pinyin}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: '0.68rem', opacity: 0.4, textAlign: 'center' }}>
+            提示：高亮金黄色卡片为今日必背元素，其他半透明元素为后续课时或前几课内容。
+          </div>
+        </div>
+      );
+    }
+
+    // 12天和13天：保留核外电子轨道概念模型
+    if (['day12', 'day13'].includes(dayId)) {
       list.push(
         <div key="c-day-atom" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：11号钠(Na)最外层电子轨道模型 (化合价本质)</div>
