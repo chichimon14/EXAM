@@ -1131,89 +1131,8 @@ export default function PhysicsModule() {
           </div>
         </div>
 
-        {/* 全局学科工具 (错题本、诊断、公式与账单) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <button
-            className={`btn btn-secondary ${activeTab === 'wrongbook' ? 'btn-primary' : ''}`}
-            style={{
-              justifyContent: 'flex-start',
-              border: 'none',
-              backgroundColor: activeTab === 'wrongbook' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
-              color: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--text-primary))',
-              fontSize: '0.74rem',
-              padding: '6px 10px',
-              position: 'relative'
-            }}
-            onClick={() => setActiveTab('wrongbook')}
-          >
-            ❌ 物理错题重温本
-            {wrongList.length > 0 && (
-              <span style={{
-                position: 'absolute',
-                right: '10px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--color-danger))',
-                color: activeTab === 'wrongbook' ? 'hsl(var(--color-mech))' : '#fff',
-                fontSize: '0.64rem',
-                fontWeight: 'bold',
-                padding: '1px 4px',
-                borderRadius: '6px'
-              }}>
-                {wrongList.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            className={`btn btn-secondary ${activeTab === 'diagnosis' ? 'btn-primary' : ''}`}
-            style={{
-              justifyContent: 'flex-start',
-              border: 'none',
-              backgroundColor: activeTab === 'diagnosis' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
-              color: activeTab === 'diagnosis' ? '#fff' : 'hsl(var(--text-primary))',
-              fontSize: '0.74rem',
-              padding: '6px 10px'
-            }}
-            onClick={() => setActiveTab('diagnosis')}
-          >
-            📊 智能雷达弱点评估
-          </button>
-
-          <button
-            className={`btn btn-secondary ${activeTab === 'formulas' ? 'btn-primary' : ''}`}
-            style={{
-              justifyContent: 'flex-start',
-              border: 'none',
-              backgroundColor: activeTab === 'formulas' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
-              color: activeTab === 'formulas' ? '#fff' : 'hsl(var(--text-primary))',
-              fontSize: '0.74rem',
-              padding: '6px 10px'
-            }}
-            onClick={() => setActiveTab('formulas')}
-          >
-            📐 中考金牌公式计算
-          </button>
-
-          <button
-            className="btn btn-secondary scale-up"
-            style={{
-              justifyContent: 'flex-start',
-              border: 'none',
-              backgroundColor: 'rgba(139, 92, 246, 0.04)',
-              color: 'hsl(var(--color-mech))',
-              fontSize: '0.74rem',
-              padding: '6px 10px',
-              fontWeight: 'bold'
-            }}
-            onClick={() => setShowBillModal(true)}
-          >
-            🪙 25天历史金币账单
-          </button>
-        </div>
-
-        {/* 二级与三级学习目录树 */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+        {/* 二级与三级学习目录树 (优先展示，占据剩余空间并滚动) */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px', overflowY: 'auto', paddingRight: '4px' }}>
           <div style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>学习进度大纲</div>
           
           {blocks.map((block) => {
@@ -1332,6 +1251,87 @@ export default function PhysicsModule() {
               </div>
             );
           })}
+        </div>
+
+        {/* 全局学科工具 (错题本、诊断、公式与账单) 挪到下方固定 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '10px', marginTop: '2px' }}>
+          <button
+            className={`btn btn-secondary ${activeTab === 'wrongbook' ? 'btn-primary' : ''}`}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: activeTab === 'wrongbook' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
+              color: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--text-primary))',
+              fontSize: '0.74rem',
+              padding: '6px 10px',
+              position: 'relative'
+            }}
+            onClick={() => setActiveTab('wrongbook')}
+          >
+            ❌ 物理错题重温本
+            {wrongList.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                right: '10px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--color-danger))',
+                color: activeTab === 'wrongbook' ? 'hsl(var(--color-mech))' : '#fff',
+                fontSize: '0.64rem',
+                fontWeight: 'bold',
+                padding: '1px 4px',
+                borderRadius: '6px'
+              }}>
+                {wrongList.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            className={`btn btn-secondary ${activeTab === 'diagnosis' ? 'btn-primary' : ''}`}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: activeTab === 'diagnosis' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
+              color: activeTab === 'diagnosis' ? '#fff' : 'hsl(var(--text-primary))',
+              fontSize: '0.74rem',
+              padding: '6px 10px'
+            }}
+            onClick={() => setActiveTab('diagnosis')}
+          >
+            📊 智能雷达弱点评估
+          </button>
+
+          <button
+            className={`btn btn-secondary ${activeTab === 'formulas' ? 'btn-primary' : ''}`}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: activeTab === 'formulas' ? 'hsl(var(--color-mech))' : 'rgba(0,0,0,0.02)',
+              color: activeTab === 'formulas' ? '#fff' : 'hsl(var(--text-primary))',
+              fontSize: '0.74rem',
+              padding: '6px 10px'
+            }}
+            onClick={() => setActiveTab('formulas')}
+          >
+            📐 中考金牌公式计算
+          </button>
+
+          <button
+            className="btn btn-secondary scale-up"
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: 'rgba(139, 92, 246, 0.04)',
+              color: 'hsl(var(--color-mech))',
+              fontSize: '0.74rem',
+              padding: '6px 10px',
+              fontWeight: 'bold'
+            }}
+            onClick={() => setShowBillModal(true)}
+          >
+            🪙 25天历史金币账单
+          </button>
         </div>
       </div>
 

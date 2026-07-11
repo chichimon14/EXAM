@@ -325,59 +325,8 @@ export default function EnglishModule() {
           </div>
         </div>
 
-        {/* 全局学科工具 (错题本与账单) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <button
-            className={`btn btn-secondary ${activeTab === 'wrongbook' ? 'btn-primary' : ''}`}
-            style={{
-              justifyContent: 'flex-start',
-              border: 'none',
-              backgroundColor: activeTab === 'wrongbook' ? '#a855f7' : 'rgba(0,0,0,0.02)',
-              color: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--text-primary))',
-              fontSize: '0.78rem',
-              padding: '8px 12px',
-              position: 'relative'
-            }}
-            onClick={() => setActiveTab('wrongbook')}
-          >
-            ❌ 英语错题重温本
-            {wrongList.length > 0 && (
-              <span style={{
-                position: 'absolute',
-                right: '12px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                backgroundColor: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--color-danger))',
-                color: activeTab === 'wrongbook' ? '#a855f7' : '#fff',
-                fontSize: '0.68rem',
-                fontWeight: 'bold',
-                padding: '1px 5px',
-                borderRadius: '8px'
-              }}>
-                {wrongList.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            className="btn btn-secondary scale-up"
-            style={{
-              justifyContent: 'flex-start',
-              border: 'none',
-              backgroundColor: 'rgba(168, 85, 247, 0.04)',
-              color: '#7e22ce',
-              fontSize: '0.78rem',
-              padding: '8px 12px',
-              fontWeight: 'bold'
-            }}
-            onClick={() => setShowBillModal(true)}
-          >
-            📊 30天历史金币账单
-          </button>
-        </div>
-
-        {/* 二级与三级学习目录树 */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+        {/* 二级与三级学习目录树 (优先展示，占据剩余空间并滚动) */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', overflowY: 'auto', paddingRight: '4px' }}>
           <div style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>学习进度大纲</div>
           
           {englishBlocks.map((block) => {
@@ -496,6 +445,57 @@ export default function EnglishModule() {
               </div>
             );
           })}
+        </div>
+
+        {/* 全局学科工具挪到下方固定 (错题本与账单) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '10px', marginTop: '2px' }}>
+          <button
+            className={`btn btn-secondary ${activeTab === 'wrongbook' ? 'btn-primary' : ''}`}
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: activeTab === 'wrongbook' ? '#a855f7' : 'rgba(0,0,0,0.02)',
+              color: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--text-primary))',
+              fontSize: '0.78rem',
+              padding: '8px 12px',
+              position: 'relative'
+            }}
+            onClick={() => setActiveTab('wrongbook')}
+          >
+            ❌ 英语错题重温本
+            {wrongList.length > 0 && (
+              <span style={{
+                position: 'absolute',
+                right: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                backgroundColor: activeTab === 'wrongbook' ? '#fff' : 'hsl(var(--color-danger))',
+                color: activeTab === 'wrongbook' ? '#a855f7' : '#fff',
+                fontSize: '0.68rem',
+                fontWeight: 'bold',
+                padding: '1px 5px',
+                borderRadius: '8px'
+              }}>
+                {wrongList.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            className="btn btn-secondary scale-up"
+            style={{
+              justifyContent: 'flex-start',
+              border: 'none',
+              backgroundColor: 'rgba(168, 85, 247, 0.04)',
+              color: '#7e22ce',
+              fontSize: '0.78rem',
+              padding: '8px 12px',
+              fontWeight: 'bold'
+            }}
+            onClick={() => setShowBillModal(true)}
+          >
+            📊 30天历史金币账单
+          </button>
         </div>
       </div>
 
