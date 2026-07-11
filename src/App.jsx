@@ -15,11 +15,12 @@ export default function App() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      height: '100vh',
       display: 'flex',
       flexDirection: 'column',
       backgroundColor: '#fafaf6', // 高雅的亮色暖白底色
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      overflow: 'hidden'
     }}>
       
       {/* 学科大厅导航顶栏 (在选中具体学科时渲染) */}
@@ -87,7 +88,8 @@ export default function App() {
         padding: activeSubject === null ? '0' : '20px',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'stretch'
+        justifyContent: 'stretch',
+        overflow: 'hidden'
       }}>
         {activeSubject === null && (
           <SubjectPortal onSelectSubject={(subj) => setActiveSubject(subj)} />
