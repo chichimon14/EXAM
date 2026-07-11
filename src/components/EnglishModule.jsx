@@ -28,10 +28,20 @@ export default function EnglishModule() {
   // 英语错题本状态
   const [wrongList, setWrongList] = useState([]);
 
-  // 初始化加载错题与30天历史积分
+  // 智能英语单词斩词熟记与生词本管理
+  const [masteredWords, setMasteredWords] = useState([]);
+  const [unfamiliarWords, setUnfamiliarWords] = useState([]);
+
+  // 初始化加载错题与30天历史积分、斩词与生词库
   useEffect(() => {
     const savedWrongs = localStorage.getItem('english-wrongs');
     if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
+
+    const mastered = localStorage.getItem('english-mastered-words');
+    if (mastered) setMasteredWords(JSON.parse(mastered));
+
+    const unfamiliar = localStorage.getItem('english-unfamiliar-words');
+    if (unfamiliar) setUnfamiliarWords(JSON.parse(unfamiliar));
 
     const scores = {};
     for (let i = 1; i <= 30; i++) {
@@ -54,6 +64,46 @@ export default function EnglishModule() {
     setTestChecked(false);
     setTestScore(null);
   }, [selectedDayId]);
+
+  // 切换掌握熟记状态（斩词）
+  const toggleMastered = (word) => {
+    let nextMastered = [];
+    const isExist = masteredWords.includes(word);
+    if (isExist) {
+      nextMastered = masteredWords.filter(w => w !== word);
+    } else {
+      nextMastered = [...masteredWords, word];
+      // 熟记斩词后，自动从生词本中移出，减轻记忆负担
+      if (unfamiliarWords.includes(word)) {
+        const nextUnfamiliar = unfamiliarWords.filter(w => w !== word);
+        setUnfamiliarWords(nextUnfamiliar);
+        localStorage.setItem('english-unfamiliar-words', JSON.stringify(nextUnfamiliar));
+      }
+      // 孩子斩词成功，奖励 1 个荣誉金币！
+      updateGoldCoin(true);
+    }
+    setMasteredWords(nextMastered);
+    localStorage.setItem('english-mastered-words', JSON.stringify(nextMastered));
+  };
+
+  // 切换不熟悉生词状态（收藏强化训练）
+  const toggleUnfamiliar = (word) => {
+    let nextUnfamiliar = [];
+    const isExist = unfamiliarWords.includes(word);
+    if (isExist) {
+      nextUnfamiliar = unfamiliarWords.filter(w => w !== word);
+    } else {
+      nextUnfamiliar = [...unfamiliarWords, word];
+      // 标记为生词后，自动从已掌握（斩词）中剔除，回归正常训练流程
+      if (masteredWords.includes(word)) {
+        const nextMastered = masteredWords.filter(w => w !== word);
+        setMasteredWords(nextMastered);
+        localStorage.setItem('english-mastered-words', JSON.stringify(nextMastered));
+      }
+    }
+    setUnfamiliarWords(nextUnfamiliar);
+    localStorage.setItem('english-unfamiliar-words', JSON.stringify(nextUnfamiliar));
+  };
 
   // 开启20题测试
   const handleStartTest = () => {
@@ -191,11 +241,11 @@ export default function EnglishModule() {
     }
   };
 
-  // 切片获取当前天数的 20 个背诵单词
+  // 切片获取当前天数的 40 个背诵单词
   const getDayWords = (dayId) => {
     const dayNum = parseInt(dayId.replace('day', ''), 10) || 1;
-    const start = (dayNum - 1) * 20;
-    const end = dayNum * 20;
+    const start = (dayNum - 1) * 40;
+    const end = dayNum * 40;
     return englishVocabList.slice(start, end);
   };
 
@@ -415,92 +465,210 @@ export default function EnglishModule() {
                 </div>
               </div>
 
-              {/* 右栏：今日必背20词 (带读音喇叭) */}
+              {/* 右栏：今日必背40词 (带发音朗读与自适应筛词) */}
               <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
-                <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>🔊 今日必背词汇 (20 个 / 600)</span>
-                  <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>点击喇叭真人朗读发音</span>
+                <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 4px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>🔊 今日必背词汇 (40 个 / 1200)</span>
+                  <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>点击喇叭朗读发音</span>
                 </h3>
+                
+                {/* 智能筛词天平状态条 */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  backgroundColor: '#f8fafc',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  border: '1px solid #edf2f7',
+                  marginBottom: '10px'
+                }}>
+                  <span style={{ color: 'hsl(var(--color-success))', fontWeight: 'bold' }}>
+                    ⚔️ 今日已熟记(已斩)：{currentDayWords.filter(w => masteredWords.includes(w.word)).length} / 40
+                  </span>
+                  <span style={{ color: '#ec4899', fontWeight: 'bold' }}>
+                    ⭐ 今日重点生词：{currentDayWords.filter(w => unfamiliarWords.includes(w.word)).length} / 40
+                  </span>
+                </div>
+
                 <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
-                  {currentDayWords.map((item, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        padding: '14px',
-                        border: '1px solid #edf2f7',
-                        borderRadius: '10px',
-                        backgroundColor: '#f8fafc',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '8px',
-                        transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                      }}
-                      className="scale-up"
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '0.74rem', color: '#a855f7', fontWeight: 'bold' }}>#{idx + 1}</span>
-                          <span style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'hsl(var(--text-primary))' }}>{item.word}</span>
-                          <span style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', fontFamily: 'monospace' }}>{item.phonetic}</span>
+                  {currentDayWords.map((item, idx) => {
+                    const isMastered = masteredWords.includes(item.word);
+                    const isUnfamiliar = unfamiliarWords.includes(item.word);
+
+                    let cardBg = '#f8fafc';
+                    let cardBorder = '1px solid #edf2f7';
+                    let cardOpacity = 1;
+                    let cardGlow = 'none';
+
+                    if (isMastered) {
+                      cardBg = '#f1f5f9';
+                      cardBorder = '1px solid #e2e8f0';
+                      cardOpacity = 0.55;
+                    } else if (isUnfamiliar) {
+                      cardBg = 'linear-gradient(135deg, #fffdfa 0%, #fff5f5 100%)';
+                      cardBorder = '1.5px solid #f472b6';
+                      cardGlow = '0 2px 10px rgba(244,114,182,0.1)';
+                    }
+
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '14px',
+                          border: cardBorder,
+                          borderRadius: '10px',
+                          backgroundColor: cardBg,
+                          opacity: cardOpacity,
+                          boxShadow: cardGlow,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                          transition: 'all 0.22s ease',
+                          position: 'relative'
+                        }}
+                        className="scale-up"
+                      >
+                        {/* 状态徽标 */}
+                        {isMastered && (
+                          <span style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '110px',
+                            backgroundColor: 'rgba(16,185,129,0.1)',
+                            color: 'hsl(var(--color-success))',
+                            fontSize: '0.64rem',
+                            fontWeight: 'bold',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}>
+                            ⚔️ 已熟记斩词
+                          </span>
+                        )}
+                        {isUnfamiliar && (
+                          <span style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '110px',
+                            backgroundColor: '#fce7f3',
+                            color: '#db2777',
+                            fontSize: '0.64rem',
+                            fontWeight: 'bold',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}>
+                            ⭐ 重点练习
+                          </span>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '0.74rem', color: '#a855f7', fontWeight: 'bold' }}>#{idx + 1}</span>
+                            <span style={{
+                              fontSize: '1.05rem',
+                              fontWeight: 'bold',
+                              color: 'hsl(var(--text-primary))',
+                              textDecoration: isMastered ? 'line-through' : 'none'
+                            }}>
+                              {item.word}
+                            </span>
+                            <span style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', fontFamily: 'monospace' }}>{item.phonetic}</span>
+                          </div>
+
+                          {/* 精美小按钮排组 */}
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button
+                              style={{
+                                border: 'none',
+                                backgroundColor: 'rgba(59, 130, 246, 0.08)',
+                                color: 'hsl(var(--color-optics))',
+                                borderRadius: '4px',
+                                padding: '4px 6px',
+                                fontSize: '0.74rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '2px'
+                              }}
+                              title="听发音"
+                              onClick={() => speakText(item.word)}
+                            >
+                              🔊 读音
+                            </button>
+                            <button
+                              style={{
+                                border: 'none',
+                                backgroundColor: isMastered ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.06)',
+                                color: isMastered ? '#047857' : 'hsl(var(--color-success))',
+                                borderRadius: '4px',
+                                padding: '4px 6px',
+                                fontSize: '0.74rem',
+                                cursor: 'pointer',
+                                fontWeight: isMastered ? 'bold' : 'normal'
+                              }}
+                              title={isMastered ? "已斩此词，点击撤销" : "已掌握此词，做题时将被斩掉并奖励1金币"}
+                              onClick={() => toggleMastered(item.word)}
+                            >
+                              ⚔️ {isMastered ? '已斩' : '熟记'}
+                            </button>
+                            <button
+                              style={{
+                                border: 'none',
+                                backgroundColor: isUnfamiliar ? 'rgba(236,72,153,0.2)' : 'rgba(236,72,153,0.06)',
+                                color: isUnfamiliar ? '#be185d' : '#ec4899',
+                                borderRadius: '4px',
+                                padding: '4px 6px',
+                                fontSize: '0.74rem',
+                                cursor: 'pointer',
+                                fontWeight: isUnfamiliar ? 'bold' : 'normal'
+                              }}
+                              title={isUnfamiliar ? "已加入生词本，点击撤销" : "标记为不熟悉生词，考试时优先出此题"}
+                              onClick={() => toggleUnfamiliar(item.word)}
+                            >
+                              ⭐ {isUnfamiliar ? '不熟' : '生词'}
+                            </button>
+                          </div>
                         </div>
-                        <button
-                          style={{
-                            border: 'none',
-                            backgroundColor: 'rgba(59, 130, 246, 0.08)',
-                            color: 'hsl(var(--color-optics))',
-                            borderRadius: '50%',
-                            width: '28px',
-                            height: '28px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            cursor: 'pointer'
-                          }}
-                          title="听发音"
-                          onClick={() => speakText(item.word)}
-                        >
-                          🔊
-                        </button>
-                      </div>
 
-                      <div style={{ fontSize: '0.84rem', color: 'hsl(var(--text-primary))', fontWeight: '500' }}>
-                        中文：{item.translation}
-                      </div>
-
-                      <div style={{ fontSize: '0.76rem', color: '#b45309', backgroundColor: '#fffbeb', padding: '6px 10px', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
-                        💡 <b>助记捷径：</b>{item.tip}
-                      </div>
-
-                      <div style={{
-                        fontSize: '0.8rem',
-                        backgroundColor: '#ffffff',
-                        padding: '8px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(0,0,0,0.02)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
-                        <div style={{ paddingRight: '8px' }}>
-                          <div style={{ fontStyle: 'italic', color: '#4a5568' }}>“ {item.sentence} ”</div>
-                          <div style={{ fontSize: '0.74rem', color: '#718096', marginTop: '2px' }}>{item.sentence_translation}</div>
+                        <div style={{ fontSize: '0.84rem', color: 'hsl(var(--text-primary))', fontWeight: '500' }}>
+                          中文：{item.translation}
                         </div>
-                        <button
-                          style={{
-                            border: 'none',
-                            backgroundColor: 'transparent',
-                            color: '#718096',
-                            fontSize: '0.85rem',
-                            cursor: 'pointer'
-                          }}
-                          title="听例句发音"
-                          onClick={() => speakText(item.sentence)}
-                        >
-                          🗣️
-                        </button>
+
+                        <div style={{ fontSize: '0.76rem', color: '#b45309', backgroundColor: '#fffbeb', padding: '6px 10px', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
+                          💡 <b>助记捷径：</b>{item.tip}
+                        </div>
+
+                        <div style={{
+                          fontSize: '0.8rem',
+                          backgroundColor: '#ffffff',
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid rgba(0,0,0,0.02)',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{ paddingRight: '8px' }}>
+                            <div style={{ fontStyle: 'italic', color: '#4a5568' }}>“ {item.sentence} ”</div>
+                            <div style={{ fontSize: '0.74rem', color: '#718096', marginTop: '2px' }}>{item.sentence_translation}</div>
+                          </div>
+                          <button
+                            style={{
+                              border: 'none',
+                              backgroundColor: 'transparent',
+                              color: '#718096',
+                              fontSize: '0.85rem',
+                              cursor: 'pointer'
+                            }}
+                            title="听例句发音"
+                            onClick={() => speakText(item.sentence)}
+                          >
+                            🗣️
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

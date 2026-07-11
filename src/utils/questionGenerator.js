@@ -1191,14 +1191,39 @@ export function generateChemistryQuestions(topicId, count = 20) {
  */
 export function generateEnglishQuestions(topicId, count = 20) {
   const list = [];
-  // 提取当前Day切片下的词汇 (通过切片读取，也可以在引擎里按 topicId 进行词汇映射)
   const dayNum = parseInt(topicId.replace('eng_topic_day', ''), 10) || 1;
-  const startIdx = (dayNum - 1) * 20;
-  const endIdx = dayNum * 20;
+  const startIdx = (dayNum - 1) * 40;
+  const endIdx = dayNum * 40;
+  
+  // 1. 提取当前 Day 切片下的 40 个基础词
   const dayWords = englishVocabList.slice(startIdx, endIdx);
+  const currentVocabBase = dayWords.length > 0 ? dayWords : englishVocabList.slice(0, 40);
 
-  // 兜底保护，如果英语词汇切片不够，使用前20个
-  const currentVocab = dayWords.length > 0 ? dayWords : englishVocabList.slice(0, 20);
+  // 2. 从本地缓存读取已熟记（斩掉）的词与标为生词（不熟）的词
+  let masteredWords = [];
+  let unfamiliarWords = [];
+  try {
+    const masteredStr = localStorage.getItem('english-mastered-words');
+    if (masteredStr) masteredWords = JSON.parse(masteredStr);
+    const unfamiliarStr = localStorage.getItem('english-unfamiliar-words');
+    if (unfamiliarStr) unfamiliarWords = JSON.parse(unfamiliarStr);
+  } catch (e) {
+    // 降级保护
+  }
+
+  // 3. 过滤掉已经掌握斩词的集合
+  let filteredWords = currentVocabBase.filter(w => !masteredWords.includes(w.word));
+
+  // 4. 提取今日所属的生词
+  let todayUnfamiliar = currentVocabBase.filter(w => unfamiliarWords.includes(w.word));
+
+  // 5. 组合候选池，将今日生词提到最前面，进行高强度针对性训练
+  let candidateWords = [...todayUnfamiliar, ...filteredWords];
+
+  // 6. 兜底保护：如果候选池空了（说明本章单词全部被斩掉），使用本章原始词兜底
+  if (candidateWords.length === 0) {
+    candidateWords = currentVocabBase;
+  }
 
   for (let i = 0; i < count; i++) {
     let qObj = {};
@@ -1206,8 +1231,8 @@ export function generateEnglishQuestions(topicId, count = 20) {
 
     // 奇数题做词汇英汉匹配，偶数题做当天语法选择题
     if (i % 2 === 0) {
-      // 词汇选择题
-      const seedItem = currentVocab[i % currentVocab.length];
+      // 词汇选择题：从今日的候选池（生词优先）中提取
+      const seedItem = candidateWords[i % candidateWords.length];
       const askChinese = randomInt(0, 1) === 1;
 
       if (askChinese) {
