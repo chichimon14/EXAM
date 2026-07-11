@@ -3,11 +3,21 @@ import { chemistryBlocks, chemistryDays } from '../data/chemistryData';
 import { generateChemistryQuestions } from '../utils/questionGenerator';
 import WrongBook from './WrongBook';
 
+// Day 4 专属游戏所使用的核心元素种子
+const GAME_SEEDS = [
+  { id: 'H', symbol: 'H', pinyin: '氢 (qīng)', english: 'Hydrogen [ˈhaɪdrədʒən]' },
+  { id: 'O', symbol: 'O', pinyin: '氧 (yǎng)', english: 'Oxygen [ˈɑːksɪdʒən]' },
+  { id: 'Na', symbol: 'Na', pinyin: '钠 (nà)', english: 'Sodium [ˈsoʊdiəm]' },
+  { id: 'Fe', symbol: 'Fe', pinyin: '铁 (tiě)', english: 'Iron [ˈaɪərn]' },
+  { id: 'Cu', symbol: 'Cu', pinyin: '铜 (tóng)', english: 'Copper [ˈkɑːpər]' },
+  { id: 'Ca', symbol: 'Ca', pinyin: '钙 (gài)', english: 'Calcium [ˈkælsiəm]' }
+];
+
 export default function ChemistryModule() {
   const [activeTab, setActiveTab] = useState('study'); // study | test | exercise | wrongbook
   const [selectedDayId, setSelectedDayId] = useState('day1');
 
-  // 15天每日金币积分状态 { [dayId]: score }
+  // 25天每日金币积分状态 { [dayId]: score }
   const [dayScores, setDayScores] = useState({});
   const [showBillModal, setShowBillModal] = useState(false);
 
@@ -28,13 +38,20 @@ export default function ChemistryModule() {
   // 化学错题本状态
   const [wrongList, setWrongList] = useState([]);
 
-  // 初始化加载错题与15天历史积分
+  // --- Day 4 专属连线配对消除游戏状态 ---
+  const [gameCards, setGameCards] = useState([]);
+  const [selectedCards, setSelectedCards] = useState([]); // 当前单次选中的 card 对象数组 (最多3个)
+  const [matchedIds, setMatchedIds] = useState([]); // 已完美匹配成功的元素 id 数组
+  const [gameWon, setGameWon] = useState(false);
+  const [gameErrorActive, setGameErrorActive] = useState(false); // 匹配错误时闪红灯状态
+
+  // 初始化加载错题与25天历史积分
   useEffect(() => {
     const savedWrongs = localStorage.getItem('chemistry-wrongs');
     if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
 
     const scores = {};
-    for (let i = 1; i <= 15; i++) {
+    for (let i = 1; i <= 25; i++) {
       const dayKey = `day${i}`;
       const val = localStorage.getItem(`chemistry-score-${dayKey}`);
       if (val !== null) {
@@ -53,6 +70,11 @@ export default function ChemistryModule() {
     setSelectedTestOpt(null);
     setTestChecked(false);
     setTestScore(null);
+
+    // 如果切到 Day 4，自动初始化连线游戏
+    if (selectedDayId === 'day4') {
+      initMatchGame();
+    }
   }, [selectedDayId]);
 
   // 开启20题测试
@@ -79,7 +101,7 @@ export default function ChemistryModule() {
     }
   }, [selectedDayId, activeTab]);
 
-  // 更新金币分值助手函数：做对 +1，做错 -1
+  // 更新金币积分：做对 +1，做错 -1
   const updateGoldCoin = (isCorrect) => {
     const currentScore = dayScores[selectedDayId] || 0;
     const delta = isCorrect ? 1 : -1;
@@ -88,6 +110,81 @@ export default function ChemistryModule() {
     const nextScores = { ...dayScores, [selectedDayId]: newScore };
     setDayScores(nextScores);
     localStorage.setItem(`chemistry-score-${selectedDayId}`, newScore.toString());
+  };
+
+  // --- Day 4 连线匹配消除游戏核心逻辑 ---
+  const initMatchGame = () => {
+    const cardList = [];
+    GAME_SEEDS.forEach(el => {
+      // 每个元素分出3个属性卡片
+      cardList.push({ elId: el.id, type: 'symbol', text: el.symbol });
+      cardList.push({ elId: el.id, type: 'pinyin', text: el.pinyin });
+      cardList.push({ elId: el.id, type: 'english', text: el.english });
+    });
+    // 打乱顺序，并标记 cardId 索引
+    const shuffled = cardList
+      .map((c, idx) => ({ ...c, cardId: idx }))
+      .sort(() => 0.5 - Math.random());
+    
+    setGameCards(shuffled);
+    setSelectedCards([]);
+    setMatchedIds([]);
+    setGameWon(false);
+    setGameErrorActive(false);
+  };
+
+  const handleCardClick = (card) => {
+    if (matchedIds.includes(card.elId)) return; // 已经匹配消除的不理会
+    if (selectedCards.some(c => c.cardId === card.cardId)) return; // 不能重复选自己
+    if (gameErrorActive) return; // 正在闪红灯时不能点
+
+    const nextSelected = [...selectedCards, card];
+
+    // 1. 点中第1个卡片
+    if (nextSelected.length === 1) {
+      setSelectedCards(nextSelected);
+    }
+    // 2. 点中第2个卡片
+    else if (nextSelected.length === 2) {
+      // 判定前两个是不是同一个元素
+      if (nextSelected[0].elId === nextSelected[1].elId) {
+        setSelectedCards(nextSelected);
+      } else {
+        // 不是同一个，闪红灯错配
+        setSelectedCards(nextSelected);
+        setGameErrorActive(true);
+        setTimeout(() => {
+          setSelectedCards([]);
+          setGameErrorActive(false);
+        }, 800);
+      }
+    }
+    // 3. 点中第3个卡片 (完美拼图集齐)
+    else if (nextSelected.length === 3) {
+      if (nextSelected[0].elId === nextSelected[2].elId) {
+        // 3个全部吻合，绿灯消除！
+        const newMatched = [...matchedIds, card.elId];
+        setMatchedIds(newMatched);
+        setSelectedCards([]);
+        
+        // 配对成功奖励 3 金币！
+        updateGoldCoin(true);
+        updateGoldCoin(true);
+        updateGoldCoin(true);
+
+        if (newMatched.length === GAME_SEEDS.length) {
+          setGameWon(true);
+        }
+      } else {
+        // 闪红灯错配
+        setSelectedCards(nextSelected);
+        setGameErrorActive(true);
+        setTimeout(() => {
+          setSelectedCards([]);
+          setGameErrorActive(false);
+        }, 800);
+      }
+    }
   };
 
   // 20题测试单步提交
@@ -178,12 +275,12 @@ export default function ChemistryModule() {
     }
   };
 
-  // 渲染化学实验/原子微观原理图
+  // 渲染化学实验/原子微观原理图 (含 Day 8 氧气、Day 14 水电解、Day 15 引流过滤、Day 12 钠电子轨道)
   const renderChemistryIllustrations = (dayId) => {
     const list = [];
     
-    // 1. 原子微观核电排布 (Day 1 - 4)
-    if (dayId === 'day1' || dayId === 'day2' || dayId === 'day3' || dayId === 'day4') {
+    // 1. 原子微观核电排布 (Day 1 - 3, Day 12 - 13)
+    if (['day1', 'day2', 'day3', 'day12', 'day13'].includes(dayId)) {
       list.push(
         <div key="c-day-atom" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：11号钠(Na)最外层电子轨道模型 (化合价本质)</div>
@@ -214,8 +311,8 @@ export default function ChemistryModule() {
       );
     }
 
-    // 2. 水的电解气泡比 (Day 8)
-    if (dayId === 'day8') {
+    // 2. 水的电解气泡比 (Day 14)
+    if (dayId === 'day14') {
       list.push(
         <div key="c-day-water" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：电解水“正氧负氢、氢二氧一”实验管体积</div>
@@ -236,8 +333,8 @@ export default function ChemistryModule() {
       );
     }
 
-    // 3. 铁丝燃烧集气瓶水防护 (Day 7)
-    if (dayId === 'day7') {
+    // 3. 铁丝燃烧集气瓶水防护 (Day 8)
+    if (dayId === 'day8') {
       list.push(
         <div key="c-day-iron" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：铁丝在氧气中燃烧集气瓶底部放水防炸裂</div>
@@ -251,6 +348,29 @@ export default function ChemistryModule() {
             <circle cx="205" cy="55" r="2" fill="orange" />
             <circle cx="193" cy="62" r="2" fill="orange" />
             <text x="212" y="58" fill="orange" fontSize="7" fontWeight="bold">火星四射</text>
+          </svg>
+        </div>
+      );
+    }
+
+    // 4. 水的净化引流过滤 (Day 15)
+    if (dayId === 'day15') {
+      list.push(
+        <div key="c-day-filter" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：过滤一贴二低三靠引流系统</div>
+          <svg width="100%" height="110" viewBox="0 0 400 110" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
+            {/* 铁架台与漏斗 */}
+            <line x1="150" y1="10" x2="150" y2="100" stroke="#4a5568" strokeWidth="3" />
+            <line x1="120" y1="100" x2="200" y2="100" stroke="#4a5568" strokeWidth="4" />
+            
+            {/* 烧杯与玻璃棒 */}
+            <rect x="230" y="50" width="50" height="45" fill="none" stroke="#718096" strokeWidth="2" rx="2" />
+            <path d="M 195 20 L 245 70" stroke="hsl(var(--color-danger))" strokeWidth="2.5" />
+            <text x="228" y="32" fill="hsl(var(--color-danger))" fontSize="8" fontWeight="bold">玻璃棒(引流)</text>
+            
+            {/* 漏斗 */}
+            <path d="M 210 30 L 250 30 L 235 60 L 235 80 L 230 80 L 230 60 Z" fill="none" stroke="#718096" strokeWidth="2" />
+            <text x="270" y="80" fill="hsl(var(--color-success))" fontSize="8" fontWeight="bold">管口紧靠烧杯壁</text>
           </svg>
         </div>
       );
@@ -313,7 +433,7 @@ export default function ChemistryModule() {
           </div>
           <div>
             <h2 style={{ fontSize: '0.98rem', border: 'none', padding: 0, margin: 0, letterSpacing: '0.5px' }}>中考化学抢跑营</h2>
-            <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>15天初三抢跑先锋</span>
+            <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>25天初三提分全课纲</span>
           </div>
         </div>
 
@@ -377,7 +497,7 @@ export default function ChemistryModule() {
             }}
             onClick={() => setShowBillModal(true)}
           >
-            📊 15天历史金币账单
+            📊 25天历史金币账单
           </button>
           <div style={{ fontSize: '0.68rem', opacity: 0.4, textAlign: 'center' }}>
             做对+1, 做错-1, 小测后核算
@@ -390,8 +510,8 @@ export default function ChemistryModule() {
         
         {activeTab !== 'wrongbook' && (
           <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* 两周大阶段切换 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+            {/* 四周大阶段切换 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
               {chemistryBlocks.map((block) => {
                 const isCurrentBlock = block.days.includes(selectedDayId);
                 return (
@@ -412,7 +532,7 @@ export default function ChemistryModule() {
                     onClick={() => setSelectedDayId(block.days[0])}
                   >
                     <span style={{ fontWeight: 'bold' }}>{block.name.split('：')[0]}</span>
-                    <span style={{ fontSize: '0.64rem', opacity: 0.85 }}>{block.name.split('：')[1]}</span>
+                    <span style={{ fontSize: '0.64rem', opacity: 0.85, textOverflow: 'ellipsis', overflow: 'hidden', maxWidth: '100%' }}>{block.name.split('：')[1].split('(')[0]}</span>
                   </button>
                 );
               })}
@@ -461,43 +581,155 @@ export default function ChemistryModule() {
         {/* Tab 1: 讲义与化学图解 */}
         {activeTab === 'study' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', height: '520px', alignItems: 'stretch' }}>
-              
-              {/* 左栏 */}
-              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
-                <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>📖 课程讲义 ({currentDayData?.name})</span>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>抢跑课: 1.0小时/天</span>
-                </h3>
-                <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
-                  {parseSummary(currentDayData?.summary)}
-                </div>
-              </div>
-
-              {/* 右栏 */}
-              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
-                <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-success))', borderBottom: '2px solid rgba(16,185,129,0.06)', paddingBottom: '10px' }}>
-                  📐 经典母题与实验图解
-                </h3>
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '8px' }}>
-                  
-                  <div style={{ padding: '16px', border: '1px solid rgba(16,185,129,0.15)', background: 'linear-gradient(135deg, rgba(16,185,129,0.02), rgba(59,130,246,0.02))', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#047857' }}>📝 经典母题精讲：</div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 'bold', padding: '10px', backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.03)', borderRadius: '4px' }}>
-                      {currentDayData?.example.question}
-                    </div>
-                    <div style={{ fontSize: '0.82rem', lineHeight: '1.65', color: 'hsl(var(--text-primary))', whiteSpace: 'pre-wrap' }}>
-                      {currentDayData?.example.answer}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: 'hsl(var(--color-danger))', borderTop: '1px dashed rgba(16,185,129,0.2)', paddingTop: '8px', lineHeight: '1.5' }}>
-                      ⚠️ <b>名师避坑指点：</b>{currentDayData?.example.tip}
+            
+            {/* 如果是 Day 4, 渲染连线检验大游戏 */}
+            {selectedDayId === 'day4' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.6fr', gap: '20px', height: '520px', alignItems: 'stretch' }}>
+                {/* 左栏：检验要求 */}
+                <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '10px' }}>
+                    🎯 元素连线检验规则
+                  </h3>
+                  <div style={{ flex: 1, fontSize: '0.86rem', lineHeight: '1.65', color: 'hsl(var(--text-primary))', overflowY: 'auto' }}>
+                    <p style={{ margin: '0 0 10px 0' }}>请把打乱的 18 张卡片进行三合一配对消除！</p>
+                    <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <li>第一步：点击一个元素<b>【符号卡】</b>（如 Na）</li>
+                      <li>第二步：点击对应的<b>【中文拼音卡】</b>（如 钠 (nà)）</li>
+                      <li>第三步：点击对应的<b>【英文音标卡】</b>（如 Sodium）</li>
+                    </ul>
+                    <div style={{
+                      marginTop: '16px',
+                      padding: '12px',
+                      backgroundColor: '#fffbeb',
+                      borderLeft: '4px solid #f59e0b',
+                      borderRadius: '4px',
+                      fontSize: '0.78rem',
+                      color: '#b45309'
+                    }}>
+                      💡 <b>通关福利：</b> 成功配对一组可<b>直接得 3 金币</b>！全部消除即可彻底通关！
                     </div>
                   </div>
+                  <button className="btn btn-secondary" style={{ alignSelf: 'flex-start' }} onClick={initMatchGame}>
+                    🔄 重置并打乱重新挑战
+                  </button>
+                </div>
 
-                  {renderChemistryIllustrations(selectedDayId)}
+                {/* 右栏：连线消除游戏大挑战盘 */}
+                <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', color: 'hsl(var(--color-success))', borderBottom: '2px solid rgba(16,185,129,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>🎴 元素消消乐挑战盘</span>
+                    <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>已成功消除：{matchedIds.length} / 6 组</span>
+                  </h3>
+                  
+                  {gameWon ? (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }} className="fade-in">
+                      <span style={{ fontSize: '4rem' }}>🎉</span>
+                      <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#047857', margin: 0 }}>背诵大满贯！恭喜通关！</h4>
+                      <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', margin: 0 }}>
+                        前20个元素中英文符号音标已经滚瓜烂熟了！获得金币奖励已计入 Day 4。
+                      </p>
+                      <button className="btn btn-primary" style={{ backgroundColor: 'hsl(var(--color-optics))', borderColor: 'hsl(var(--color-optics))' }} onClick={initMatchGame}>
+                        再玩一次
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{
+                      flex: 1,
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(3, 1fr)',
+                      gap: '8px',
+                      padding: '10px 0',
+                      overflowY: 'auto'
+                    }}>
+                      {gameCards.map((card) => {
+                        const isSelected = selectedCards.some(c => c.cardId === card.cardId);
+                        const isMatched = matchedIds.includes(card.elId);
+                        
+                        let cardStyle = {
+                          border: '1px solid #e2e8f0',
+                          backgroundColor: '#ffffff',
+                          color: 'hsl(var(--text-primary))',
+                          opacity: isMatched ? 0.08 : 1,
+                          cursor: isMatched ? 'default' : 'pointer'
+                        };
+
+                        if (isSelected) {
+                          cardStyle = {
+                            border: gameErrorActive ? '2px solid hsl(var(--color-danger))' : '2px solid hsl(var(--color-optics))',
+                            backgroundColor: gameErrorActive ? 'hsla(var(--color-danger)/0.08)' : 'hsla(var(--color-optics)/0.08)',
+                            color: gameErrorActive ? 'hsl(var(--color-danger))' : 'hsl(var(--color-optics))',
+                            opacity: 1,
+                            cursor: 'pointer'
+                          };
+                        }
+
+                        return (
+                          <button
+                            key={card.cardId}
+                            style={{
+                              padding: '12px 6px',
+                              borderRadius: '8px',
+                              fontSize: card.type === 'english' ? '0.74rem' : '0.88rem',
+                              fontWeight: 'bold',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              textAlign: 'center',
+                              minHeight: '56px',
+                              transition: 'all 0.2s ease',
+                              ...cardStyle
+                            }}
+                            disabled={isMatched}
+                            onClick={() => handleCardClick(card)}
+                            className={gameErrorActive && isSelected ? 'shake' : 'scale-up'}
+                          >
+                            {card.text}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            ) : (
+              /* 正常 25 天的课文讲义左右栏排版 */
+              <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', height: '520px', alignItems: 'stretch' }}>
+                {/* 左栏 */}
+                <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
+                  <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>📖 课程讲义 ({currentDayData?.name})</span>
+                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>抢跑课: 1.0-1.5小时/天</span>
+                  </h3>
+                  <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
+                    {parseSummary(currentDayData?.summary)}
+                  </div>
+                </div>
+
+                {/* 右栏 */}
+                <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
+                  <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-success))', borderBottom: '2px solid rgba(16,185,129,0.06)', paddingBottom: '10px' }}>
+                    📐 经典母题与实验图解
+                  </h3>
+                  <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '8px' }}>
+                    
+                    <div style={{ padding: '16px', border: '1px solid rgba(16,185,129,0.15)', background: 'linear-gradient(135deg, rgba(16,185,129,0.02), rgba(59,130,246,0.02))', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#047857' }}>📝 经典母题精讲：</div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 'bold', padding: '10px', backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.03)', borderRadius: '4px' }}>
+                        {currentDayData?.example.question}
+                      </div>
+                      <div style={{ fontSize: '0.82rem', lineHeight: '1.65', color: 'hsl(var(--text-primary))', whiteSpace: 'pre-wrap' }}>
+                        {currentDayData?.example.answer}
+                      </div>
+                      <div style={{ fontSize: '0.78rem', color: 'hsl(var(--color-danger))', borderTop: '1px dashed rgba(16,185,129,0.2)', paddingTop: '8px', lineHeight: '1.5' }}>
+                        ⚠️ <b>名师避坑指点：</b>{currentDayData?.example.tip}
+                      </div>
+                    </div>
+
+                    {renderChemistryIllustrations(selectedDayId)}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 今日小测引导 */}
             <div style={{
@@ -511,10 +743,10 @@ export default function ChemistryModule() {
             }}>
               <div>
                 <h4 style={{ margin: '0 0 4px 0', fontSize: '0.9rem', fontWeight: 'bold', color: 'hsl(var(--text-primary))' }}>
-                  🧪 今天的化学抢跑知识听懂了吗？
+                  🧪 今天的化学知识听懂了吗？来个课后小测吧！
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                  做对一个<b>加1金币</b>，做错扣1金币，今日小测完可查询总金币。
+                  每天测试 20 题，做对<b>加1金币</b>，做错扣1金币。
                 </p>
               </div>
               <button
@@ -905,7 +1137,7 @@ export default function ChemistryModule() {
         )}
       </div>
 
-      {/* 📊 15天积分兑奖荣誉账单 Modal */}
+      {/* 📊 25天积分兑奖荣誉账单 Modal */}
       {showBillModal && (
         <div style={{
           position: 'fixed',
@@ -932,7 +1164,7 @@ export default function ChemistryModule() {
             gap: '16px'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '10px' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#047857' }}>🪙 15天化学抢跑荣誉账单</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#047857' }}>🪙 25天化学抢跑荣誉账单</h3>
               <button
                 style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'hsl(var(--text-secondary))' }}
                 onClick={() => setShowBillModal(false)}
@@ -942,7 +1174,7 @@ export default function ChemistryModule() {
             </div>
 
             <p style={{ margin: 0, fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', lineHeight: '1.5' }}>
-              提示：每天金币分值等于<b>【做对题目数 &times; 1 + 做错题目数 &times; -1】</b>。家长可在此随时核对 15 天的成绩，兑换奖励。
+              提示：每天金币分值等于<b>【做对题目数 &times; 1 + 做错题目数 &times; -1】</b>。家长可在此随时核对 25 天的成绩，兑换奖励。
             </p>
 
             <div style={{
@@ -951,7 +1183,7 @@ export default function ChemistryModule() {
               gap: '8px',
               padding: '6px'
             }}>
-              {Array.from({ length: 15 }).map((_, idx) => {
+              {Array.from({ length: 25 }).map((_, idx) => {
                 const dayId = `day${idx + 1}`;
                 const score = dayScores[dayId] !== undefined ? dayScores[dayId] : 0;
                 const isSelected = selectedDayId === dayId;

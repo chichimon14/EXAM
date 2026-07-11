@@ -713,7 +713,7 @@ export function generateChemistryQuestions(topicId, count = 20) {
     const qIdx = i + 1;
 
     switch (topicId) {
-      // 1-4号元素
+      // 1-4号元素 (Day 1)
       case 'chem_topic_elements1': {
         const item = elementData1[randomInt(0, 3)];
         const askSymbol = randomInt(0, 1) === 1;
@@ -723,7 +723,7 @@ export function generateChemistryQuestions(topicId, count = 20) {
             question: `【化学题 ${qIdx}】前20号元素中，名称为“${item.name}”的元素符号是什么？其汉语拼音是：`,
             options: [item.symbol, item.symbol.toUpperCase(), item.symbol.toLowerCase(), 'Hn'].sort(() => 0.5 - Math.random()),
             answer: 0,
-            explanation: `白话解析：\n根据“青海里皮 (qīng hǎi lǐ pí)”口诀，${item.name}的拼音是【${item.pinyin}】。化学元素符号的书写原则是“一大二小”，所以其符号是 ${item.symbol}。`
+            explanation: `白话解析：\n根据“青海里皮 (qīng hǎi lǐ pí)”口诀，第${item.z}个是${item.name}，其拼音是【${item.pinyin}】。化学元素符号的书写原则是“一大二小”，所以其符号是 ${item.symbol}。`
           };
           qObj.answer = qObj.options.indexOf(item.symbol);
         } else {
@@ -739,7 +739,7 @@ export function generateChemistryQuestions(topicId, count = 20) {
         break;
       }
       
-      // 5-10号元素
+      // 5-10号元素 (Day 2)
       case 'chem_topic_elements2': {
         const item = elementData2[randomInt(0, 5)];
         const askSymbol = randomInt(0, 1) === 1;
@@ -765,96 +765,419 @@ export function generateChemistryQuestions(topicId, count = 20) {
         break;
       }
 
-      // 11-18号元素
-      case 'chem_topic_elements3': {
-        const item = elementData3[randomInt(0, 7)];
-        const askVal = randomInt(0, 1) === 1;
-        if (askVal) {
-          qObj = {
-            id: 40400 + i,
-            question: `【化学题 ${qIdx}】第 ${item.z} 号元素“${item.name}”(${item.symbol})在化合物中常见的化合价是：`,
-            options: [item.val, '+2', '+1', '-1'].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n${item.name}的拼音是【${item.pinyin}】，序号是 ${item.z}。根据得失电子稳定魔咒，它在化合物里的常见化合价是 ${item.val}。`
-          };
-          qObj.answer = qObj.options.indexOf(item.val);
-        } else {
+      // 11-20号及重金属常用元素 (Day 3 & Day 4 挑战测)
+      case 'chem_topic_elements3':
+      case 'chem_topic_matching': {
+        const allElements = [...elementData3, ...elementData4, ...elementData5];
+        const item = allElements[randomInt(0, allElements.length - 1)];
+        qObj = {
+          id: 40400 + i,
+          question: `【化学题 ${qIdx}】关于中考必考元素“${item.name}”，其对应的符号及汉语拼音正确的是：`,
+          options: [`${item.symbol} (${item.pinyin})`, `Fe (${item.pinyin})`, `Cu (${item.pinyin})`, `Na (${item.pinyin})`].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n中考常用元素中，【${item.name}】的拼音读法是【${item.pinyin}】，其国际化学元素符号为 ${item.symbol}。`
+        };
+        qObj.answer = qObj.options.indexOf(`${item.symbol} (${item.pinyin})`);
+        break;
+      }
+
+      // 物理变化 vs 化学变化 (Day 5)
+      case 'chem_topic_change': {
+        const physicals = ['冰雪融化成水', '瓷碗摔得粉碎', '汽油从瓶中挥发', '电灯泡通电发光放热', '西瓜榨成果汁'];
+        const chemicals = ['钢铁在潮湿空气中生锈', '红磷燃烧产生白烟', '食物在夏天变质发霉', '动植物呼吸消耗氧气', '木柴在火炉中燃烧'];
+        
+        const isAskChemical = randomInt(0, 1) === 1;
+        if (isAskChemical) {
+          const correct = chemicals[randomInt(0, chemicals.length - 1)];
+          const w1 = physicals[0];
+          const w2 = physicals[1];
+          const w3 = physicals[2];
+          
           qObj = {
             id: 40500 + i,
-            question: `【化学题 ${qIdx}】符号为“${item.symbol}”的元素中文名称及汉语拼音正确的是：`,
-            options: [`${item.name} (${item.pinyin})`, '铝 (lǚ)', '硅 (guī)', '硫 (liú)'].sort(() => 0.5 - Math.random()),
+            question: `【化学题 ${qIdx}】下列日常生活中发生的各种变化中，属于【化学变化】的是：`,
+            options: [correct, w1, w2, w3].sort(() => 0.5 - Math.random()),
             answer: 0,
-            explanation: `白话解析：\n元素符号“${item.symbol}”对应的是“${item.name}”元素，其汉语拼音是【${item.pinyin}】。`
+            explanation: `白话解析：\n判断化学变化还是物理变化，关键看【有没有新分子（新物质）生成】。“${correct}”中原子重新交换舞伴组装成了全新分子，所以是化学变化。其他选项分子成分根本没变，只是形态、距离改变，属于物理变化。`
           };
-          qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+          qObj.answer = qObj.options.indexOf(correct);
+        } else {
+          const correct = physicals[randomInt(0, physicals.length - 1)];
+          const w1 = chemicals[0];
+          const w2 = chemicals[1];
+          const w3 = chemicals[2];
+          
+          qObj = {
+            id: 40550 + i,
+            question: `【化学题 ${qIdx}】下列日常生活中发生的各种变化中，属于【物理变化】的是：`,
+            options: [correct, w1, w2, w3].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n“${correct}”只是物质的状态、位置发生物理性位移，内部的水分子或物质分子并没有打碎重组，【没有新物质生成】，属于物理变化。而其他选项都产生了全新的物质，属于化学变化。`
+          };
+          qObj.answer = qObj.options.indexOf(correct);
         }
         break;
       }
 
-      // 19-20号元素
-      case 'chem_topic_elements4': {
-        const item = elementData4[randomInt(0, 1)];
+      // 混合物 vs 纯净物 与 单质 vs 化合物 (Day 6)
+      case 'chem_topic_class': {
+        const questions = [
+          { q: '下列物质属于【纯净物】的是：', a: '冰水混合物', opts: ['冰水混合物', '洁净的空气', '天然矿泉水', '澄清石灰水'], exp: '冰和水是同一种物质的两个化身，微观全都是水分子(H₂O)，所以是纯净物。空气、矿泉水、石灰水里均装有多种分子，是混合物。' },
+          { q: '下列物质属于【单质】的是：', a: '液态氧 (O₂)', opts: ['液态氧 (O₂)', '冰水混合物 (H₂O)', '二氧化碳 (CO₂)', '氯化钠 (NaCl)'], exp: '单质是指由【同一种元素】组成的纯净物。液氧微观全由氧原子结合，是单质。水、二氧化碳和氯化钠由不同原子组合，是化合物。' },
+          { q: '下列物质中，属于【混合物】的是：', a: '澄清石灰水', opts: ['澄清石灰水', '蒸馏水', '五氧化二磷', '铁粉'], exp: '澄清石灰水是氢氧化钙固体溶于水形成的溶液，包含水分子和氢氧化钙粒子，属于混合物。蒸馏水、五氧化二磷和铁粉只有唯一的一种分子或原子，是纯净物。' }
+        ];
+        const item = questions[randomInt(0, questions.length - 1)];
         qObj = {
           id: 40600 + i,
-          question: `【化学题 ${qIdx}】元素“${item.name}”在周期表中的序号、符号及拼音正确的是：`,
-          options: [`${item.z}号, ${item.symbol} (${item.pinyin})`, `19号, Ca (钙)`, `20号, K (钾)`, `18号, Ar (氩)`].sort(() => 0.5 - Math.random()),
+          question: `【化学题 ${qIdx}】${item.q}`,
+          options: item.opts.sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `白话解析：\n口诀“家盖 (jiā gài)”中，${item.name}的拼音是【${item.pinyin}】，序号为 ${item.z}，符号为 ${item.symbol}。`
+          explanation: `白话解析：\n${item.exp}`
         };
-        qObj.answer = qObj.options.indexOf(`${item.z}号, ${item.symbol} (${item.pinyin})`);
+        qObj.answer = qObj.options.indexOf(item.a);
         break;
       }
 
-      // 常用重磅金属元素
-      case 'chem_topic_elements5': {
-        const item = elementData5[randomInt(0, 4)];
+      // 空气测定氧气实验 (Day 7)
+      case 'chem_topic_air': {
+        const errs = [
+          { reason: '红磷量不足，无法把瓶内的氧气消耗干净', state: '偏小' },
+          { reason: '集气瓶弹簧夹没夹紧，或者装置漏气，导致外部空气被吸入', state: '偏小' },
+          { reason: '红磷燃烧完毕后，试管尚未完全冷却就打开止水夹读取水面', state: '偏小' }
+        ];
+        const errItem = errs[randomInt(0, errs.length - 1)];
         qObj = {
           id: 40700 + i,
-          question: `【化学题 ${qIdx}】中考必背变价/重金属中，符号“${item.symbol}”的元素中文及拼音为：`,
-          options: [`${item.name} (${item.pinyin})`, '铜 (tóng)', '铁 (tiě)', '锌 (xīn)'].sort(() => 0.5 - Math.random()),
+          question: `【化学题 ${qIdx}】在红磷燃烧测定空气中氧气含量的实验中，若出现【${errItem.reason}】，测得的氧气体积含量将：`,
+          options: [`比 1/5 ${errItem.state}`, '比 1/5 偏大', '刚好等于 1/5', '无法确定'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `白话解析：\n中考常用金属中，符号“${item.symbol}”对应的是“${item.name}”，拼音是【${item.pinyin}】。`
+          explanation: `白话解析：\n红磷测定氧气必须确保【把氧气吃光、外面空气不许漏进来、降到室温再量体积】。如果${errItem.reason}，产生的吸力就会变小，倒吸入的水体积就会【比 1/5 ${errItem.state}】。`
         };
-        qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+        qObj.answer = qObj.options.indexOf(`比 1/5 ${errItem.state}`);
         break;
       }
 
-      // 化学反应原理综合题型 (Day 6 - 15)
-      default: {
-        const reactions = [
-          { eq: 'C + O₂ ==(点燃)==> CO₂', type: '化合反应', desc: '木炭在氧气中剧烈燃烧，发出白光，生成使石灰水变浑浊的气体' },
-          { eq: 'S + O₂ ==(点燃)==> SO₂,', type: '化合反应', desc: '硫在纯氧中燃烧，发出明亮的蓝紫色火焰，产生有刺激性气味的气体' },
-          { eq: '4P + 5O₂ ==(点燃)==> 2P₂O₅', type: '化合反应', desc: '红磷在空气中燃烧，产生大量白烟' },
-          { eq: '3Fe + 2O₂ ==(点燃)==> Fe₃O₄', type: '化合反应', desc: '铁丝在氧气中剧烈燃烧，火星四射，生成黑色固体，集气瓶底部要放少量水防炸裂' },
-          { eq: '2Mg + O₂ ==(点燃)==> 2MgO', type: '化合反应', desc: '镁条在空气中燃烧，发出耀眼的白光，生成白色固体' },
-          { eq: '2H₂O ==(通电)==> 2H₂↑ + O₂↑', type: '分解反应', desc: '正极产生氧气，负极产生氢气，体积比为 1:2 (正氧负氢，氢二氧一)' },
-          { eq: '2H₂O₂ ==(MnO₂)==> 2H₂O + O₂↑', type: '分解反应', desc: '双氧水分解，二氧化锰作催化剂，反应不需要加热' },
-          { eq: 'CaCO₃ + 2HCl == CaCl₂ + H₂O + CO₂↑', type: '复分解反应', desc: '实验室制取二氧化碳，不能用稀硫酸代替稀盐酸' },
-          { eq: 'Fe + CuSO₄ == FeSO₄ + Cu', type: '置换反应', desc: '铁钉表面裹上红色固体，蓝色溶液变浅绿色 (湿法炼铜)' },
-          { eq: 'Fe₂O₃ + 6HCl == 2FeCl₃ + 3H₂O', type: '复分解反应', desc: '稀盐酸去铁锈，红褐色铁锈溶解，溶液变成黄色' }
+      // 氧气燃烧现象及防护 (Day 8)
+      case 'chem_topic_oxygen': {
+        const scenarios = [
+          { gas: '铁丝在纯氧中燃烧', formula: '3Fe + 2O₂ ==(点燃)== Fe₃O₄', safety: '集气瓶底部放少量水或铺一层细沙，防止溅落的高温熔融物烫裂瓶底' },
+          { gas: '硫粉在纯氧中燃烧', formula: 'S + O₂ ==(点燃)== SO₂', safety: '集气瓶底部放少量水，用来吸收有毒的二氧化硫气体，防止污染空气' },
+          { gas: '红磷在空气中燃烧', formula: '4P + 5O₂ ==(点燃)== 2P₂O₅', safety: '红磷燃烧会产生大量具有刺激性污染的白烟(五氧化二磷颗粒)' }
         ];
-        const react = reactions[randomInt(0, reactions.length - 1)];
-        const askType = randomInt(0, 1) === 1;
+        const item = scenarios[randomInt(0, scenarios.length - 1)];
+        const askSafety = randomInt(0, 1) === 1;
 
-        if (askType) {
+        if (askSafety) {
           qObj = {
             id: 40800 + i,
-            question: `【化学题 ${qIdx}】关于化学反应式：${react.eq}，它的基本反应类型是：`,
-            options: [react.type, '化合反应', '分解反应', '置换反应'].sort(() => 0.5 - Math.random()),
+            question: `【化学题 ${qIdx}】在中考化学实验中，做“${item.gas}”实验时，关于集气瓶底部的防护操作，描述正确的是：`,
+            options: [item.safety, '瓶底不需要做任何处理', '瓶底必须装满水将火淹没', '瓶底一定要涂抹凡士林'].sort(() => 0.5 - Math.random()),
             answer: 0,
-            explanation: `白话解析：\n反应式中，该反应属于【${react.type}】。记住“多变一”为化合，“一变多”为分解，单质与化合物换位为置换。`
+            explanation: `白话解析：\n做“${item.gas}”实验时：${item.safety}。这是中考常考的经典实验安全考分点！`
           };
-          qObj.answer = qObj.options.indexOf(react.type);
+          qObj.answer = qObj.options.indexOf(item.safety);
         } else {
           qObj = {
-            id: 40900 + i,
-            question: `【化学题 ${qIdx}】关于反应方程式 ${react.eq.split('==')[0]} 反应的实验现象或防护，下列描述正确的是：`,
-            options: [react.desc, '反应没有任何明显现象', '反应剧烈产生大量黑烟', '不能在常温下制备'].sort(() => 0.5 - Math.random()),
+            id: 40850 + i,
+            question: `【化学题 ${qIdx}】请选出描述“${item.gas}”反应的配平化学方程式：`,
+            options: [item.formula, 'Fe + O₂ == Fe₃O₄', 'S + O₂ == SO₂↑', 'P + O₂ == P₂O₅'].sort(() => 0.5 - Math.random()),
             answer: 0,
-            explanation: `白话解析：\n对于该化学反应，正确的实验现象及原理是：${react.desc}。中考常在此处考察实验安全细节。`
+            explanation: `白话解析：\n化学方程式配平是铁律。左右原子数在反应前后必须完全等重！其正确的方程式为：${item.formula}。`
           };
-          qObj.answer = qObj.options.indexOf(react.desc);
+          qObj.answer = qObj.options.indexOf(item.formula);
         }
+        break;
+      }
+
+      // 双氧水制氧与催化剂一变两不变 (Day 9)
+      case 'chem_topic_prep1': {
+        qObj = {
+          id: 40900 + i,
+          question: `【化学题 ${qIdx}】关于双氧水(H₂O₂)分解制氧气中，作为催化剂的二氧化锰(MnO₂)，下列说法正确的是：`,
+          options: [
+            '反应前后，其自身的质量和化学性质都不发生改变',
+            '反应后，二氧化锰的质量会随之减少',
+            '二氧化锰能使原本不能分解的双氧水强行分解',
+            '反应前后，二氧化锰的物理性质和化学性质都绝对不变'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n催化剂“化学红娘”的特性是【一变两不变】。一变：改变反应速度 ； 两不变：自身的【质量】和【化学性质】在反应前后绝不改变。物理状态（如颗粒粗细）可能会发生改变。`
+        };
+        qObj.answer = qObj.options.indexOf('反应前后，其自身的质量和化学性质都不发生改变');
+        break;
+      }
+
+      // 加热固体制氧安全与防倒吸 (Day 10)
+      case 'chem_topic_prep2': {
+        qObj = {
+          id: 41000 + i,
+          question: `【化学题 ${qIdx}】用高锰酸钾固体制取氧气并用排水法收集，实验结束时正确的停机熄灯步骤是：`,
+          options: [
+            '先将导管从水槽中移出，再熄灭酒精灯',
+            '先熄灭酒精灯，再将导管从水槽中移出',
+            '熄灭酒精灯与移出导管必须同时进行',
+            '先熄灭酒精灯，然后往试管底浇冷水'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n中考提分防雷必背：如果先熄灭酒精灯，试管内温度降低气压变小，水槽中的水会顺着导管【倒吸】回滚烫的试管底部，导致试管瞬间炸裂。所以必须【先拔导管，后熄灯】！`
+        };
+        qObj.answer = qObj.options.indexOf('先将导管从水槽中移出，再熄灭酒精灯');
+        break;
+      }
+
+      // 分子与原子特性 (Day 11)
+      case 'chem_topic_molecule': {
+        const examples = [
+          { fact: '50mL 水与 50mL 酒精混合后，总体积小于 100mL', exp: '说明分子之间是有空隙的，大小不同的分子互相钻进了空隙中。' },
+          { fact: '墙内开花墙外香，墨水滴入水中整杯水变色', exp: '说明分子是在不断地进行无规则运动的，温度越高运动越剧烈。' },
+          { fact: '物质的热胀冷缩现象（如温度计液柱受热上升）', exp: '说明温度升高时，分子之间的空隙变大了，而不是分子自己变胖了！' }
+        ];
+        const item = examples[randomInt(0, examples.length - 1)];
+        qObj = {
+          id: 41100 + i,
+          question: `【化学题 ${qIdx}】在微观世界中，生活物理现象“${item.fact}”可以用分子的哪种特性来合理解释？`,
+          options: [item.exp, '说明分子的体积和质量在受热时变大了', '说明分子在物理状态改变时分裂成了原子', '说明分子的电荷发生了改变'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n${item.exp}`
+        };
+        qObj.answer = qObj.options.indexOf(item.exp);
+        break;
+      }
+
+      // 原子结构与电荷守恒 (Day 12)
+      case 'chem_topic_structure': {
+        qObj = {
+          id: 41200 + i,
+          question: `【化学题 ${qIdx}】任何原子在未得失电子的情况下都呈现电中性，这说明在原子内部关系中：`,
+          options: [
+            '质子数 ＝ 核外电子数 ＝ 核电荷数 ＝ 原子序数',
+            '质子数 ＝ 中子数 ＝ 电子数',
+            '中子数和电子数电荷相反，刚好抵消',
+            '原子核占据了原子全部的体积，所以不带电'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n原子的太阳系模型中，原子核内有带正电的质子，核外有带负电的电子（中子不带电）。因为核内的质子数恰好等于核外的电子数，正负电荷总数刚好抵消，所以不带电。`
+        };
+        qObj.answer = qObj.options.indexOf('质子数 ＝ 核外电子数 ＝ 核电荷数 ＝ 原子序数');
+        break;
+      }
+
+      // 阴阳离子形成与符号书写 (Day 13)
+      case 'chem_topic_ion': {
+        qObj = {
+          id: 41300 + i,
+          question: `【化学题 ${qIdx}】已知镁原子的核内质子数为 12，其最外层有 2 个电子，当它失去最外层电子形成镁离子后，其离子符号书写正确的是：`,
+          options: ['Mg²⁺', 'Mg⁺²', 'Mg²⁻', 'Mg⁻²'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n镁原子最外层有2个电子，失去2个电子后显 +2 价，记作镁离子。离子符号写法原则：电荷数写在元素符号的右上角，数字在前，正负号在后，故为 Mg²⁺。`
+        };
+        qObj.answer = qObj.options.indexOf('Mg²⁺');
+        break;
+      }
+
+      // 水的电解与气体检验 (Day 14)
+      case 'chem_topic_water1': {
+        qObj = {
+          id: 41400 + i,
+          question: `【化学题 ${qIdx}】关于电解水实验(2H₂O ==通电== 2H₂↑ + O₂↑)，下列说法或现象描述正确的是：`,
+          options: [
+            '负极产生氢气，正极产生氧气，它们的体积比约为 2:1',
+            '正极产生的是氢气，可以用燃着的木条点燃',
+            '电解水反应生成的氢气 and 氧气的质量比约为 2:1',
+            '水中加入稀硫酸是为了将水中的钙镁离子过滤除去'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n电解水“正氧负氢、氢二氧一”：负极产生氢气 (H₂)，正极产生氧气 (O₂)，两极体积比为 2:1。而它们的质量比则是 1:8。`
+        };
+        qObj.answer = qObj.options.indexOf('负极产生氢气，正极产生氧气，它们的体积比约为 2:1');
+        break;
+      }
+
+      // 水的过滤一贴二低三靠 (Day 15)
+      case 'chem_topic_water2': {
+        qObj = {
+          id: 41500 + i,
+          question: `【化学题 ${qIdx}】在水的过滤操作中，关于玻璃棒的作用及“三靠”原则，下列说法正确的是：`,
+          options: [
+            '倒液体时，烧杯口要紧靠玻璃棒引流，玻璃棒下端轻靠三层滤纸处',
+            '玻璃棒是用来不断搅拌漏斗内部，加快过滤流速的',
+            '漏斗下端管口要悬空放在烧杯中央，防止接触烧杯壁漏气',
+            '过滤可以完全除去水中的可溶性盐度，从而得到纯水'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n过滤三靠中：倒入液体的烧杯口要紧靠玻璃棒（引流防止外洒） ； 玻璃棒下端轻靠三层滤纸那一侧 ； 漏斗下端管口紧靠烧杯内壁。千万不可拿玻璃棒在漏斗里搅拌，那会戳破滤纸！`
+        };
+        qObj.answer = qObj.options.indexOf('倒液体时，烧杯口要紧靠玻璃棒引流，玻璃棒下端轻靠三层滤纸处');
+        break;
+      }
+
+      // 化合价交叉法书写化学式 (Day 16)
+      case 'chem_topic_formula': {
+        qObj = {
+          id: 41600 + i,
+          question: `【化学题 ${qIdx}】已知铝元素(Al)在化合物中通常呈 +3 价，氧元素(O)通常呈 -2 价。利用交叉法写出氧化铝的化学式：`,
+          options: ['Al₂O₃', 'Al₃O₂', 'AlO', 'Al₂O'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n交叉法三步走：1. 标价 Al⁺³ O⁻² ； 2. 交叉数字到右下角，铝得 2，氧得 3 ； 3. 约简（2和3不能再约分），最终化学式为 Al₂O₃。符合正负电荷和为 0 的原则：(+3)×2 + (-2)×3 = 0。`
+        };
+        qObj.answer = qObj.options.indexOf('Al₂O₃');
+        break;
+      }
+
+      // 质量守恒定律微观计算 (Day 17)
+      case 'chem_topic_conservation': {
+        qObj = {
+          id: 41700 + i,
+          question: `【化学题 ${qIdx}】化学反应前后，密闭容器中必定保持守恒且不发生改变的微观量是：`,
+          options: [
+            '原子的种类、原子的个数、原子的质量',
+            '分子的种类、原子的个数、物质的总质量',
+            '元素的种类、分子的个数、分子的质量',
+            '物质的体积、分子的个数、原子的种类'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n化学反应本质是原子的打散重组，原子积木本身没有丢。所以微观上：原子的【种类】绝对不变、原子的【个数】绝对不变、原子的【质量】绝对不变。分子种类一定会改变（因为生成了新物质）。`
+        };
+        qObj.answer = qObj.options.indexOf('原子的种类、原子的个数、原子的质量');
+        break;
+      }
+
+      // 化学反应方程式配平 (Day 18)
+      case 'chem_topic_balancing': {
+        qObj = {
+          id: 41800 + i,
+          question: `【化学题 ${qIdx}】配平化学方程式： x P + y O₂ ==(点燃)== z P₂O₅，其化学计量数 x, y, z 分别为：`,
+          options: ['4, 5, 2', '2, 5, 2', '4, 3, 2', '1, 5, 2'].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n用最小公倍数法配平：左右两边氧原子分别为 2 和 5，最小公倍数是 10。因此 O₂ 系数 y ＝ 10÷2 ＝ 5 ； P₂O₅ 系数 z ＝ 10÷5 ＝ 2。此时右边磷原子数 2×2＝4，故左边 P 的系数 x ＝ 4。即 4, 5, 2。`
+        };
+        qObj.answer = qObj.options.indexOf('4, 5, 2');
+        break;
+      }
+
+      // 实验室制取二氧化碳原理装置 (Day 19)
+      case 'chem_topic_co2_prep': {
+        qObj = {
+          id: 41900 + i,
+          question: `【化学题 ${qIdx}】在实验室制取二氧化碳时，选用稀盐酸与大理石反应，而不用稀硫酸的原因是：`,
+          options: [
+            '稀硫酸会与碳酸钙生成微溶的硫酸钙，包裹在大理石表面阻碍反应持续进行',
+            '稀硫酸和碳酸钙反应速度太快，气流剧烈无法收集',
+            '稀硫酸挥发性强，会导致收集到的二氧化碳气体不纯净',
+            '稀硫酸不与大理石发生化学反应'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n稀硫酸(H₂SO₄)与碳酸钙(CaCO₃)反应，会生成微溶于水的硫酸钙(CaSO₄)固体。这层固体会在大理石表面覆盖一层“硬壳”，导致大理石和酸液无法接触，反应会迅速变慢并停止。`
+        };
+        qObj.answer = qObj.options.indexOf('稀硫酸会与碳酸钙生成微溶的硫酸钙，包裹在大理石表面阻碍反应持续进行');
+        break;
+      }
+
+      // 二氧化碳性质与检验 (Day 20)
+      case 'chem_topic_co2_prop': {
+        qObj = {
+          id: 42000 + i,
+          question: `【化学题 ${qIdx}】将二氧化碳气体通入紫色石蕊试液中，试液变红色 ； 对变红的试液进行加热，颜色又变回紫色。这一过程中发生的两个反应其化学式子是：`,
+          options: [
+            'CO₂ + H₂O == H₂CO₃  and  H₂CO₃ ==(加热)== H₂O + CO₂↑',
+            'CO₂ + Ca(OH)₂ == CaCO₃↓ + H₂O  and  CaCO₃ == CaO + CO₂↑',
+            'CO₂ + H₂O == H₂CO₃  and  CO₂ + Ca(OH)₂ == CaCO₃↓ + H₂O',
+            'C + O₂ == CO₂  and  CO₂ + C == 2CO'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n二氧化碳溶于水，生成酸性的碳酸使石蕊变红：CO₂ + H₂O == H₂CO₃。但碳酸极不稳定，加热后受热分解，红色的溶液又恢复中性的紫色：H₂CO₃ == H₂O + CO₂↑。`
+        };
+        qObj.answer = qObj.options.indexOf('CO₂ + H₂O == H₂CO₃  and  H₂CO₃ ==(加热)== H₂O + CO₂↑');
+        break;
+      }
+
+      // 碳单质金刚石与石墨 (Day 21)
+      case 'chem_topic_carbon': {
+        qObj = {
+          id: 42100 + i,
+          question: `【化学题 ${qIdx}】金刚石是天然最硬的晶体，而石墨极软且具有优良导电性。它们物理性质存在巨大差异的根本原因是：`,
+          options: [
+            '它们的碳原子空间排列方式不同',
+            '它们含有的碳原子种类不同',
+            '金刚石是由碳原子构成的，而石墨是由碳分子构成的',
+            '金刚石的化学性质比石墨更加活泼'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n金刚石和石墨虽然都是由【碳原子 C】组成的单质，但因为它们内部的【碳原子在空间的排列方式不同】（结构不同），所以物理性质千差万别。这就是“结构决定性质”。`
+        };
+        qObj.answer = qObj.options.indexOf('它们的碳原子空间排列方式不同');
+        break;
+      }
+
+      // 高炉炼铁原理与尾气点燃安全 (Day 22)
+      case 'chem_topic_iron_make': {
+        qObj = {
+          id: 42200 + i,
+          question: `【化学题 ${qIdx}】在工业高炉炼铁反应(Fe₂O₃ + 3CO ==高温== 2Fe + 3CO₂)中，关于一氧化碳(CO)所扮演的角色及尾气处理描述正确的是：`,
+          options: [
+            'CO 是还原剂，夺取氧化铁中的氧 ； 尾气中的 CO 必须点燃或收集，防止污染及中毒',
+            'CO 是氧化剂，给氧化铁提供氧 ； 尾气可以直接排放到大气中',
+            'CO 是催化剂，反应前后其质量不变 ； 尾气可以直接排放',
+            'CO 被还原生成了铁 ； 尾气需通入水中完全溶解'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\nCO 夺取了氧化铁里的氧，充当还原剂 ； 氧化铁被还原成铁。因为一氧化碳有剧毒，不能直接排放到空气里，必须在尾气口放一盏酒精灯点燃它，使其变成无毒的二氧化碳。`
+        };
+        qObj.answer = qObj.options.indexOf('CO 是还原剂，夺取氧化铁中的氧 ； 尾气中的 CO 必须点燃或收集，防止污染及中毒');
+        break;
+      }
+
+      // 金属活动性置换抢亲法则 (Day 23)
+      case 'chem_topic_displacement': {
+        qObj = {
+          id: 42300 + i,
+          question: `【化学题 ${qIdx}】将铁钉放入蓝色的硫酸铜(CuSO₄)溶液中，发生置换反应。关于该反应的现象及方程式判定正确的是：`,
+          options: [
+            '铁钉表面覆盖一层红色固体，溶液由蓝色逐渐变浅绿色 (Fe + CuSO₄ == FeSO₄ + Cu)',
+            '铁钉表面覆盖一层黑色固体，溶液由蓝色变成黄色 (Fe + CuSO₄ == Fe(SO₄)₃ + Cu)',
+            '无任何明显实验现象产生',
+            '铁钉溶解并放出大量氢气气泡 (Fe + CuSO₄ == FeSO₄ + H₂↑)'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n铁 Fe 排在铜 Cu 之前，活动性更强，可以发生置换。铁强行抢走硫酸根舞伴，把红色的铜单质踢出来覆盖在铁钉表面。生成的 FeSO₄ 是 +2 价的亚铁溶液，显浅绿色。`
+        };
+        qObj.answer = qObj.options.indexOf('铁钉表面覆盖一层红色固体，溶液由蓝色逐渐变浅绿色 (Fe + CuSO₄ == FeSO₄ + Cu)');
+        break;
+      }
+
+      // 溶解度与溶解曲线 (Day 24)
+      case 'chem_topic_solubility': {
+        qObj = {
+          id: 42400 + i,
+          question: `【化学题 ${qIdx}】若硝酸钾(KNO₃)的溶解度随温度升高急剧增大（曲线陡峭），而食盐(NaCl)的溶解度随温度变化极小（曲线平缓）。要从含有少量食盐的硝酸钾饱和溶液中提纯出纯净的硝酸钾晶体，应采用的方法是：`,
+          options: [
+            '降温结晶法 (或冷却热饱和溶液法)',
+            '蒸发结晶法 (加热把水烧干)',
+            '过滤法直接除杂',
+            '加入稀盐酸中和溶解'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n对于溶解度随温度变化极大的陡峭型物质（如硝酸钾），最适合用【降温结晶法】提纯（温度一低它就快速结晶析出） ； 对于溶解度变化不明显的平缓型物质（如食盐），最适合用【蒸发结晶法】把水烧干提取。`
+        };
+        qObj.answer = qObj.options.indexOf('降温结晶法 (或冷却热饱和溶液法)');
+        break;
+      }
+
+      // 酸碱盐中和与除铁锈过度腐蚀链 (Day 25)
+      default: {
+        qObj = {
+          id: 42500 + i,
+          question: `【化学题 ${qIdx}】将生锈的铁钉（铁锈主要成分是 Fe₂O₃）放入过量的稀盐酸中，直至铁钉完全溶解。有关该过程的反应链及现象，描述正确的是：`,
+          options: [
+            '先是红褐色铁锈溶解溶液变黄 (Fe₂O₃ + 6HCl == 2FeCl₃ + 3H₂O)，锈除完后铁钉表面产生大量气泡溶液逐渐变浅绿 (Fe + 2HCl == FeCl₂ + H₂↑)',
+            '铁锈溶解后立即发生置换反应生成 +3 价的氯化铁并释放氢气',
+            '没有气体生成，整个过程溶液一直保持无色透明',
+            '稀盐酸无法与铁单质发生反应，气泡是铁锈溶解放出的二氧化碳'
+          ].sort(() => 0.5 - Math.random()),
+          answer: 0,
+          explanation: `白话解析：\n稀盐酸会先和外面的铁锈(氧化铁)反应生成黄色的 FeCl₃：Fe₂O₃ + 6HCl == 2FeCl₃ + 3H₂O。铁锈除完后，盐酸会与里面的铁单质反应生成绿色的 FeCl₂ 并释放氢气气泡：Fe + 2HCl == FeCl₂ + H₂↑。`
+        };
+        qObj.answer = qObj.options.indexOf('先是红褐色铁锈溶解溶液变黄 (Fe₂O₃ + 6HCl == 2FeCl₃ + 3H₂O)，锈除完后铁钉表面产生大量气泡溶液逐渐变浅绿 (Fe + 2HCl == FeCl₂ + H₂↑)');
         break;
       }
     }
