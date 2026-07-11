@@ -7,6 +7,10 @@ export default function MathModule() {
   const [activeTab, setActiveTab] = useState('study'); // study | test | exercise | wrongbook
   const [selectedDayId, setSelectedDayId] = useState('day1');
 
+  // 25天每日金币积分状态 { [dayId]: score }
+  const [dayScores, setDayScores] = useState({});
+  const [showBillModal, setShowBillModal] = useState(false); // 控制积分账单弹窗
+
   // 20题测试状态
   const [testQuestions, setTestQuestions] = useState([]);
   const [testAnswers, setTestAnswers] = useState({}); // { [qId]: selectedOpt }
@@ -24,10 +28,23 @@ export default function MathModule() {
   // 数学错题本状态
   const [wrongList, setWrongList] = useState([]);
 
-  // 初始化加载错题
+  // 初始化加载错题与25天历史金币积分
   useEffect(() => {
     const savedWrongs = localStorage.getItem('math-wrongs');
     if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
+
+    // 加载25天金币荣誉分值
+    const scores = {};
+    for (let i = 1; i <= 25; i++) {
+      const dayKey = `day${i}`;
+      const val = localStorage.getItem(`math-score-${dayKey}`);
+      if (val !== null) {
+        scores[dayKey] = parseInt(val, 10);
+      } else {
+        scores[dayKey] = 0; // 默认 0
+      }
+    }
+    setDayScores(scores);
   }, []);
 
   // 切换天数时，重置测试与练习状态
@@ -63,6 +80,17 @@ export default function MathModule() {
     }
   }, [selectedDayId, activeTab]);
 
+  // 更新金币分值助手函数：做对 +1，做错 -1
+  const updateGoldCoin = (isCorrect) => {
+    const currentScore = dayScores[selectedDayId] || 0;
+    const delta = isCorrect ? 1 : -1;
+    const newScore = currentScore + delta;
+    
+    const nextScores = { ...dayScores, [selectedDayId]: newScore };
+    setDayScores(nextScores);
+    localStorage.setItem(`math-score-${selectedDayId}`, newScore.toString());
+  };
+
   // 20题测试单步提交
   const handleTestSubmit = () => {
     if (selectedTestOpt === null) return;
@@ -71,6 +99,9 @@ export default function MathModule() {
 
     const nextAnswers = { ...testAnswers, [currentQ.id]: selectedTestOpt };
     setTestAnswers(nextAnswers);
+
+    // 金币结算 (+1 / -1)
+    updateGoldCoin(isCorrect);
 
     // 做错自动收录到数学错题本
     if (!isCorrect) {
@@ -93,7 +124,7 @@ export default function MathModule() {
     if (currentTestIndex < testQuestions.length - 1) {
       setCurrentTestIndex(currentTestIndex + 1);
     } else {
-      // 答完最后一题结算分数
+      // 答完最后一题结算得分
       let correctCount = 0;
       testQuestions.forEach(q => {
         if (testAnswers[q.id] === q.answer) {
@@ -115,6 +146,9 @@ export default function MathModule() {
       [currentQ.id]: { isCorrect, userOpt: optionIdx }
     };
     setExerciseAnswers(nextAnswers);
+
+    // 金币结算 (+1 / -1)
+    updateGoldCoin(isCorrect);
 
     // 做错自动收录到数学错题本
     if (!isCorrect) {
@@ -139,6 +173,15 @@ export default function MathModule() {
     if (window.confirm('您确定要清空数学错题本中所有的题目吗？')) {
       setWrongList([]);
       localStorage.setItem('math-wrongs', JSON.stringify([]));
+    }
+  };
+
+  // 重置指定 Day 的金币分值为 0
+  const handleResetDayScore = (dayId) => {
+    if (window.confirm(`您确定要清空 Day ${dayId.replace('day', '')} 的今日积分金币吗？`)) {
+      const nextScores = { ...dayScores, [dayId]: 0 };
+      setDayScores(nextScores);
+      localStorage.setItem(`math-score-${dayId}`, '0');
     }
   };
 
@@ -351,18 +394,15 @@ export default function MathModule() {
       );
     }
 
-    // 9. 新增：勾股定理三角形原理图 (Day 25)
+    // 9. 勾股定理三角形 (Day 25)
     if (dayId === 'day25') {
       list.push(
         <div key="m-day-pythagoras" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
           <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：直角三角形勾股数 (3 - 4 - 5) 几何拼板面积律</div>
           <svg width="100%" height="130" viewBox="0 0 400 130" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
             <g transform="translate(100, 10)">
-              {/* 绘制直角三角形 */}
               <polygon points="40,80 120,80 120,20" fill="rgba(59, 130, 246, 0.15)" stroke="rgb(59, 130, 246)" strokeWidth="2" />
-              {/* 直角符号 */}
               <polyline points="112,80 112,72 120,72" fill="none" stroke="rgb(59, 130, 246)" strokeWidth="1" />
-              {/* 边长文字 */}
               <text x="80" y="93" fill="hsl(var(--text-primary))" fontSize="10" fontWeight="bold" textAnchor="middle">直角边 a = 4</text>
               <text x="126" y="55" fill="hsl(var(--text-primary))" fontSize="10" fontWeight="bold">直角边 b = 3</text>
               <text x="70" y="45" fill="hsl(var(--color-danger))" fontSize="10.5" fontWeight="bold" textAnchor="middle">斜边 c = 5</text>
@@ -430,6 +470,7 @@ export default function MathModule() {
   };
 
   const currentDayData = mathDays[selectedDayId] || mathDays['day1'];
+  const todayGoldCoin = dayScores[selectedDayId] !== undefined ? dayScores[selectedDayId] : 0;
 
   return (
     <div className="app-container fade-in">
@@ -457,7 +498,30 @@ export default function MathModule() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, marginTop: '20px' }}>
+        {/* 🪙 今日实时金币荣誉面板 */}
+        {activeTab !== 'wrongbook' && (
+          <div style={{
+            padding: '12px 14px',
+            background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+            border: '1px solid #f59e0b',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            marginTop: '16px',
+            boxShadow: '0 4px 12px rgba(245,158,11,0.08)'
+          }}>
+            <span style={{ fontSize: '1.4rem' }}>🪙</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#b45309', fontWeight: 'bold' }}>Day {selectedDayId.replace('day', '')} 特训累积金币</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: 'bold', color: '#92400e', letterSpacing: '0.5px' }}>
+                {todayGoldCoin >= 0 ? `+${todayGoldCoin}` : todayGoldCoin} 个
+              </span>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1, marginTop: '16px' }}>
           <button
             className={`btn btn-secondary ${activeTab === 'study' ? 'btn-primary' : ''}`}
             style={{ justifyContent: 'flex-start', border: 'none', backgroundColor: activeTab === 'study' ? '' : 'transparent' }}
@@ -504,9 +568,24 @@ export default function MathModule() {
           </button>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid hsla(var(--text-secondary) / 0.1)', paddingTop: '16px' }}>
-          <div style={{ fontSize: '0.72rem', opacity: 0.4, textAlign: 'center' }}>
-            25天每日2.0小时提分计划
+        {/* 📊 历史积分兑奖账单入口 */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', borderTop: '1px solid hsla(var(--text-secondary) / 0.1)', paddingTop: '16px' }}>
+          <button
+            className="btn btn-secondary scale-up"
+            style={{
+              padding: '8px',
+              fontSize: '0.78rem',
+              fontWeight: 'bold',
+              borderColor: 'rgba(245,158,11,0.3)',
+              backgroundColor: 'rgba(245,158,11,0.03)',
+              color: '#d97706'
+            }}
+            onClick={() => setShowBillModal(true)}
+          >
+            📊 25天历史金币账单
+          </button>
+          <div style={{ fontSize: '0.68rem', opacity: 0.4, textAlign: 'center' }}>
+            做对+1, 做错-1, 每天兑奖励
           </div>
         </div>
       </div>
@@ -585,17 +664,16 @@ export default function MathModule() {
           </div>
         )}
 
-        {/* Tab 1: 知识大纲精讲与图解 */}
+        {/* Tab 1: 讲义与几何原理图 */}
         {activeTab === 'study' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            {/* 双栏等高布局 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', height: '520px', alignItems: 'stretch' }}>
               
               {/* 左栏：精讲大纲 */}
               <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
                 <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-work))', borderBottom: '2px solid rgba(245,158,11,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
                   <span>📖 课程讲义 ({currentDayData?.name})</span>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>特训课: 2小时/天</span>
+                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>特训课: 2.0小时/天</span>
                 </h3>
                 <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
                   {parseSummary(currentDayData?.summary)}
@@ -629,7 +707,7 @@ export default function MathModule() {
               </div>
             </div>
 
-            {/* 今日测试引导入口 */}
+            {/* 今日小测引导 */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -644,7 +722,7 @@ export default function MathModule() {
                   🧠 今天的提分概念听懂了吗？
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                  立刻进行本天 Day {selectedDayId.replace('day', '')} 专属的 20 题测试，查漏补缺！
+                  做对一道<b>加1分</b>，做错扣1分，立刻开始 Day {selectedDayId.replace('day', '')} 过关小测试！
                 </p>
               </div>
               <button
@@ -676,7 +754,7 @@ export default function MathModule() {
                     ✍️ 开启：Day {selectedDayId.replace('day', '')} 专题小测
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', maxWidth: '440px', margin: '0 auto', lineHeight: '1.6' }}>
-                    测验包含 20 道专门针对今天排课知识点的计算题。系统将自动记录漏洞并计入错题本。
+                    测验包含 20 道专题算术题。答题过程中，做对一道<b>+1金币</b>，做错一道<b>-1金币</b>，分值实时存入今日金币荣誉包。
                   </p>
                 </div>
                 <button className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.88rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }} onClick={handleStartTest}>
@@ -688,7 +766,7 @@ export default function MathModule() {
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
                   <span>当前进度：<b>{currentTestIndex + 1}</b> / 20 题</span>
-                  <span>正在测评：{currentDayData?.name.split('：')[1]}</span>
+                  <span>今日金币：<b>{todayGoldCoin >= 0 ? `+${todayGoldCoin}` : todayGoldCoin}</b> 个</span>
                 </div>
 
                 <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
@@ -746,7 +824,7 @@ export default function MathModule() {
                     whiteSpace: 'pre-wrap'
                   }}>
                     <div style={{ fontWeight: 'bold', color: selectedTestOpt === testQuestions[currentTestIndex].answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                      {selectedTestOpt === testQuestions[currentTestIndex].answer ? '✅ 算对了！真棒！' : '❌ 算错了。让孩子仔细看看以下的分步推导演变步骤：'}
+                      {selectedTestOpt === testQuestions[currentTestIndex].answer ? '✅ 算对了！ +1 金币' : '❌ 算错了。 扣减 1 金币。请看以下分步推演：'}
                     </div>
                     {testQuestions[currentTestIndex].explanation}
                   </div>
@@ -759,13 +837,13 @@ export default function MathModule() {
                     </button>
                   ) : (
                     <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.82rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }} onClick={handleNextTest}>
-                      {currentTestIndex < 19 ? '下一题' : '完成测验并打分'}
+                      {currentTestIndex < 19 ? '下一题' : '完成测验并结算'}
                     </button>
                   )}
                 </div>
               </div>
             ) : (
-              /* 成绩单 */
+              /* 成绩报告 */
               <div style={{ textAlign: 'center', padding: '24px 0', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
                 <div style={{
                   width: '90px',
@@ -779,14 +857,15 @@ export default function MathModule() {
                   fontSize: '2rem',
                   fontWeight: 'bold'
                 }}>
-                  {testScore}分
+                  {testScore}%
                 </div>
                 <div>
                   <h4 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: '0 0 6px 0' }}>
-                    {testScore === 100 ? '🎉 满分通关！计算小能手！' : testScore >= 80 ? '👍 达到 80 分逆袭目标！计算底子非常棒！' : '💪 还未达到 80 分目标，别灰心，对照错题解析重新算一遍！'}
+                    {testScore >= 80 ? '🎉 达到 80 分目标！太出色了！' : '💪 还未达到 80 分，清空错题本，重新挑战！'}
                   </h4>
                   <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', margin: 0, maxWidth: '400px', lineHeight: '1.5' }}>
-                    本次测验得分 <b>{testScore}</b> 分。错题已同步归集到左下角的错题本中，可以单独把它们消灭掉。
+                    今日测试正确率 <b>{testScore}%</b>。Day {selectedDayId.replace('day', '')} 今日累计积分金币为：<b>{todayGoldCoin}</b> 个。
+                    快让爸爸折算奖励吧！
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
@@ -817,7 +896,7 @@ export default function MathModule() {
                           Day {selectedDayId.replace('day', '')} 特训 · 第 {currentExerciseIndex + 1} / 100 题
                         </span>
                         <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                          类型：{exerciseQuestions[currentExerciseIndex].category}
+                          累计金币：{todayGoldCoin >= 0 ? `+${todayGoldCoin}` : todayGoldCoin}
                         </span>
                       </div>
 
@@ -874,7 +953,7 @@ export default function MathModule() {
                           whiteSpace: 'pre-wrap'
                         }}>
                           <div style={{ fontWeight: 'bold', color: exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 答对了！' : '❌ 计算错误，该题已加入错题本。'}
+                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个，已自动计错。'}
                           </div>
                           {exerciseQuestions[currentExerciseIndex].explanation}
                         </div>
@@ -904,7 +983,7 @@ export default function MathModule() {
                 )}
               </div>
 
-              {/* 右栏：100题网格状态进度卡 */}
+              {/* 右栏：100题进度网格 */}
               <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
                   <span>🎯 100题特训卡</span>
@@ -990,6 +1069,147 @@ export default function MathModule() {
         )}
 
       </div>
+
+      {/* 📊 积分兑奖荣誉账单 Modal (炫酷弹窗) */}
+      {showBillModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          animation: 'fade-in 0.25s ease'
+        }}>
+          <div className="glass-card scale-up" style={{
+            width: '90%',
+            maxWidth: '520px',
+            backgroundColor: '#ffffff',
+            padding: '24px',
+            borderRadius: '12px',
+            maxHeight: '85vh',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '10px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#b45309' }}>🪙 25天历史金币荣誉账单 (兑奖专用)</h3>
+              <button
+                style={{ background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: 'hsl(var(--text-secondary))' }}
+                onClick={() => setShowBillModal(false)}
+              >
+                &times;
+              </button>
+            </div>
+
+            <p style={{ margin: 0, fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', lineHeight: '1.5' }}>
+              提示：每天金币分值等于<b>【做对题目数 &times; 1 + 做错题目数 &times; -1】</b>。家长可根据每日得分，为孩子折算实物奖励或奖励包（例如 1金币=0.1元，鼓励为主，培养孩子信心！）。
+            </p>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(5, 1fr)',
+              gap: '8px',
+              padding: '6px'
+            }}>
+              {Array.from({ length: 25 }).map((_, idx) => {
+                const dayId = `day${idx + 1}`;
+                const score = dayScores[dayId] !== undefined ? dayScores[dayId] : 0;
+                const isSelected = selectedDayId === dayId;
+
+                let scoreColor = '#718096';
+                let cellBg = '#f8fafc';
+                let border = '1px solid #e2e8f0';
+
+                if (score > 0) {
+                  scoreColor = '#d97706';
+                  cellBg = '#fffbeb';
+                  border = '1px solid #fde68a';
+                } else if (score < 0) {
+                  scoreColor = 'hsl(var(--color-danger))';
+                  cellBg = 'hsla(var(--color-danger)/0.02)';
+                  border = '1px solid hsla(var(--color-danger)/0.1)';
+                }
+
+                if (isSelected) {
+                  border = '2px solid hsl(var(--color-work))';
+                }
+
+                return (
+                  <div
+                    key={dayId}
+                    style={{
+                      padding: '8px 4px',
+                      backgroundColor: cellBg,
+                      border: border,
+                      borderRadius: '8px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '4px',
+                      cursor: 'pointer',
+                      position: 'relative'
+                    }}
+                    onClick={() => {
+                      setSelectedDayId(dayId);
+                      setShowBillModal(false);
+                    }}
+                  >
+                    <span style={{ fontSize: '0.68rem', opacity: 0.6 }}>Day {idx + 1}</span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: scoreColor }}>
+                      {score > 0 ? `+${score}` : score}
+                    </span>
+                    
+                    {score !== 0 && (
+                      <button
+                        style={{
+                          position: 'absolute',
+                          top: '-4px',
+                          right: '-4px',
+                          width: '12px',
+                          height: '12px',
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(0,0,0,0.15)',
+                          color: '#fff',
+                          fontSize: '8px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}
+                        title="清空此日分值"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleResetDayScore(dayId);
+                        }}
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '12px' }}>
+              <button
+                className="btn btn-primary"
+                style={{ padding: '8px 20px', fontSize: '0.8rem', backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }}
+                onClick={() => setShowBillModal(false)}
+              >
+                确认关闭
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
