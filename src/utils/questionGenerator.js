@@ -554,6 +554,106 @@ export function generateMathQuestions(topicId, count = 100) {
         break;
       }
 
+      // 10. 勾股定理几何计算
+      case 'math_topic10': {
+        const triples = [
+          { a: 3, b: 4, c: 5 },
+          { a: 5, b: 12, c: 13 },
+          { a: 6, b: 8, c: 10 },
+          { a: 8, b: 15, c: 17 },
+          { a: 9, b: 12, c: 15 }
+        ];
+        const triple = triples[randomInt(0, triples.length - 1)];
+        const askHypotenuse = randomInt(0, 1) === 1;
+
+        let question = '';
+        let correct = '';
+        let wrong1 = '';
+        let wrong2 = '';
+        let wrong3 = '';
+        let explanation = '';
+
+        if (askHypotenuse) {
+          question = `【习题 ${qIndex}】已知直角三角形的两条直角边分别为 a = ${triple.a}，b = ${triple.b}。求该直角三角形的斜边 c 的长度：`;
+          correct = `${triple.c}`;
+          wrong1 = `${triple.a + triple.b}`;
+          wrong2 = `${triple.b + 1}`;
+          wrong3 = `${triple.c + 2}`;
+          explanation = `名师分步解析：\n步骤 1. 套用勾股定理公式：直角三角形两直角边的平方和，等于斜边的平方。公式为：a² + b² = c²。\n步骤 2. 代入数值计算平方：${triple.a}² + ${triple.b}² = ${triple.a * triple.a} + ${triple.b * triple.b} = ${triple.c * triple.c}。\n步骤 3. 开平方求斜边：c = √(${triple.c * triple.c}) = ${triple.c}。`;
+        } else {
+          question = `【习题 ${qIndex}】已知直角三角形的一条直角边 a = ${triple.a}，斜边 c = ${triple.c}。求另一条直角边 b 的长度：`;
+          correct = `${triple.b}`;
+          wrong1 = `${triple.c - triple.a}`;
+          wrong2 = `${triple.b + 2}`;
+          wrong3 = `${triple.a + 1}`;
+          explanation = `名师分步解析：\n步骤 1. 套用勾股定理变形公式：已知斜边与直角边，求另一条直角边。公式为：b² = c² - a²。\n步骤 2. 代入数值计算平方差：${triple.c}² - ${triple.a}² = ${triple.c * triple.c} - ${triple.a * triple.a} = ${triple.b * triple.b}。\n步骤 3. 开平方求直角边：b = √(${triple.b * triple.b}) = ${triple.b}。`;
+        }
+
+        const opts = [correct, wrong1, wrong2, wrong3].sort(() => 0.5 - Math.random());
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`31000${qIndex}`),
+          category: '勾股定理线段计算',
+          question,
+          options: opts,
+          answer: ansIdx,
+          explanation
+        };
+        break;
+      }
+
+      // 11. 中考数据统计计算
+      case 'math_topic11': {
+        const sets = [
+          { data: [2, 3, 3, 5, 7], mean: 4, median: 3, mode: 3, range: 5 },
+          { data: [1, 2, 2, 4, 6], mean: 3, median: 2, mode: 2, range: 5 },
+          { data: [3, 4, 4, 7, 7], mean: 5, median: 4, mode: 4, range: 4 },
+          { data: [2, 4, 4, 6, 9], mean: 5, median: 4, mode: 4, range: 7 }
+        ];
+        const selectedSet = sets[randomInt(0, sets.length - 1)];
+        const askMean = randomInt(0, 1) === 1;
+
+        let question = '';
+        let correct = '';
+        let wrong1 = '';
+        let wrong2 = '';
+        let wrong3 = '';
+        let explanation = '';
+
+        const dataStr = selectedSet.data.join(', ');
+
+        if (askMean) {
+          question = `【习题 ${qIndex}】已知一组数据为：${dataStr}。求这组数据的平均数是：`;
+          correct = `${selectedSet.mean}`;
+          const sum = selectedSet.data.reduce((x, y) => x + y, 0);
+          wrong1 = `${selectedSet.median}`;
+          wrong2 = `${selectedSet.mean + 1}`;
+          wrong3 = `${selectedSet.mean - 1}`;
+          explanation = `名师分步解析：\n步骤 1. 平均数等于这组数据中所有数值的总和，除以数据的个数。\n步骤 2. 求和计算：(${selectedSet.data.join(' + ')}) = ${sum}。\n步骤 3. 求平均值：${sum} ÷ 5 = ${selectedSet.mean}。`;
+        } else {
+          question = `【习题 ${qIndex}】已知一组已排序的数据为：${dataStr}。求这组数据的中位数是：`;
+          correct = `${selectedSet.median}`;
+          wrong1 = `${selectedSet.mean}`;
+          wrong2 = `${selectedSet.median + 1}`;
+          wrong3 = `${selectedSet.median - 1}`;
+          explanation = `名师分步解析：\n步骤 1. 中位数定义：把一组数据按大小顺序排列后，处在最中间位置的一个数就是中位数。\n步骤 2. 这组数据有 5 个数，最中间的数是第 3 个数。\n步骤 3. 第 3 个位置的数是 ${selectedSet.median}，所以中位数是 ${selectedSet.median}。`;
+        }
+
+        const opts = [correct, wrong1, wrong2, wrong3].sort(() => 0.5 - Math.random());
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`31100${qIndex}`),
+          category: '数据统计平均数中位数',
+          question,
+          options: opts,
+          answer: ansIdx,
+          explanation
+        };
+        break;
+      }
+
       default:
         break;
     }

@@ -39,7 +39,7 @@ export default function MathModule() {
     setTestScore(null);
   }, [selectedDayId]);
 
-  // 开启20题测试：根据当前Day的topicId锁死生成20道题
+  // 开启20题测试：根据当前选中的 Day 的 topicId 锁死生成 20 道测试题
   const handleStartTest = () => {
     const dayData = mathDays[selectedDayId] || mathDays['day1'];
     const generated = generateMathQuestions(dayData.topicId, 20);
@@ -52,7 +52,7 @@ export default function MathModule() {
     setTestSubmitted(true);
   };
 
-  // 100题特训：切换Day时，自适应生成当天专题的100道计算题
+  // 100题特训：根据当前 Day 的 topicId 自动生成当天的 100 道专项练习题
   useEffect(() => {
     if (activeTab === 'exercise') {
       const dayData = mathDays[selectedDayId] || mathDays['day1'];
@@ -142,15 +142,39 @@ export default function MathModule() {
     }
   };
 
-  // 根据 Day 匹配渲染 9 大核心 SVG 几何原理插图 (与 Day 强绑定)
+  // 根据 Day 匹配渲染 25天 中考数学几何原理插图 (与 Day 强绑定)
   const renderMathIllustrations = (dayId) => {
     const list = [];
 
-    // 分数绝对值 (Day 1 - 7 关联绝对值)
-    if (dayId === 'day7' || dayId === 'day6') {
+    // 1. 分数网格面积等分 (Day 3 - 6)
+    if (dayId === 'day3' || dayId === 'day4' || dayId === 'day5' || dayId === 'day6') {
       list.push(
-        <div key="m-day7" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
-          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：数轴、相反数与绝对值的几何意义</div>
+        <div key="m-day-fraction" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：分数约分通分的网格面积等分直观表示</div>
+          <svg width="100%" height="90" viewBox="0 0 400 90" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
+            <rect x="40" y="20" width="100" height="40" fill="none" stroke="#718096" strokeWidth="1.5" />
+            <rect x="40" y="20" width="50" height="40" fill="rgba(59, 130, 246, 0.15)" />
+            <line x1="90" y1="20" x2="90" y2="60" stroke="#718096" />
+            <text x="90" y="78" fill="hsl(var(--text-primary))" fontSize="9.5" fontWeight="bold" textAnchor="middle">1/2 的占比面积</text>
+
+            <text x="190" y="45" fill="#718096" fontSize="14" fontWeight="bold" textAnchor="middle">≡</text>
+
+            <rect x="240" y="20" width="100" height="40" fill="none" stroke="#718096" strokeWidth="1.5" />
+            <rect x="240" y="20" width="50" height="40" fill="rgba(16, 185, 129, 0.15)" />
+            <line x1="265" y1="20" x2="265" y2="60" stroke="#cbd5e0" strokeWidth="0.8" />
+            <line x1="290" y1="20" x2="290" y2="60" stroke="#718096" />
+            <line x1="315" y1="20" x2="315" y2="60" stroke="#cbd5e0" strokeWidth="0.8" />
+            <text x="290" y="78" fill="hsl(var(--text-primary))" fontSize="9.5" fontWeight="bold" textAnchor="middle">通分为 2/4 后的等分面积</text>
+          </svg>
+        </div>
+      );
+    }
+
+    // 2. 数轴绝对值距离 (Day 7 - 8)
+    if (dayId === 'day7' || dayId === 'day8') {
+      list.push(
+        <div key="m-day-abs" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：数轴上的相反数对称与绝对值距离</div>
           <svg width="100%" height="110" viewBox="0 0 400 110" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
             <line x1="20" y1="65" x2="380" y2="65" stroke="#718096" strokeWidth="2" />
             <polyline points="372,60 380,65 372,70" fill="none" stroke="#718096" strokeWidth="2" />
@@ -174,17 +198,17 @@ export default function MathModule() {
             <text x="245" y="32" fill="hsl(var(--color-success))" fontSize="8.5" fontWeight="bold" textAnchor="middle">|3| = 3 (距离)</text>
 
             <path d="M 110 76 Q 200 108 290 76" fill="none" stroke="hsl(var(--color-work))" strokeWidth="1.5" />
-            <text x="200" y="103" fill="hsl(var(--color-work))" fontSize="8.5" fontWeight="bold" textAnchor="middle">↔ 互为相反数 ↔</text>
+            <text x="200" y="103" fill="hsl(var(--color-work))" fontSize="8.5" fontWeight="bold" textAnchor="middle">↔ 互为相反数 (关于原点对称) ↔</text>
           </svg>
         </div>
       );
     }
 
-    // 乘方雷区对比 (Day 9 - 10 关联有理数乘方)
-    if (dayId === 'day9' || dayId === 'day10') {
+    // 3. 乘方号括号避坑 (Day 9 - 11)
+    if (dayId === 'day9' || dayId === 'day10' || dayId === 'day11') {
       list.push(
-        <div key="m-day9" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
-          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：中考第一大雷区 —— 乘方的正负号辨析</div>
+        <div key="m-day-power" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：乘方负号大辨析 (中考高频失分点)</div>
           <svg width="100%" height="90" viewBox="0 0 400 90" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
             <rect x="25" y="10" width="160" height="70" fill="rgba(16, 185, 129, 0.03)" stroke="hsl(var(--color-success))" strokeWidth="1" rx="6" />
             <text x="105" y="33" fill="hsl(var(--color-success))" fontSize="1.1rem" fontWeight="bold" textAnchor="middle">(-3)² = 9</text>
@@ -200,11 +224,11 @@ export default function MathModule() {
       );
     }
 
-    // 完全平方积木拼图 (Day 14)
-    if (dayId === 'day14') {
+    // 4. 平方差与完全平方拼图 (Day 15)
+    if (dayId === 'day15') {
       list.push(
-        <div key="m-day14" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
-          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：完全平方公式的几何积木拼图</div>
+        <div key="m-day-formula1" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：完全平方展开式与面积图形表示</div>
           <svg width="100%" height="130" viewBox="0 0 400 130" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
             <g transform="translate(40, 10)">
               <rect x="0" y="0" width="70" height="70" fill="rgba(59, 130, 246, 0.15)" stroke="rgb(59, 130, 246)" strokeWidth="1.5" />
@@ -215,74 +239,19 @@ export default function MathModule() {
               <text x="35" y="88" fill="rgb(245, 158, 11)" fontSize="10" fontWeight="bold" textAnchor="middle">ab</text>
               <rect x="70" y="70" width="30" height="30" fill="rgba(16, 185, 129, 0.15)" stroke="rgb(16, 185, 129)" strokeWidth="1.5" />
               <text x="85" y="88" fill="rgb(16, 185, 129)" fontSize="10" fontWeight="bold" textAnchor="middle">b²</text>
-              <text x="-8" y="35" fill="hsl(var(--text-secondary))" fontSize="9" textAnchor="end">a</text>
-              <text x="-8" y="88" fill="hsl(var(--text-secondary))" fontSize="9" textAnchor="end">b</text>
-              <text x="35" y="-6" fill="hsl(var(--text-secondary))" fontSize="9" textAnchor="middle">a</text>
-              <text x="85" y="-6" fill="hsl(var(--text-secondary))" fontSize="9" textAnchor="middle">b</text>
             </g>
-            <text x="280" y="55" fill="hsl(var(--text-primary))" fontSize="11" fontWeight="bold" textAnchor="middle">正方形总面积 = (a + b)²</text>
+            <text x="280" y="55" fill="hsl(var(--text-primary))" fontSize="11" fontWeight="bold" textAnchor="middle">总面积 = (a + b)²</text>
             <text x="280" y="75" fill="hsl(var(--color-mech))" fontSize="11.5" fontWeight="bold" textAnchor="middle">等价于：a² + 2ab + b²</text>
           </svg>
         </div>
       );
     }
 
-    // 平方差割补拼图 (Day 13)
-    if (dayId === 'day13') {
+    // 5. 方程交点 (Day 18 - 19)
+    if (dayId === 'day18' || dayId === 'day19') {
       list.push(
-        <div key="m-day13" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
-          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：平方差公式的几何割补拼接</div>
-          <svg width="100%" height="130" viewBox="0 0 400 130" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
-            <g transform="translate(30, 15)">
-              <rect x="0" y="0" width="90" height="90" fill="rgba(59, 130, 246, 0.15)" stroke="rgb(59, 130, 246)" strokeWidth="1.5" />
-              <rect x="60" y="60" width="30" height="30" fill="#f8fafc" stroke="#cbd5e0" strokeDasharray="3,3" />
-              <text x="75" y="78" fill="#a0aec0" fontSize="8" textAnchor="middle">剪去 b²</text>
-              <text x="35" y="45" fill="rgb(59, 130, 246)" fontSize="10.5" fontWeight="bold" textAnchor="middle">面积: a² - b²</text>
-            </g>
-            <path d="M 145 60 L 175 60" fill="none" stroke="#718096" strokeWidth="2" />
-            <g transform="translate(200, 30)">
-              <rect x="0" y="0" width="130" height="60" fill="rgba(16, 185, 129, 0.15)" stroke="rgb(16, 185, 129)" strokeWidth="1.5" />
-              <line x1="90" y1="0" x2="90" y2="60" stroke="rgb(16, 185, 129)" strokeDasharray="2,2" />
-              <text x="45" y="35" fill="rgb(16, 185, 129)" fontSize="9.5" fontWeight="bold" textAnchor="middle">a 块</text>
-              <text x="110" y="35" fill="rgb(16, 185, 129)" fontSize="9.5" fontWeight="bold" textAnchor="middle">b 块</text>
-              <text x="65" y="-6" fill="hsl(var(--text-secondary))" fontSize="8.5" textAnchor="middle">a + b</text>
-              <text x="-6" y="35" fill="hsl(var(--text-secondary))" fontSize="8.5" textAnchor="end">a - b</text>
-            </g>
-            <text x="200" y="118" fill="hsl(var(--color-work))" fontSize="10.5" fontWeight="bold" textAnchor="middle">因此：a² - b² = (a + b)(a - b)</text>
-          </svg>
-        </div>
-      );
-    }
-
-    // 分数网格 (Day 1 - 5 均显示网格)
-    if (dayId === 'day1' || dayId === 'day2' || dayId === 'day3') {
-      list.push(
-        <div key="m-day3" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
-          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：分数约分通分的网格等分直观表示</div>
-          <svg width="100%" height="90" viewBox="0 0 400 90" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
-            <rect x="40" y="20" width="100" height="40" fill="none" stroke="#718096" strokeWidth="1.5" />
-            <rect x="40" y="20" width="50" height="40" fill="rgba(59, 130, 246, 0.15)" />
-            <line x1="90" y1="20" x2="90" y2="60" stroke="#718096" />
-            <text x="90" y="78" fill="hsl(var(--text-primary))" fontSize="9.5" fontWeight="bold" textAnchor="middle">1/2 面积</text>
-
-            <text x="190" y="45" fill="#718096" fontSize="14" fontWeight="bold" textAnchor="middle">≡</text>
-
-            <rect x="240" y="20" width="100" height="40" fill="none" stroke="#718096" strokeWidth="1.5" />
-            <rect x="240" y="20" width="50" height="40" fill="rgba(16, 185, 129, 0.15)" />
-            <line x1="265" y1="20" x2="265" y2="60" stroke="#cbd5e0" strokeWidth="0.8" />
-            <line x1="290" y1="20" x2="290" y2="60" stroke="#718096" />
-            <line x1="315" y1="20" x2="315" y2="60" stroke="#cbd5e0" strokeWidth="0.8" />
-            <text x="290" y="78" fill="hsl(var(--text-primary))" fontSize="9.5" fontWeight="bold" textAnchor="middle">通分为 2/4 面积 (完全等同)</text>
-          </svg>
-        </div>
-      );
-    }
-
-    // 方程交点 (Day 17)
-    if (dayId === 'day17') {
-      list.push(
-        <div key="m-day17" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
-          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：二元一次方程组交点即为唯一解</div>
+        <div key="m-day-eq" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：二元一次方程组交点的几何几何意义</div>
           <svg width="100%" height="110" viewBox="0 0 400 110" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
             <line x1="30" y1="90" x2="370" y2="90" stroke="#cbd5e0" strokeWidth="1" />
             <line x1="70" y1="10" x2="70" y2="105" stroke="#cbd5e0" strokeWidth="1" />
@@ -297,11 +266,40 @@ export default function MathModule() {
       );
     }
 
-    // 二次方程与抛物线 (Day 20)
-    if (dayId === 'day20') {
+    // 6. 二次根式数轴投射 (Day 22)
+    if (dayId === 'day22') {
       list.push(
-        <div key="m-day20" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
-          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：一元二次方程与二次函数交点个数的关系</div>
+        <div key="m-day-sqrt" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：直角三角形与数轴上根式 √2 的精确映射</div>
+          <svg width="100%" height="110" viewBox="0 0 400 110" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
+            <line x1="20" y1="80" x2="380" y2="80" stroke="#718096" strokeWidth="2" />
+            <polyline points="372,75 380,80 372,85" fill="none" stroke="#718096" strokeWidth="2" />
+            
+            <line x1="100" y1="75" x2="100" y2="85" stroke="#2d3748" strokeWidth="2" />
+            <text x="100" y="97" fill="#2d3748" fontSize="9" fontWeight="bold" textAnchor="middle">0</text>
+            <line x1="220" y1="75" x2="220" y2="85" stroke="#2d3748" strokeWidth="2" />
+            <text x="220" y="97" fill="#2d3748" fontSize="9" fontWeight="bold" textAnchor="middle">1</text>
+            <line x1="340" y1="75" x2="340" y2="85" stroke="#2d3748" strokeWidth="2" />
+            <text x="340" y="97" fill="#2d3748" fontSize="9" fontWeight="bold" textAnchor="middle">2</text>
+            
+            <polygon points="100,80 220,80 220,20" fill="rgba(245, 158, 11, 0.12)" stroke="hsl(var(--color-work))" strokeWidth="1.5" />
+            <text x="160" y="89" fill="hsl(var(--text-secondary))" fontSize="7.5" textAnchor="middle">直角边 = 1</text>
+            <text x="226" y="50" fill="hsl(var(--text-secondary))" fontSize="7.5">直角边 = 1</text>
+            <text x="150" y="44" fill="hsl(var(--color-work))" fontSize="8.5" fontWeight="bold">斜边 = √2</text>
+
+            <path d="M 220 20 A 120 120 0 0 1 270 80" fill="none" stroke="hsl(var(--color-danger))" strokeDasharray="3,2" strokeWidth="1.5" />
+            <circle cx="270" cy="80" r="4" fill="hsl(var(--color-danger))" />
+            <text x="270" y="97" fill="hsl(var(--color-danger))" fontSize="9" fontWeight="bold" textAnchor="middle">√2 (≈1.414)</text>
+          </svg>
+        </div>
+      );
+    }
+
+    // 7. 二次方程抛物线交点 (Day 23)
+    if (dayId === 'day23') {
+      list.push(
+        <div key="m-day-eq2" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：一元二次方程与二次函数交点 Δ 判定</div>
           <svg width="100%" height="110" viewBox="0 0 400 110" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
             <g transform="translate(10, 5)">
               <line x1="10" y1="75" x2="110" y2="75" stroke="#718096" strokeWidth="1" />
@@ -321,6 +319,56 @@ export default function MathModule() {
               <path d="M 25 25 Q 60 45 95 25" fill="none" stroke="#718096" strokeWidth="1.5" />
               <text x="60" y="93" fill="hsl(var(--text-secondary))" fontSize="8" fontWeight="bold" textAnchor="middle">Δ &lt; 0 (无实根)</text>
             </g>
+          </svg>
+        </div>
+      );
+    }
+
+    // 8. 不等式交集 (Day 24)
+    if (dayId === 'day24') {
+      list.push(
+        <div key="m-day-ineq" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：不等式组在数轴上的公共重叠交集</div>
+          <svg width="100%" height="110" viewBox="0 0 400 110" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
+            <line x1="20" y1="75" x2="380" y2="75" stroke="#718096" strokeWidth="2" />
+            <line x1="140" y1="70" x2="140" y2="80" stroke="#2d3748" />
+            <text x="140" y="92" fill="#2d3748" fontSize="9.5" fontWeight="bold" textAnchor="middle">1</text>
+            <line x1="260" y1="70" x2="260" y2="80" stroke="#2d3748" />
+            <text x="260" y="92" fill="#2d3748" fontSize="9.5" fontWeight="bold" textAnchor="middle">3</text>
+            
+            <circle cx="140" cy="50" r="3.5" fill="#f8fafc" stroke="hsl(var(--color-optics))" strokeWidth="2" />
+            <line x1="144" y1="50" x2="360" y2="50" stroke="hsl(var(--color-optics))" strokeWidth="2" />
+            <text x="350" y="42" fill="hsl(var(--color-optics))" fontSize="7.5" fontWeight="bold">① x &gt; 1 (空心向右)</text>
+
+            <circle cx="260" cy="25" r="4.5" fill="hsl(var(--color-work))" />
+            <line x1="256" y1="25" x2="40" y2="25" stroke="hsl(var(--color-work))" strokeWidth="2" />
+            <text x="50" y="17" fill="hsl(var(--color-work))" fontSize="7.5" fontWeight="bold">② x ≤ 3 (实心向左)</text>
+
+            <rect x="141" y="65" width="118" height="10" fill="rgba(16, 185, 129, 0.2)" />
+            <text x="200" y="105" fill="hsl(var(--color-success))" fontSize="9.5" fontWeight="bold" textAnchor="middle">公共解集为： 1 &lt; x ≤ 3</text>
+          </svg>
+        </div>
+      );
+    }
+
+    // 9. 新增：勾股定理三角形原理图 (Day 25)
+    if (dayId === 'day25') {
+      list.push(
+        <div key="m-day-pythagoras" style={{ padding: '16px', backgroundColor: '#f8fafc', border: '1px solid #edf2f7', borderRadius: 'var(--radius-md)' }}>
+          <div style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', marginBottom: '8px', fontWeight: 'bold' }}>🖼️ 图解：直角三角形勾股数 (3 - 4 - 5) 几何拼板面积律</div>
+          <svg width="100%" height="130" viewBox="0 0 400 130" style={{ display: 'block', margin: '0 auto', maxWidth: '400px' }}>
+            <g transform="translate(100, 10)">
+              {/* 绘制直角三角形 */}
+              <polygon points="40,80 120,80 120,20" fill="rgba(59, 130, 246, 0.15)" stroke="rgb(59, 130, 246)" strokeWidth="2" />
+              {/* 直角符号 */}
+              <polyline points="112,80 112,72 120,72" fill="none" stroke="rgb(59, 130, 246)" strokeWidth="1" />
+              {/* 边长文字 */}
+              <text x="80" y="93" fill="hsl(var(--text-primary))" fontSize="10" fontWeight="bold" textAnchor="middle">直角边 a = 4</text>
+              <text x="126" y="55" fill="hsl(var(--text-primary))" fontSize="10" fontWeight="bold">直角边 b = 3</text>
+              <text x="70" y="45" fill="hsl(var(--color-danger))" fontSize="10.5" fontWeight="bold" textAnchor="middle">斜边 c = 5</text>
+            </g>
+            <text x="280" y="55" fill="hsl(var(--color-work))" fontSize="11" fontWeight="bold" textAnchor="middle">勾股定理：a² + b² = c²</text>
+            <text x="280" y="75" fill="hsl(var(--text-secondary))" fontSize="10" textAnchor="middle">验证：4² + 3² = 16 + 9 = 25 = 5²</text>
           </svg>
         </div>
       );
@@ -381,7 +429,6 @@ export default function MathModule() {
     );
   };
 
-  // 根据当前 selectedDayId 得到对应的 Block 阶段
   const currentDayData = mathDays[selectedDayId] || mathDays['day1'];
 
   return (
@@ -406,7 +453,7 @@ export default function MathModule() {
           </div>
           <div>
             <h2 style={{ fontSize: '0.98rem', border: 'none', padding: 0, margin: 0, letterSpacing: '0.5px' }}>中考数学特训营</h2>
-            <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>20天从50分逆袭80分</span>
+            <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>25天精准逆袭80分</span>
           </div>
         </div>
 
@@ -459,7 +506,7 @@ export default function MathModule() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid hsla(var(--text-secondary) / 0.1)', paddingTop: '16px' }}>
           <div style={{ fontSize: '0.72rem', opacity: 0.4, textAlign: 'center' }}>
-            20天每日1.5小时学习计划
+            25天每日2.0小时提分计划
           </div>
         </div>
       </div>
@@ -467,11 +514,11 @@ export default function MathModule() {
       {/* 主面板内容 */}
       <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         
-        {/* 顶部：20天日程导航大区 (除错题本外均显示) */}
+        {/* 顶部：25天日程导航大区 (除错题本外均显示) */}
         {activeTab !== 'wrongbook' && (
           <div className="glass-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* 四周大阶段切换 */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+            {/* 五周大阶段切换 */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
               {mathBlocks.map((block) => {
                 const isCurrentBlock = block.days.includes(selectedDayId);
                 return (
@@ -479,8 +526,8 @@ export default function MathModule() {
                     key={block.id}
                     className={`btn ${isCurrentBlock ? 'btn-primary' : 'btn-secondary'}`}
                     style={{
-                      fontSize: '0.78rem',
-                      padding: '8px',
+                      fontSize: '0.75rem',
+                      padding: '8px 4px',
                       whiteSpace: 'nowrap',
                       display: 'flex',
                       flexDirection: 'column',
@@ -490,19 +537,18 @@ export default function MathModule() {
                       borderColor: isCurrentBlock ? 'hsl(var(--color-work))' : ''
                     }}
                     onClick={() => {
-                      // 切换周时，默认选中这一周的第一天
                       setSelectedDayId(block.days[0]);
                     }}
                   >
                     <span style={{ fontWeight: 'bold' }}>{block.name.split('：')[0]}</span>
-                    <span style={{ fontSize: '0.68rem', opacity: 0.8 }}>{block.name.split('：')[1]}</span>
+                    <span style={{ fontSize: '0.64rem', opacity: 0.85 }}>{block.name.split('：')[1]}</span>
                   </button>
                 );
               })}
             </div>
 
             {/* 当周所含 Day 徽章日程流 */}
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
               {(() => {
                 const currentBlock = mathBlocks.find(b => b.days.includes(selectedDayId)) || mathBlocks[0];
                 return currentBlock.days.map((dayId) => {
@@ -514,8 +560,8 @@ export default function MathModule() {
                       key={dayId}
                       className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
                       style={{
-                        padding: '6px 14px',
-                        fontSize: '0.76rem',
+                        padding: '5px 12px',
+                        fontSize: '0.74rem',
                         borderRadius: '20px',
                         whiteSpace: 'nowrap',
                         display: 'flex',
@@ -525,8 +571,8 @@ export default function MathModule() {
                       onClick={() => setSelectedDayId(dayId)}
                     >
                       <span style={{
-                        width: '8px',
-                        height: '8px',
+                        width: '6px',
+                        height: '6px',
                         borderRadius: '50%',
                         backgroundColor: isSelected ? '#fff' : 'hsl(var(--color-work))'
                       }}></span>
@@ -543,13 +589,13 @@ export default function MathModule() {
         {activeTab === 'study' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
             {/* 双栏等高布局 */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', height: '560px', alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', height: '520px', alignItems: 'stretch' }}>
               
               {/* 左栏：精讲大纲 */}
               <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
                 <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-work))', borderBottom: '2px solid rgba(245,158,11,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
                   <span>📖 课程讲义 ({currentDayData?.name})</span>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>提分目标: 80分基础分</span>
+                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>特训课: 2小时/天</span>
                 </h3>
                 <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
                   {parseSummary(currentDayData?.summary)}
@@ -630,7 +676,7 @@ export default function MathModule() {
                     ✍️ 开启：Day {selectedDayId.replace('day', '')} 专题小测
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', maxWidth: '440px', margin: '0 auto', lineHeight: '1.6' }}>
-                    测验包含 20 道专门强化今天知识点的算术题。系统将自动收录答错的题进入错题本，供后期反复练习。
+                    测验包含 20 道专门针对今天排课知识点的计算题。系统将自动记录漏洞并计入错题本。
                   </p>
                 </div>
                 <button className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.88rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }} onClick={handleStartTest}>
@@ -700,7 +746,7 @@ export default function MathModule() {
                     whiteSpace: 'pre-wrap'
                   }}>
                     <div style={{ fontWeight: 'bold', color: selectedTestOpt === testQuestions[currentTestIndex].answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                      {selectedTestOpt === testQuestions[currentTestIndex].answer ? '✅ 算对了！孩子真棒！' : '❌ 算错了。让孩子仔细看看以下的分步推导演变步骤：'}
+                      {selectedTestOpt === testQuestions[currentTestIndex].answer ? '✅ 算对了！真棒！' : '❌ 算错了。让孩子仔细看看以下的分步推导演变步骤：'}
                     </div>
                     {testQuestions[currentTestIndex].explanation}
                   </div>
@@ -737,10 +783,10 @@ export default function MathModule() {
                 </div>
                 <div>
                   <h4 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: '0 0 6px 0' }}>
-                    {testScore === 100 ? '🎉 满分通关！计算小能手！' : testScore >= 80 ? '👍 达到80分目标！计算底子非常棒！' : '💪 还未达到80分，别灰心，对照错题解析多练几遍！'}
+                    {testScore === 100 ? '🎉 满分通关！计算小能手！' : testScore >= 80 ? '👍 达到 80 分逆袭目标！计算底子非常棒！' : '💪 还未达到 80 分目标，别灰心，对照错题解析重新算一遍！'}
                   </h4>
                   <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', margin: 0, maxWidth: '400px', lineHeight: '1.5' }}>
-                    本次测验得分 <b>{testScore}</b> 分。错题已同步归集到左下角的错题本中，可以单独把它们“消灭”掉。
+                    本次测验得分 <b>{testScore}</b> 分。错题已同步归集到左下角的错题本中，可以单独把它们消灭掉。
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
