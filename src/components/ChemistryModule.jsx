@@ -3,14 +3,14 @@ import { chemistryBlocks, chemistryDays } from '../data/chemistryData';
 import { generateChemistryQuestions } from '../utils/questionGenerator';
 import WrongBook from './WrongBook';
 
-// Day 4 专属游戏所使用的核心元素种子
+// Day 4 专属连线游戏核心种子（完全剔除英文，仅保留符号与中文拼音两两对应）
 const GAME_SEEDS = [
-  { id: 'H', symbol: 'H', pinyin: '氢 (qīng)', english: 'Hydrogen' },
-  { id: 'O', symbol: 'O', pinyin: '氧 (yǎng)', english: 'Oxygen' },
-  { id: 'Na', symbol: 'Na', pinyin: '钠 (nà)', english: 'Sodium' },
-  { id: 'Fe', symbol: 'Fe', pinyin: '铁 (tiě)', english: 'Iron' },
-  { id: 'Cu', symbol: 'Cu', pinyin: '铜 (tóng)', english: 'Copper' },
-  { id: 'Ca', symbol: 'Ca', pinyin: '钙 (gài)', english: 'Calcium' }
+  { id: 'H', symbol: 'H', pinyin: '氢 (qīng)' },
+  { id: 'O', symbol: 'O', pinyin: '氧 (yǎng)' },
+  { id: 'Na', symbol: 'Na', pinyin: '钠 (nà)' },
+  { id: 'Fe', symbol: 'Fe', pinyin: '铁 (tiě)' },
+  { id: 'Cu', symbol: 'Cu', pinyin: '铜 (tóng)' },
+  { id: 'Ca', symbol: 'Ca', pinyin: '钙 (gài)' }
 ];
 
 export default function ChemistryModule() {
@@ -38,9 +38,9 @@ export default function ChemistryModule() {
   // 化学错题本状态
   const [wrongList, setWrongList] = useState([]);
 
-  // --- Day 4 专属连线配对消除游戏状态 ---
+  // --- Day 4 专属连线配对消除游戏状态 (两两配对，12卡方阵) ---
   const [gameCards, setGameCards] = useState([]);
-  const [selectedCards, setSelectedCards] = useState([]); // 当前单次选中的 card 对象数组 (最多3个)
+  const [selectedCards, setSelectedCards] = useState([]); // 当前单次选中的 card 对象数组 (最多2个)
   const [matchedIds, setMatchedIds] = useState([]); // 已完美匹配成功的元素 id 数组
   const [gameWon, setGameWon] = useState(false);
   const [gameErrorActive, setGameErrorActive] = useState(false); // 匹配错误时闪红灯状态
@@ -112,16 +112,15 @@ export default function ChemistryModule() {
     localStorage.setItem(`chemistry-score-${selectedDayId}`, newScore.toString());
   };
 
-  // --- Day 4 连线匹配消除游戏核心逻辑 ---
+  // --- Day 4 两两连线匹配消除游戏核心逻辑 ---
   const initMatchGame = () => {
     const cardList = [];
     GAME_SEEDS.forEach(el => {
-      // 每个元素分出3个属性卡片
+      // 每个元素分出2个对应属性卡片 (符号与拼音)
       cardList.push({ elId: el.id, type: 'symbol', text: el.symbol });
       cardList.push({ elId: el.id, type: 'pinyin', text: el.pinyin });
-      cardList.push({ elId: el.id, type: 'english', text: el.english });
     });
-    // 打乱顺序，并标记 cardId 索引
+    // 打乱顺序，并标记 cardId 索引，共 12 张卡片
     const shuffled = cardList
       .map((c, idx) => ({ ...c, cardId: idx }))
       .sort(() => 0.5 - Math.random());
@@ -144,31 +143,15 @@ export default function ChemistryModule() {
     if (nextSelected.length === 1) {
       setSelectedCards(nextSelected);
     }
-    // 2. 点中第2个卡片
+    // 2. 点中第2个卡片 (判定两两拼图是否一致)
     else if (nextSelected.length === 2) {
-      // 判定前两个是不是同一个元素
       if (nextSelected[0].elId === nextSelected[1].elId) {
-        setSelectedCards(nextSelected);
-      } else {
-        // 不是同一个，闪红灯错配
-        setSelectedCards(nextSelected);
-        setGameErrorActive(true);
-        setTimeout(() => {
-          setSelectedCards([]);
-          setGameErrorActive(false);
-        }, 800);
-      }
-    }
-    // 3. 点中第3个卡片 (完美拼图集齐)
-    else if (nextSelected.length === 3) {
-      if (nextSelected[0].elId === nextSelected[2].elId) {
-        // 3个全部吻合，绿灯消除！
+        // 两两匹配完美成功，亮绿灯并消除！
         const newMatched = [...matchedIds, card.elId];
         setMatchedIds(newMatched);
         setSelectedCards([]);
         
-        // 配对成功奖励 3 金币！
-        updateGoldCoin(true);
+        // 配对成功一组奖励 2 金币！
         updateGoldCoin(true);
         updateGoldCoin(true);
 
@@ -176,7 +159,7 @@ export default function ChemistryModule() {
           setGameWon(true);
         }
       } else {
-        // 闪红灯错配
+        // 不是同一个，闪红灯错配
         setSelectedCards(nextSelected);
         setGameErrorActive(true);
         setTimeout(() => {
@@ -703,11 +686,10 @@ export default function ChemistryModule() {
                     🎯 元素连线检验规则
                   </h3>
                   <div style={{ flex: 1, fontSize: '0.86rem', lineHeight: '1.65', color: 'hsl(var(--text-primary))', overflowY: 'auto' }}>
-                    <p style={{ margin: '0 0 10px 0' }}>请把打乱的 18 张卡片进行三合一配对消除！</p>
+                    <p style={{ margin: '0 0 10px 0' }}>请把打乱的 12 张卡片进行两两配对消除！</p>
                     <ul style={{ paddingLeft: '20px', margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      <li>第一步：点击一个元素<b>【符号卡】</b>（如 Na）</li>
+                      <li>第一步：点击一个元素的<b>【符号卡】</b>（如 Na）</li>
                       <li>第二步：点击对应的<b>【中文拼音卡】</b>（如 钠 (nà)）</li>
-                      <li>第三步：点击对应的<b>【英文音标卡】</b>（如 Sodium）</li>
                     </ul>
                     <div style={{
                       marginTop: '16px',
@@ -718,7 +700,7 @@ export default function ChemistryModule() {
                       fontSize: '0.78rem',
                       color: '#b45309'
                     }}>
-                      💡 <b>通关福利：</b> 成功配对一组可<b>直接得 3 金币</b>！全部消除即可彻底通关！
+                      💡 <b>通关福利：</b> 成功配对一组可<b>直接得 2 金币</b>！全部消除即可彻底通关！
                     </div>
                   </div>
                   <button className="btn btn-secondary" style={{ alignSelf: 'flex-start' }} onClick={initMatchGame}>
@@ -738,7 +720,7 @@ export default function ChemistryModule() {
                       <span style={{ fontSize: '4rem' }}>🎉</span>
                       <h4 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#047857', margin: 0 }}>背诵大满贯！恭喜通关！</h4>
                       <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', margin: 0 }}>
-                        前20个元素中英文符号音标已经滚瓜烂熟了！获得金币奖励已计入 Day 4。
+                        前20个元素中中文读法与符号字母的配对已经滚瓜烂熟了！获得金币奖励已计入 Day 4。
                       </p>
                       <button className="btn btn-primary" style={{ backgroundColor: 'hsl(var(--color-optics))', borderColor: 'hsl(var(--color-optics))' }} onClick={initMatchGame}>
                         再玩一次
@@ -749,8 +731,8 @@ export default function ChemistryModule() {
                       flex: 1,
                       display: 'grid',
                       gridTemplateColumns: 'repeat(3, 1fr)',
-                      gap: '8px',
-                      padding: '10px 0',
+                      gap: '10px',
+                      padding: '20px 0',
                       overflowY: 'auto'
                     }}>
                       {gameCards.map((card) => {
@@ -781,13 +763,13 @@ export default function ChemistryModule() {
                             style={{
                               padding: '12px 6px',
                               borderRadius: '8px',
-                              fontSize: card.type === 'english' ? '0.74rem' : '0.88rem',
+                              fontSize: '0.88rem',
                               fontWeight: 'bold',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               textAlign: 'center',
-                              minHeight: '56px',
+                              minHeight: '64px',
                               transition: 'all 0.2s ease',
                               ...cardStyle
                             }}
@@ -824,7 +806,7 @@ export default function ChemistryModule() {
                   </h3>
                   <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '8px' }}>
                     
-                    <div style={{ padding: '16px', border: '1px solid rgba(16,185,129,0.15)', background: 'linear-gradient(135deg, rgba(16,185,129,0.02), rgba(59,130,246,0.02))', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ padding: '16px', border: '1px solid rgba(16,185,129,0.15)', background: 'linear-gradient(135deg, rgba(16,185,129,0.02), rgba(59, 130, 246, 0.02))', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: '#047857' }}>📝 经典母题精讲：</div>
                       <div style={{ fontSize: '0.88rem', fontWeight: 'bold', padding: '10px', backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.03)', borderRadius: '4px' }}>
                         {currentDayData?.example.question}
