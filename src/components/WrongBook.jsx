@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { chapters } from '../data/physicsData';
-import { mathTopics } from '../data/mathData';
+import { mathDays } from '../data/mathData';
 
 export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, subject = 'physics' }) {
   const [activeChallengeId, setActiveChallengeId] = useState(null);
@@ -61,7 +61,7 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, s
       {/* 错题列表 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         {wrongList.map((q, idx) => {
-          const ch = subject === 'physics' ? chapters[q.chapterId] : mathTopics[q.chapterId];
+          const ch = subject === 'physics' ? chapters[q.chapterId] : mathDays[q.chapterId];
           const isChallenging = activeChallengeId === q.id;
 
           return (
@@ -70,7 +70,7 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, s
               {/* 板块和章节小标识 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span className="badge badge-mech" style={{ backgroundColor: 'hsla(var(--color-heat) / 0.1)', color: 'hsl(var(--color-heat))', border: '1px solid hsla(var(--color-heat) / 0.2)' }}>
-                  {ch ? ch.name.split(' ')[0] + ' ' + ch.name.split(' ')[1] : subject === 'physics' ? '物理' : '数学'} · {q.category}
+                  {ch ? ch.name.split('：')[0] : subject === 'physics' ? '物理' : '数学'} · {q.category}
                 </span>
                 <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>#错题 {idx + 1}</span>
               </div>
