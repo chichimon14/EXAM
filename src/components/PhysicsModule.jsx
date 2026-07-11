@@ -1189,7 +1189,7 @@ export default function PhysicsModule() {
                     marginBottom: '4px'
                   }}>
                     {block.chapters.map((chId) => {
-                      const chData = chapters.find(c => c.id === chId);
+                      const chData = chapters[chId];
                       const isSelected = selectedChapterId === chId;
                       const score = dayScores[chId] || 0;
                       const isPassed = score > 0;
@@ -1405,7 +1405,7 @@ export default function PhysicsModule() {
                 borderRadius: '12px',
                 fontWeight: 'bold'
               }}>
-                🗓️ Day {selectedChapterId.replace('day', '')} · {chapters.find(c=>c.id===selectedChapterId)?.name.split(' ')[1]}
+                🗓️ Day {selectedChapterId.replace('day', '')} · {chapters[selectedChapterId]?.name.split(' ')[1]}
               </span>
               {(activeTab !== 'study' || (chapterStep === 'quiz' && quizScore !== null)) && (
                 <span style={{
@@ -1446,7 +1446,7 @@ export default function PhysicsModule() {
                     boxShadow: '0 8px 30px rgba(0,0,0,0.015)'
                   }}>
                     <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 12px 0', color: 'hsl(var(--color-mech))', borderBottom: '2px solid rgba(139,92,246,0.06)', paddingBottom: '8px' }}>
-                      📖 重点知识干货精讲 ({chapters.find(c=>c.id===selectedChapterId)?.name})
+                      📖 重点知识干货精讲 ({chapters[selectedChapterId]?.name})
                     </h3>
                     <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
                       <p style={{
@@ -1456,7 +1456,7 @@ export default function PhysicsModule() {
                         whiteSpace: 'pre-wrap',
                         margin: 0
                       }}>
-                        {chapters.find(c => c.id === selectedChapterId)?.summary}
+                        {chapters[selectedChapterId]?.summary}
                       </p>
                     </div>
                   </div>
@@ -1515,7 +1515,7 @@ export default function PhysicsModule() {
               <div className="glass-card" style={{ flex: 1, padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
                   <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>
-                    🏆 重点考点基础闯关 (20题测试) —— {chapters.find(c=>c.id===selectedChapterId)?.name}
+                    🏆 重点考点基础闯关 (20题测试) —— {chapters[selectedChapterId]?.name}
                   </h3>
                   <button className="btn btn-secondary" style={{ padding: '6px 12px' }} onClick={() => setChapterStep('study')}>
                     退出测试
