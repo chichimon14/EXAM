@@ -325,8 +325,8 @@ export default function EnglishModule() {
           </div>
         </div>
 
-        {/* 二级与三级学习目录树 (优先展示，占据剩余空间并滚动) */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', overflowY: 'auto', paddingRight: '4px' }}>
+        {/* 二级与三级学习目录树 (自然流动，紧密衔接) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingRight: '4px' }}>
           <div style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>学习进度大纲</div>
           
           {englishBlocks.map((block) => {

@@ -442,14 +442,15 @@ export default function ChemistryModule() {
   // 渲染化学实验/原子微观原理图 (含 Day 8 氧气、Day 14 水电解、Day 15 引流过滤、Day 12 钠电子轨道)
   const renderChemistryIllustrations = (dayId) => {
     const list = [];
-    
-    // 前三天：展示全局高亮周期表网格，教他口诀记忆，不放轨道模型
-    if (['day1', 'day2', 'day3'].includes(dayId)) {
+
+    if (['day0', 'day1', 'day2', 'day3', 'day4'].includes(dayId)) {
       let currentMnemonic = '';
-      if (dayId === 'day1') currentMnemonic = '🔥 今日口诀组：青海里皮蓬(1-5)，碳蛋养拂奶(6-10)';
+      if (dayId === 'day0') currentMnemonic = '🗺️ 周期全景预习：初三阶段，我们只要掌握这 30 个常用化学积木元素就可以了！';
+      else if (dayId === 'day1') currentMnemonic = '🔥 今日口诀组：青海里皮蓬(1-5)，碳蛋养拂奶(6-10)';
       else if (dayId === 'day2') currentMnemonic = '🔥 今日口诀组：那美驴归临(11-15)，留绿亚家盖(16-20)';
       else if (dayId === 'day3') currentMnemonic = '🔥 今日口诀组：铁铜锌银钡锰(重金属常用组)';
-
+      else if (dayId === 'day4') currentMnemonic = '🔥 今日口诀组：金胎点细工 (新添 5 个高频核心元素)';
+ 
       list.push(
         <div key="c-day-periodic" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div style={{ 
@@ -481,8 +482,13 @@ export default function ChemistryModule() {
               let border = '1px solid #e2e8f0';
               let glowStyle = {};
               let opacity = 0.35; // 其它元素淡化
-
-              if (isTodayElement) {
+ 
+              if (dayId === 'day0') {
+                // 先导课全表均匀高亮展示
+                opacity = 0.95;
+                cellBg = '#ffffff';
+                border = '1px solid rgba(59, 130, 246, 0.12)';
+              } else if (isTodayElement) {
                 opacity = 1;
                 cellBg = 'linear-gradient(135deg, #fffdf5 0%, #fff9db 100%)';
                 border = '2px solid #f59e0b';
@@ -490,7 +496,7 @@ export default function ChemistryModule() {
                   boxShadow: '0 0 10px rgba(245, 158, 11, 0.2)',
                 };
               }
-
+ 
               return (
                 <div
                   key={el.z}
@@ -519,7 +525,7 @@ export default function ChemistryModule() {
             })}
           </div>
           <div style={{ fontSize: '0.68rem', opacity: 0.4, textAlign: 'center' }}>
-            提示：高亮金黄色卡片为今日必背元素，其他半透明元素为后续课时或前几课内容。
+            {dayId === 'day0' ? '提示：先导课全景预览，初三阶段只需掌握这30个高频化学积木元素。' : '提示：高亮金黄色卡片为今日必背元素，其他半透明元素为后续课时或前几课内容。'}
           </div>
         </div>
       );
@@ -685,8 +691,8 @@ export default function ChemistryModule() {
           </div>
         </div>
 
-        {/* 二级与三级学习目录树 (优先展示，占据剩余空间并滚动) */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', overflowY: 'auto', paddingRight: '4px' }}>
+        {/* 二级与三级学习目录树 (自然流动，紧密衔接) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingRight: '4px' }}>
           <div style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>学习进度大纲</div>
           
           {chemistryBlocks.map((block) => {
