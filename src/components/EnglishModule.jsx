@@ -483,9 +483,11 @@ export default function EnglishModule() {
                               {dayData?.name.split('：')[1]}
                             </span>
                           </div>
-                          <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.9 : 0.5, fontFamily: 'monospace' }}>
-                            {score > 0 ? `+${score}🪙` : score < 0 ? `${score}🪙` : '0🪙'}
-                          </span>
+                          {score !== 0 && (
+                            <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.9 : 0.5, fontFamily: 'monospace' }}>
+                              {score > 0 ? `+${score}🪙` : `${score}🪙`}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -568,16 +570,18 @@ export default function EnglishModule() {
               }}>
                 🗓️ Day {selectedDayId.replace('day', '')} · {currentDayData?.name.split('：')[1]}
               </span>
-              <span style={{
-                padding: '4px 10px',
-                backgroundColor: '#fffbeb',
-                color: '#b45309',
-                borderRadius: '12px',
-                fontWeight: 'bold',
-                border: '1px solid #fde68a'
-              }}>
-                🪙 今日积分：{todayGoldCoin} 金币
-              </span>
+              {activeTab !== 'study' && (activeTab !== 'test' || testScore !== null) && (
+                <span style={{
+                  padding: '4px 10px',
+                  backgroundColor: '#fffbeb',
+                  color: '#b45309',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  border: '1px solid #fde68a'
+                }}>
+                  🪙 今日积分：{todayGoldCoin} 金币
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -585,13 +589,13 @@ export default function EnglishModule() {
         {/* Tab 1: 讲义与单词发音卡 */}
         {activeTab === 'study' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr', gap: '20px', height: '520px', alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.25fr', gap: '12px', height: '580px', alignItems: 'stretch' }}>
               
               {/* 左栏：语法精讲 */}
-              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
-                <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: '#a855f7', borderBottom: '2px solid rgba(168,85,247,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 12px 0', color: '#a855f7', borderBottom: '2px solid rgba(168,85,247,0.06)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
                   <span>📖 语法课大纲 ({currentDayData?.name})</span>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>冲刺课: 1.0小时/天</span>
+                  <span style={{ fontSize: '0.72rem', color: 'hsl(var(--text-secondary))' }}>冲刺课: 1.0小时/天</span>
                 </h3>
                 <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
                   {parseSummary(currentDayData?.summary)}
@@ -599,8 +603,8 @@ export default function EnglishModule() {
               </div>
 
               {/* 右栏：今日必背40词 (带发音朗读与自适应筛词) */}
-              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
-                <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 4px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 4px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>🔊 今日必背词汇 (40 个 / 1200)</span>
                   <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>点击喇叭朗读发音</span>
                 </h3>

@@ -707,6 +707,13 @@ export function generateChemistryQuestions(topicId, count = 20) {
     { name: '锰', symbol: 'Mn', pinyin: 'měng', z: 25, val: '+2, +4, +7' },
     { name: '钡', symbol: 'Ba', pinyin: 'bèi', z: 56, val: '+2' }
   ];
+  const elementData6 = [
+    { name: '金', symbol: 'Au', pinyin: 'jīn', z: 79, val: '+1, +3' },
+    { name: '钛', symbol: 'Ti', pinyin: 'tài', z: 22, val: '+4' },
+    { name: '碘', symbol: 'I', pinyin: 'diǎn', z: 53, val: '-1' },
+    { name: '锡', symbol: 'Sn', pinyin: 'xī', z: 50, val: '+2, +4' },
+    { name: '汞', symbol: 'Hg', pinyin: 'gǒng', z: 80, val: '+1, +2' }
+  ];
 
   for (let i = 0; i < count; i++) {
     let qObj = {};
@@ -759,6 +766,32 @@ export function generateChemistryQuestions(topicId, count = 20) {
             options: [`${item.name} (${item.pinyin})`, '氟 (fú)', '碳 (tàn)', '氧 (yǎng)'].sort(() => 0.5 - Math.random()),
             answer: 0,
             explanation: `白话解析：\n质子数等于原子序号。质子数为 ${item.z} 的元素是【${item.name}】，拼音是【${item.pinyin}】。`
+          };
+          qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+        }
+        break;
+      }
+
+      // 新增 5 个金属/非金属 (金 钛 碘 锡 汞) (Day 4)
+      case 'chem_topic_elements4': {
+        const item = elementData6[randomInt(0, elementData6.length - 1)];
+        const askSymbol = randomInt(0, 1) === 1;
+        if (askSymbol) {
+          qObj = {
+            id: 40500 + i,
+            question: `【化学题 ${qIdx}】关于中考必记元素“${item.name}”，其正确的化学元素符号是：`,
+            options: [item.symbol, 'Ag', 'Pt', 'Pb'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n根据口诀“金钛碘锡汞 (Au Ti I Sn Hg)”，【${item.name}】的符号是 ${item.symbol}，拼音是【${item.pinyin}】。`
+          };
+          qObj.answer = qObj.options.indexOf(item.symbol);
+        } else {
+          qObj = {
+            id: 40550 + i,
+            question: `【化学题 ${qIdx}】关于化学符号“${item.symbol}”，其对应的中文名称及汉语拼音正确的是：`,
+            options: [`${item.name} (${item.pinyin})`, '银 (yín)', '铂 (bó)', '铅 (qiān)'].sort(() => 0.5 - Math.random()),
+            answer: 0,
+            explanation: `白话解析：\n化学符号【${item.symbol}】对应的元素名称是“${item.name}”，拼音读作【${item.pinyin}】。`
           };
           qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
         }

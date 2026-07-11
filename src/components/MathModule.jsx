@@ -673,9 +673,11 @@ export default function MathModule() {
                               {dayData?.name.split('：')[1]}
                             </span>
                           </div>
-                          <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.9 : 0.5, fontFamily: 'monospace' }}>
-                            {score > 0 ? `+${score}🪙` : score < 0 ? `${score}🪙` : '0🪙'}
-                          </span>
+                          {score !== 0 && (
+                            <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.9 : 0.5, fontFamily: 'monospace' }}>
+                              {score > 0 ? `+${score}🪙` : `${score}🪙`}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -758,16 +760,18 @@ export default function MathModule() {
               }}>
                 🗓️ Day {selectedDayId.replace('day', '')} · {currentDayData?.name.split('：')[1]}
               </span>
-              <span style={{
-                padding: '4px 10px',
-                backgroundColor: '#fffbeb',
-                color: '#b45309',
-                borderRadius: '12px',
-                fontWeight: 'bold',
-                border: '1px solid #fde68a'
-              }}>
-                🪙 今日积分：{todayGoldCoin} 金币
-              </span>
+              {activeTab !== 'study' && (activeTab !== 'test' || testScore !== null) && (
+                <span style={{
+                  padding: '4px 10px',
+                  backgroundColor: '#fffbeb',
+                  color: '#b45309',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  border: '1px solid #fde68a'
+                }}>
+                  🪙 今日积分：{todayGoldCoin} 金币
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -775,13 +779,13 @@ export default function MathModule() {
         {/* Tab 1: 讲义与几何原理图 */}
         {activeTab === 'study' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', height: '520px', alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '12px', height: '580px', alignItems: 'stretch' }}>
               
               {/* 左栏：精讲大纲 */}
-              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
-                <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-work))', borderBottom: '2px solid rgba(245,158,11,0.06)', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between' }}>
+              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 12px 0', color: 'hsl(var(--color-work))', borderBottom: '2px solid rgba(245,158,11,0.06)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between' }}>
                   <span>📖 课程讲义 ({currentDayData?.name})</span>
-                  <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>特训课: 2.0小时/天</span>
+                  <span style={{ fontSize: '0.72rem', color: 'hsl(var(--text-secondary))' }}>特训课: 2.0小时/天</span>
                 </h3>
                 <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
                   {parseSummary(currentDayData?.summary)}
@@ -789,22 +793,22 @@ export default function MathModule() {
               </div>
 
               {/* 右栏：经典母题与几何图解 */}
-              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '24px' }}>
-                <h3 style={{ fontSize: '1.08rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '10px' }}>
+              <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 12px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '8px' }}>
                   📐 经典母题与几何原理图
                 </h3>
-                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '8px' }}>
+                <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
                   
                   {/* 例题精讲 */}
-                  <div style={{ padding: '16px', border: '1px solid rgba(245,158,11,0.15)', background: 'linear-gradient(135deg, rgba(245,158,11,0.02), rgba(239,68,68,0.02))', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'hsl(var(--color-work))' }}>📝 经典母题精讲：</div>
-                    <div style={{ fontSize: '0.88rem', fontWeight: 'bold', padding: '10px', backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.03)', borderRadius: '4px' }}>
+                  <div style={{ padding: '12px', border: '1px solid rgba(245,158,11,0.15)', background: 'linear-gradient(135deg, rgba(245,158,11,0.02), rgba(239,68,68,0.02))', borderRadius: 'var(--radius-md)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '0.82rem', color: 'hsl(var(--color-work))' }}>📝 经典母题精讲：</div>
+                    <div style={{ fontSize: '0.85rem', fontWeight: 'bold', padding: '8px', backgroundColor: '#fff', border: '1px solid rgba(0,0,0,0.03)', borderRadius: '4px' }}>
                       {currentDayData?.example.question}
                     </div>
-                    <div style={{ fontSize: '0.82rem', lineHeight: '1.65', color: 'hsl(var(--text-primary))', whiteSpace: 'pre-wrap' }}>
+                    <div style={{ fontSize: '0.8rem', lineHeight: '1.6', color: 'hsl(var(--text-primary))', whiteSpace: 'pre-wrap' }}>
                       {currentDayData?.example.answer}
                     </div>
-                    <div style={{ fontSize: '0.78rem', color: 'hsl(var(--color-danger))', borderTop: '1px dashed rgba(245,158,11,0.2)', paddingTop: '8px', lineHeight: '1.5' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'hsl(var(--color-danger))', borderTop: '1px dashed rgba(245,158,11,0.2)', paddingTop: '6px', lineHeight: '1.4' }}>
                       ⚠️ <b>名师避坑指点：</b>{currentDayData?.example.tip}
                     </div>
                   </div>

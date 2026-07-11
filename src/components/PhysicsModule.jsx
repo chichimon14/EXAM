@@ -1319,9 +1319,11 @@ export default function PhysicsModule() {
                               {chData?.name.split(' ').slice(1).join(' ')}
                             </span>
                           </div>
-                          <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.9 : 0.5, fontFamily: 'monospace' }}>
-                            {score > 0 ? `+${score}🪙` : score < 0 ? `${score}🪙` : '0🪙'}
-                          </span>
+                          {score !== 0 && (
+                            <span style={{ fontSize: '0.64rem', opacity: isSelected ? 0.9 : 0.5, fontFamily: 'monospace' }}>
+                              {score > 0 ? `+${score}🪙` : `${score}🪙`}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -1405,16 +1407,18 @@ export default function PhysicsModule() {
               }}>
                 🗓️ Day {selectedChapterId.replace('day', '')} · {chapters.find(c=>c.id===selectedChapterId)?.name.split(' ')[1]}
               </span>
-              <span style={{
-                padding: '4px 10px',
-                backgroundColor: '#fffbeb',
-                color: '#b45309',
-                borderRadius: '12px',
-                fontWeight: 'bold',
-                border: '1px solid #fde68a'
-              }}>
-                🪙 今日积分：{todayGoldCoin} 金币
-              </span>
+              {(activeTab !== 'study' || (chapterStep === 'quiz' && quizScore !== null)) && (
+                <span style={{
+                  padding: '4px 10px',
+                  backgroundColor: '#fffbeb',
+                  color: '#b45309',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  border: '1px solid #fde68a'
+                }}>
+                  🪙 今日积分：{todayGoldCoin} 金币
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -1428,7 +1432,7 @@ export default function PhysicsModule() {
                 <div style={{
                   display: 'grid',
                   gridTemplateColumns: '1.2fr 1fr',
-                  gap: '20px',
+                  gap: '12px',
                   height: '630px',
                   alignItems: 'stretch'
                 }}>
@@ -1437,11 +1441,11 @@ export default function PhysicsModule() {
                     display: 'flex',
                     flexDirection: 'column',
                     height: '100%',
-                    padding: '24px',
+                    padding: '16px 20px',
                     borderRadius: 'var(--radius-lg)',
                     boxShadow: '0 8px 30px rgba(0,0,0,0.015)'
                   }}>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-mech))', borderBottom: '2px solid rgba(139,92,246,0.06)', paddingBottom: '10px' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 12px 0', color: 'hsl(var(--color-mech))', borderBottom: '2px solid rgba(139,92,246,0.06)', paddingBottom: '8px' }}>
                       📖 重点知识干货精讲 ({chapters.find(c=>c.id===selectedChapterId)?.name})
                     </h3>
                     <div style={{ flex: 1, overflowY: 'auto', paddingRight: '8px' }}>
@@ -1462,11 +1466,11 @@ export default function PhysicsModule() {
                     display: 'flex',
                     flexDirection: 'column',
                     height: '100%',
-                    padding: '24px',
+                    padding: '16px 20px',
                     borderRadius: 'var(--radius-lg)',
                     boxShadow: '0 8px 30px rgba(0,0,0,0.015)'
                   }}>
-                    <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', margin: '0 0 16px 0', color: 'hsl(var(--color-work))', borderBottom: '2px solid rgba(245,158,11,0.06)', paddingBottom: '10px' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 12px 0', color: 'hsl(var(--color-work))', borderBottom: '2px solid rgba(245,158,11,0.06)', paddingBottom: '8px' }}>
                       🖼️ 中考原理可视化
                     </h3>
                     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', paddingRight: '8px' }}>
