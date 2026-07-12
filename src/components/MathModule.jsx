@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { mathBlocks, mathDays } from '../data/mathData';
 import { generateMathQuestions } from '../utils/questionGenerator';
 import WrongBook from './WrongBook';
+import { addStudyLog } from '../utils/syncService';
 
 export default function MathModule() {
   const [activeTab, setActiveTab] = useState('study'); // study | test | exercise | wrongbook
@@ -141,12 +142,26 @@ export default function MathModule() {
     } else {
       // 答完最后一题结算得分
       let correctCount = 0;
+      const weaknesses = [];
       testQuestions.forEach(q => {
         if (testAnswers[q.id] === q.answer) {
           correctCount++;
+        } else {
+          weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
         }
       });
-      setTestScore(Math.round((correctCount / 20) * 100));
+      const finalScore = Math.round((correctCount / testQuestions.length) * 100);
+      setTestScore(finalScore);
+
+      const dayNum = selectedDayId.replace('day', '');
+      addStudyLog(
+        'math',
+        'quiz_complete',
+        `完成数学 Day ${dayNum} 计算测试 (20道题)`,
+        correctCount,
+        testQuestions.length,
+        weaknesses
+      );
     }
   };
 

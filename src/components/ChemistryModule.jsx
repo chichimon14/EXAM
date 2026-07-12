@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { chemistryBlocks, chemistryDays } from '../data/chemistryData';
 import { generateChemistryQuestions } from '../utils/questionGenerator';
 import WrongBook from './WrongBook';
+import { addStudyLog } from '../utils/syncService';
 
 // Day 4 专属连线游戏核心种子（完全剔除英文，仅保留符号与中文拼音两两对应）
 const GAME_SEEDS = [
@@ -348,12 +349,26 @@ export default function ChemistryModule() {
       setCurrentTestIndex(currentTestIndex + 1);
     } else {
       let correctCount = 0;
+      const weaknesses = [];
       testQuestions.forEach(q => {
         if (testAnswers[q.id] === q.answer) {
           correctCount++;
+        } else {
+          weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
         }
       });
-      setTestScore(Math.round((correctCount / testQuestions.length) * 100));
+      const finalScore = Math.round((correctCount / testQuestions.length) * 100);
+      setTestScore(finalScore);
+
+      const dayNum = selectedDayId.replace('day', '');
+      addStudyLog(
+        'chemistry',
+        'quiz_complete',
+        `完成化学 Day ${dayNum} 课后练习 (10道题)`,
+        correctCount,
+        testQuestions.length,
+        weaknesses
+      );
     }
   };
 
@@ -379,6 +394,30 @@ export default function ChemistryModule() {
         setWrongList(nextWrongs);
         localStorage.setItem('chemistry-wrongs', JSON.stringify(nextWrongs));
       }
+    }
+
+    // 检查是否刚好完成了所有 100 道大单元测试
+    const answeredCount = Object.keys(nextAnswers).length;
+    if (answeredCount === 100) {
+      let correctCount = 0;
+      const weaknesses = [];
+      Object.keys(nextAnswers).forEach(qId => {
+        const ans = nextAnswers[qId];
+        const q = exerciseQuestions.find(ex => ex.id === qId);
+        if (ans.isCorrect) {
+          correctCount++;
+        } else if (q) {
+          weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
+        }
+      });
+      addStudyLog(
+        'chemistry',
+        'quiz_complete',
+        '完成化学大单元100题挑战特训！',
+        correctCount,
+        100,
+        weaknesses
+      );
     }
   };
 

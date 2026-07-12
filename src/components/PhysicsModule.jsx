@@ -4,6 +4,7 @@ import { generatePhysicsQuestions } from '../utils/questionGenerator';
 import FormulaCalculator from './FormulaCalculator';
 import RadarChart from './RadarChart';
 import WrongBook from './WrongBook';
+import { addStudyLog } from '../utils/syncService';
 
 // 导入大实验组件
 import LightReflectRefract from './experiments/LightReflectRefract';
@@ -167,12 +168,26 @@ export default function PhysicsModule() {
       setCurrentQuizIndex(currentQuizIndex + 1);
     } else {
       let correctCount = 0;
+      const weaknesses = [];
       currentChapterQuestions.forEach(q => {
-        if (submittedAnswers[q.id] === true || (q.id === currentChapterQuestions[currentChapterQuestions.length - 1].id && selectedQuizOption === q.answer)) {
+        const isUserCorrect = submittedAnswers[q.id] === true || (q.id === currentChapterQuestions[currentChapterQuestions.length - 1].id && selectedQuizOption === q.answer);
+        if (isUserCorrect) {
           correctCount++;
+        } else {
+          weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
         }
       });
       setQuizScore(correctCount);
+
+      const dayNum = selectedChapterId.replace('day', '');
+      addStudyLog(
+        'physics',
+        'quiz_complete',
+        `完成物理 Day ${dayNum} 测试`,
+        correctCount,
+        currentChapterQuestions.length,
+        weaknesses
+      );
     }
   };
 

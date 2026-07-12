@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { englishBlocks, englishDays, englishVocabList } from '../data/englishData';
 import { generateEnglishQuestions } from '../utils/questionGenerator';
 import WrongBook from './WrongBook';
+import { addStudyLog } from '../utils/syncService';
 
 export default function EnglishModule() {
   const [activeTab, setActiveTab] = useState('study'); // study | test | exercise | wrongbook
@@ -443,6 +444,13 @@ export default function EnglishModule() {
     setIsAutoReading(true);
     isAutoReadingRef.current = true;
     
+    // 记录背词行为日志
+    addStudyLog(
+      'english',
+      'vocab_read',
+      `背诵学习英语 Day ${selectedDayId.replace('day', '')} 单词表 (40个/三遍朗读中)`
+    );
+    
     for (let i = 0; i < currentDayWords.length; i++) {
       if (!isAutoReadingRef.current) break;
       setCurrentReadIndex(i);
@@ -534,12 +542,26 @@ export default function EnglishModule() {
       setCurrentTestIndex(currentTestIndex + 1);
     } else {
       let correctCount = 0;
+      const weaknesses = [];
       testQuestions.forEach(q => {
         if (testAnswers[q.id] === q.answer) {
           correctCount++;
+        } else {
+          weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
         }
       });
-      setTestScore(Math.round((correctCount / 20) * 100));
+      const finalScore = Math.round((correctCount / testQuestions.length) * 100);
+      setTestScore(finalScore);
+
+      const dayNum = selectedDayId.replace('day', '');
+      addStudyLog(
+        'english',
+        'quiz_complete',
+        `完成英语 Day ${dayNum} 测验测试`,
+        correctCount,
+        testQuestions.length,
+        weaknesses
+      );
     }
   };
 

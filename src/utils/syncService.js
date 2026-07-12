@@ -50,17 +50,66 @@ export const logoutUser = () => {
   window.dispatchEvent(new Event('progress-synced'));
 };
 
-// 打包当前 LocalStorage 中所有的答题分数、错题、词汇记录
+// 自动生成并记录学习日志 (支持得分、正确率与漏洞点记录)
+export const addStudyLog = (subject, action, detail, score = 0, total = 0, weaknesses = []) => {
+  try {
+    const user = localStorage.getItem('exam-current-user');
+    // 如果没有登录，或者是 admin 自己做题，则不记录到豆豆的学习日志中
+    if (!user || user === 'admin') return;
+
+    const savedLogs = localStorage.getItem('exam-study-logs');
+    let logs = [];
+    if (savedLogs) {
+      logs = JSON.parse(savedLogs);
+    }
+
+    const now = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    const timeString = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+
+    // 计算正确率 (如 10 题答对 8 题 -> 80%)
+    const accuracy = total > 0 ? Math.round((score / total) * 100) : 100;
+
+    const newLog = {
+      id: 'log-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+      timestamp: Date.now(),
+      timeString,
+      subject,
+      action,
+      detail,
+      score,
+      total,
+      accuracy,
+      weaknesses
+    };
+
+    // 最新记录放在最前面
+    logs.unshift(newLog);
+
+    // 最大只保留最近 200 条，防止本地存储溢出
+    if (logs.length > 200) {
+      logs = logs.slice(0, 200);
+    }
+
+    localStorage.setItem('exam-study-logs', JSON.stringify(logs));
+    console.log('Recorded study log successfully:', newLog);
+  } catch (e) {
+    console.warn('Failed to add study log:', e);
+  }
+};
+
+// 打包当前 LocalStorage 中所有的答题分数、错题、词汇记录及学习日志
 export const getLocalProgress = () => {
   const progress = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    // 只打包中考系统各科目答题分数、错题库、背词记录相关的数据键
+    // 只打包中考系统各科目答题分数、错题库、背词记录相关的数据键，以及学习轨迹日志键
     if (
       key.startsWith('math-') ||
       key.startsWith('physics-') ||
       key.startsWith('chemistry-') ||
-      key.startsWith('english-')
+      key.startsWith('english-') ||
+      key === 'exam-study-logs'
     ) {
       progress[key] = localStorage.getItem(key);
     }
@@ -131,7 +180,8 @@ if (typeof window !== 'undefined') {
       key.startsWith('math-') ||
       key.startsWith('physics-') ||
       key.startsWith('chemistry-') ||
-      key.startsWith('english-')
+      key.startsWith('english-') ||
+      key === 'exam-study-logs'
     ) {
       const user = localStorage.getItem('exam-current-user');
       if (user) {
@@ -147,7 +197,8 @@ if (typeof window !== 'undefined') {
       key.startsWith('math-') ||
       key.startsWith('physics-') ||
       key.startsWith('chemistry-') ||
-      key.startsWith('english-')
+      key.startsWith('english-') ||
+      key === 'exam-study-logs'
     ) {
       const user = localStorage.getItem('exam-current-user');
       if (user) {
