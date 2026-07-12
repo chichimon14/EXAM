@@ -1070,113 +1070,137 @@ export function generateEnglishQuestions(topicId, count = 20) {
     let qObj = {};
     const qIdx = i + 1;
 
-    // 奇数题做词汇英汉匹配，偶数题做当天语法选择题
-    if (i % 2 === 0) {
-      // 词汇选择题：从今日的候选池（生词优先）中提取
-      const seedItem = candidateWords[i % candidateWords.length];
-      const askChinese = randomInt(0, 1) === 1;
-
-      if (askChinese) {
-        qObj = {
-          id: 50000 + i,
-          question: `【英语词汇题 ${qIdx}】请选择单词/短语“${seedItem.word}”对应的正确中文解释：`,
-          options: [seedItem.translation, 'n. 黑板', 'prep. 在...里面', 'v. 放弃'].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `中考名师记词诀窍：\n“${seedItem.word}”的音标为 ${seedItem.phonetic}，中文意思是【${seedItem.translation}】。\n💡记忆捷径：${seedItem.tip}\n📖例句：${seedItem.sentence} (${seedItem.sentence_translation})`
-        };
-        qObj.answer = qObj.options.indexOf(seedItem.translation);
-      } else {
-        qObj = {
-          id: 50100 + i,
-          question: `【英语词汇题 ${qIdx}】根据中文意思“${seedItem.translation.split(' ')[1] || seedItem.translation}”，选出对应的英文单词/短语：`,
-          options: [seedItem.word, 'beautiful', 'student', 'classroom'].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `中考名师记词诀窍：\n中文“${seedItem.translation}”对应的英文写法为【${seedItem.word}】，音标是 ${seedItem.phonetic}。\n💡记忆捷径：${seedItem.tip}\n📖例句：${seedItem.sentence} (${seedItem.sentence_translation})`
-        };
-        qObj.answer = qObj.options.indexOf(seedItem.word);
+    if (i < 15) {
+      const matchWords = [];
+      const shuffledCandidates = [...candidateWords].sort(() => 0.5 - Math.random());
+      for (let j = 0; j < 4; j++) {
+        const wordItem = shuffledCandidates[j] || currentVocabBase[j % currentVocabBase.length];
+        matchWords.push(wordItem);
       }
+
+      const leftOptions = matchWords.map(w => ({ id: w.word, text: w.word })).sort(() => 0.5 - Math.random());
+      const rightOptions = matchWords.map(w => ({ id: w.word, text: w.translation })).sort(() => 0.5 - Math.random());
+
+      const correctPairs = {};
+      matchWords.forEach(w => {
+        correctPairs[w.word] = w.translation;
+      });
+
+      let expText = "💡中考名师词义连线配对解析：\n";
+      matchWords.forEach(w => {
+        expText += `• **${w.word}** (${w.phonetic}) ➔ 【${w.translation}】\n   *记词诀敲：${w.tip}*\n`;
+      });
+
+      qObj = {
+        id: 50000 + i,
+        type: 'match',
+        question: `【英语词汇连线题 ${qIdx}】请将以下 4 组中英文单词两两正确配对：`,
+        leftOptions,
+        rightOptions,
+        correctPairs,
+        explanation: expText,
+        word: matchWords[0].word,
+        translation: matchWords[0].translation,
+        knowledgePoint: '词汇词义连线配对'
+      };
     } else {
-      // 语法/时态情景题 (根据 Day 的不同语法出题)
       if (dayNum === 1) {
         qObj = {
           id: 50200 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】My mother bought a storybook for my sister and _______. She likes reading very much.`,
           options: ['her', 'she', 'him', 'he'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\n空格位于介词 for 的后面。根据人称代词“座位表”口诀：【动介后面用宾格，动词前面用主格】。此处是介词后，必须选宾格。由于是给妹妹(my sister)，对应女性代词宾格 her。\n答案选 her。`
+          explanation: "名师考点解析：\n空格位于介词 for 的后面。根据人称代词“座位表”口诀：【动介后面用宾格，动词前面用主格】。此处是介词后，必须选宾格。由于是给妹妹(my sister)，对应女性代词宾格 her。\n答案选 her。",
+          knowledgePoint: '代词主宾格变化'
         };
         qObj.answer = qObj.options.indexOf('her');
       } else if (dayNum === 2) {
         qObj = {
           id: 50300 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】We are looking forward to _______ the Great Wall during the summer holiday.`,
           options: ['visiting', 'visit', 'to visit', 'visited'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\nlook forward to (期待) 中的 to 是介词，后面接动词必须变成动名词(doing)形式。这是中考常考易错地雷！\n答案选 visiting。`
+          explanation: "名师考点解析：\nlook forward to (期待) 中的 to 是介词，后面接动词必须变成动名词(doing)形式。这是中考常考易错地雷！\n答案选 visiting。",
+          knowledgePoint: 'look 家族介词搭配'
         };
         qObj.answer = qObj.options.indexOf('visiting');
       } else if (dayNum === 3) {
         qObj = {
           id: 50400 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】How much did you _______ for the new English dictionary?`,
           options: ['pay', 'spend', 'cost', 'take'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\n空格后面搭配了介词 for (pay ... for ...)。主语是 you (人)。根据花费动词“主语心法”：人做主语且介词用 for 的只有 pay！\n答案选 pay。`
+          explanation: "名师考点解析：\n空格后面搭配了介词 for (pay ... for ...)。主语是 you (人)。根据花费动词“主语心法”：人做主语且介词用 for 的只有 pay！\n答案选 pay。",
+          knowledgePoint: '花费动词辨析'
         };
         qObj.answer = qObj.options.indexOf('pay');
       } else if (dayNum === 7) {
         qObj = {
           id: 50500 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】Although he was very tired, _______ he still finished writing his homework.`,
           options: ['/', 'but', 'so', 'however'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\n句首已经有连词 although (虽然)。在英语里， although 和 but 是“不共戴天”的互斥连词，绝对不能同句共存！所以后半句开端不填任何词。\n答案选 /。`
+          explanation: "名师考点解析：\n句首已经有连词 although (虽然)。在英语里， although 和 but 是“不共戴天”的互斥连词，绝对不能同句共存！所以后半句开端不填任何词。\n答案选 /。",
+          knowledgePoint: '连词互斥法则'
         };
         qObj.answer = qObj.options.indexOf('/');
       } else if (dayNum === 8) {
         qObj = {
           id: 50600 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】My father always _______ to work by subway every morning.`,
           options: ['goes', 'go', 'going', 'went'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\n有 always (总是) 和 every morning (每天早晨) 表示平常的习惯，用一般现在时。主语 My father 是单数第三人称(单三)，动词 go 必须变成 goes。\n答案选 goes。`
+          explanation: "名师考点解析：\n有 always (总是) 和 every morning (每天早晨) 表示平常的习惯，用一般现在时。主语 My father 是单数第三人称(单三)，动词 go 必须变成 goes。",
+          knowledgePoint: '一般现在时单三变化'
         };
         qObj.answer = qObj.options.indexOf('goes');
       } else if (dayNum === 12) {
         qObj = {
           id: 50700 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】- Have you finished reading the book _______?\n- Yes, I have _______ finished it.`,
           options: ['yet; already', 'already; yet', 'yet; yet', 'already; already'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\n第一空是疑问句句尾，询问“已经...了吗”，用 yet ；第二空是肯定句中 haven/has 和 done 中间，用 already。\n答案选 yet; already。`
+          explanation: "名师考点解析：\n第一空是疑问句句尾，询问“已经...了吗”，用 yet ；第二空是肯定句中 haven/has 和 done 中间，用 already。\n答案选 yet; already。",
+          knowledgePoint: '完成时标志词区分'
         };
         qObj.answer = qObj.options.indexOf('yet; already');
       } else if (dayNum === 14) {
         qObj = {
           id: 50800 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】- Must I write down the notes now?\n- No, you _______. You can do it after school.`,
           options: ['needn\'t', 'mustn\'t', 'can\'t', 'shouldn\'t'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\n以 Must I... (我必须...)开头的疑问句，否定回答表示“不必、不需要”，固定答语用 needn\'t 或者是 don\'t have to。 mustn\'t 表示“绝对禁止”，不符合常理。\n答案选 needn\'t。`
+          explanation: "名师考点解析：\n以 Must I... (我必须...)开头的疑问句，否定回答表示“不必、不需要”，固定答语用 needn\'t 或者是 don\'t have to。 mustn\'t 表示“绝对禁止”，不符合常理。\n答案选 needn\'t。",
+          knowledgePoint: '情态动词回答禁忌'
         };
         qObj.answer = qObj.options.indexOf('needn\'t');
       } else if (dayNum === 18) {
         qObj = {
           id: 50900 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】We will go to the Shenzhen Bay Park if it _______ sunny tomorrow.`,
           options: ['is', 'will be', 'are', 'was'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\n这是一个 if 引导的条件状语从句，主句是 will go (一般将来时)。根据“主将从现”原则， if 从句必须用一般现在时。主语是 it， be 动词用 is。\n答案选 is。`
+          explanation: "名师考点解析：\n这是一个 if 引导的条件状语从句，主句是 will go (一般将来时)。根据“主将从现”原则， if 从句必须用一般现在时。主语是 it， be 动词用 is。\n答案选 is。",
+          knowledgePoint: '主将从现时态原则'
         };
         qObj.answer = qObj.options.indexOf('is');
       } else {
-        // 兜底时态题
         qObj = {
           id: 51000 + i,
+          type: 'choice',
           question: `【语法选择题 ${qIdx}】I _______ my homework when my father came back yesterday.`,
           options: ['was doing', 'did', 'am doing', 'will do'].sort(() => 0.5 - Math.random()),
           answer: 0,
-          explanation: `名师考点解析：\n时间状语为 when my father came back yesterday (昨晚爸爸回家的瞬间)，表示过去某一特定时刻正在发生的动作，使用过去进行时 (was/were + doing)。主语为 I，用 was doing。\n答案选 was doing。`
+          explanation: "名师考点解析：\n时间状语为 when my father came back yesterday (昨晚爸爸回家的瞬间)，表示过去某一特定时刻正在发生的动作，使用过去进行时 (was/were + doing)。主语为 I，用 was doing。",
+          knowledgePoint: '过去进行时语境'
         };
         qObj.answer = qObj.options.indexOf('was doing');
       }
