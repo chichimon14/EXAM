@@ -4,6 +4,7 @@
  */
 
 import { staticQuestions, elementPools } from '../data/chemistryQuestions.js';
+import { englishVocabList } from '../data/englishData.js';
 
 // 辅助函数：生成范围内的随机整数 (包含两端)
 function randomInt(min, max) {
