@@ -868,7 +868,7 @@ export default function MathModule() {
 
         {/* Tab 2: 20题测试大厅 */}
         {activeTab === 'test' && (
-          <div className="glass-card" style={{ flex: 1, padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px', minHeight: '500px' }}>
+          <div className="glass-card" style={{ flex: 1, padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px', minHeight: '500px', overflowY: 'auto' }}>
             {!testSubmitted ? (
               <div style={{ textAlign: 'center', padding: '50px 0', display: 'flex', flexDirection: 'column', gap: '18px', alignItems: 'center' }}>
                 <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--color-work))' }}>

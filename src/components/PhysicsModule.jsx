@@ -1527,7 +1527,7 @@ export default function PhysicsModule() {
               </>
             ) : (
               /* 20题测试过关界面 */
-              <div className="glass-card" style={{ flex: 1, padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              <div className="glass-card" style={{ flex: 1, padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.06)', paddingBottom: '12px' }}>
                   <h3 style={{ fontSize: '1.2rem', fontWeight: 'bold', margin: 0 }}>
                     🏆 重点考点基础闯关 (20题测试) —— {chapters[selectedChapterId]?.name}
