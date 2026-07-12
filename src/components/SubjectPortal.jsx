@@ -184,27 +184,75 @@ export default function SubjectPortal({ onSelectSubject }) {
       position: 'relative'
     }}>
       
-      {/* 右上角悬浮积分与同步控制区 */}
+      {/* 顶部自适应控制栏：防止在 iPad / 移动端与标题和其它胶囊发生物理重叠 */}
       <div style={{
-        position: 'absolute',
-        top: '20px',
-        right: '20px',
+        width: '100%',
         display: 'flex',
-        gap: '12px',
-        zIndex: 10
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '16px',
+        borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+        paddingBottom: '16px',
+        marginBottom: '8px'
       }}>
-        {/* ⚙️ 家长监控后台 (仅管理员可见) */}
-        {currentUser === 'admin' && (
+        {/* 左侧：工作台徽章 */}
+        <div style={{
+          fontSize: '0.82rem',
+          fontWeight: 'bold',
+          color: 'hsl(var(--color-mech))',
+          backgroundColor: 'hsla(var(--color-mech) / 0.08)',
+          padding: '6px 16px',
+          borderRadius: '30px',
+          letterSpacing: '1px',
+          whiteSpace: 'nowrap'
+        }}>
+          🎓 2026中考数理化英语全科提分工作台
+        </div>
+
+        {/* 右侧：动作控制胶囊群 */}
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          flexWrap: 'wrap',
+          alignItems: 'center'
+        }}>
+          {/* ⚙️ 家长监控后台 (仅管理员可见) */}
+          {currentUser === 'admin' && (
+            <div
+              className="glass-card scale-up"
+              onClick={handleOpenAdminDashboard}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '30px',
+                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(168, 85, 247, 0.35)',
+                boxShadow: '0 4px 16px rgba(168, 85, 247, 0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.78rem',
+                fontWeight: 'bold',
+                color: 'hsl(var(--text-primary))',
+                cursor: 'pointer'
+              }}
+            >
+              <span>⚙️ 豆豆的学习 Dashboard</span>
+            </div>
+          )}
+
+          {/* 🏆 荣誉积分小胶囊 */}
           <div
             className="glass-card scale-up"
-            onClick={handleOpenAdminDashboard}
+            onClick={() => setShowScoreModal(true)}
             style={{
               padding: '6px 14px',
               borderRadius: '30px',
-              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%)',
+              background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)',
               backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(168, 85, 247, 0.35)',
-              boxShadow: '0 4px 16px rgba(168, 85, 247, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.7)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
@@ -214,83 +262,47 @@ export default function SubjectPortal({ onSelectSubject }) {
               cursor: 'pointer'
             }}
           >
-            <span>⚙️ 豆豆的学习 Dashboard</span>
+            <span>🏆 荣誉积分:</span>
+            <span style={{ color: 'hsl(var(--color-work))', fontSize: '0.85rem' }}>{totalScore} 🪙</span>
           </div>
-        )}
 
-        {/* 🏆 荣誉积分小胶囊 */}
-        <div
-          className="glass-card scale-up"
-          onClick={() => setShowScoreModal(true)}
-          style={{
-            padding: '6px 14px',
-            borderRadius: '30px',
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)',
-            backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.7)',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.78rem',
-            fontWeight: 'bold',
-            color: 'hsl(var(--text-primary))',
-            cursor: 'pointer'
-          }}
-        >
-          <span>🏆 荣誉积分:</span>
-          <span style={{ color: 'hsl(var(--color-work))', fontSize: '0.85rem' }}>{totalScore} 🪙</span>
-        </div>
-
-        {/* 👤 登录同步小胶囊 */}
-        <div
-          className="glass-card scale-up"
-          onClick={currentUser ? handleLogout : () => {
-            setLoginError('');
-            setShowLoginModal(true);
-          }}
-          style={{
-            padding: '6px 14px',
-            borderRadius: '30px',
-            background: currentUser
-              ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)'
-              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)',
-            backdropFilter: 'blur(10px)',
-            border: currentUser
-              ? '1px solid rgba(168, 85, 247, 0.25)'
-              : '1px solid rgba(255, 255, 255, 0.7)',
-            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            fontSize: '0.78rem',
-            fontWeight: 'bold',
-            color: 'hsl(var(--text-primary))',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-          title={currentUser ? "点击退出登录" : "点击开启多端云备份同步"}
-        >
-          <span>👤 {currentUser ? (ACCOUNTS[currentUser]?.displayName || currentUser) : '登录同步'}</span>
-          {currentUser && <span style={{ fontSize: '0.74rem', color: '#a855f7' }}>☁️</span>}
+          {/* 👤 登录同步小胶囊 */}
+          <div
+            className="glass-card scale-up"
+            onClick={currentUser ? handleLogout : () => {
+              setLoginError('');
+              setShowLoginModal(true);
+            }}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '30px',
+              background: currentUser
+                ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)',
+              backdropFilter: 'blur(10px)',
+              border: currentUser
+                ? '1px solid rgba(168, 85, 247, 0.25)'
+                : '1px solid rgba(255, 255, 255, 0.7)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.78rem',
+              fontWeight: 'bold',
+              color: 'hsl(var(--text-primary))',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title={currentUser ? "点击退出登录" : "点击开启多端云备份同步"}
+          >
+            <span>👤 {currentUser ? (ACCOUNTS[currentUser]?.displayName || currentUser) : '登录同步'}</span>
+            {currentUser && <span style={{ fontSize: '0.74rem', color: '#a855f7' }}>☁️</span>}
+          </div>
         </div>
       </div>
-      
-      {/* 迎新头部 */}
+
+      {/* 迎新主体标题区 */}
       <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{
-          fontSize: '0.85rem',
-          fontWeight: 'bold',
-          color: 'hsl(var(--color-mech))',
-          backgroundColor: 'hsla(var(--color-mech) / 0.08)',
-          padding: '6px 16px',
-          borderRadius: '30px',
-          display: 'inline-block',
-          alignSelf: 'center',
-          letterSpacing: '1px'
-        }}>
-          🎓 2026中考数理化英语全科提分工作台
-        </div>
         <h1 style={{
           fontSize: '2.4rem',
           fontWeight: 'bold',
