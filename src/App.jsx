@@ -13,6 +13,20 @@ export default function App() {
     document.documentElement.setAttribute('data-theme', 'light');
   }, []);
 
+  useEffect(() => {
+    if (activeSubject === null) {
+      document.title = '中考学科大厅';
+    } else if (activeSubject === 'physics') {
+      document.title = '中考物理基础冲刺宝典 - 人教版';
+    } else if (activeSubject === 'math') {
+      document.title = '中考数学计算特训';
+    } else if (activeSubject === 'chemistry') {
+      document.title = '中考化学特训';
+    } else if (activeSubject === 'english') {
+      document.title = '中考英语特训';
+    }
+  }, [activeSubject]);
+
   return (
     <div style={{
       height: '100vh',

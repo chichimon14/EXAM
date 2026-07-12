@@ -89,10 +89,10 @@ export default function ChemistryModule() {
     initMatchGame();
   }, [selectedDayId]);
 
-  // 开启20题测试
+  // 开启10题测试
   const handleStartTest = () => {
     const dayData = chemistryDays[selectedDayId] || chemistryDays['day1'];
-    const generated = generateChemistryQuestions(dayData.topicId, 20);
+    const generated = generateChemistryQuestions(dayData.topicId, 10);
     setTestQuestions(generated);
     setTestAnswers({});
     setCurrentTestIndex(0);
@@ -102,11 +102,11 @@ export default function ChemistryModule() {
     setTestSubmitted(true);
   };
 
-  // 100题练习自动载入
+  // 大单元100题练习自动载入
   useEffect(() => {
     if (activeTab === 'exercise') {
       const dayData = chemistryDays[selectedDayId] || chemistryDays['day1'];
-      const generated = generateChemistryQuestions(dayData.topicId, 100);
+      const generated = generateChemistryQuestions(dayData.blockId, 100);
       setExerciseQuestions(generated);
       setExerciseAnswers({});
       setCurrentExerciseIndex(0);
@@ -339,7 +339,7 @@ export default function ChemistryModule() {
     setTestChecked(true);
   };
 
-  // 20题测试下一题
+  // 10题测试下一题
   const handleNextTest = () => {
     setSelectedTestOpt(null);
     setTestChecked(false);
@@ -353,7 +353,7 @@ export default function ChemistryModule() {
           correctCount++;
         }
       });
-      setTestScore(Math.round((correctCount / 20) * 100));
+      setTestScore(Math.round((correctCount / testQuestions.length) * 100));
     }
   };
 
@@ -909,7 +909,7 @@ export default function ChemistryModule() {
                   borderColor: activeTab === 'test' ? 'hsl(var(--color-optics))' : ''
                 }}
               >
-                ✍️ 20题过关小测
+                ✍️ 10题课后小测
               </button>
               <button
                 className={`btn ${activeTab === 'exercise' ? 'btn-primary' : 'btn-secondary'}`}
@@ -922,7 +922,7 @@ export default function ChemistryModule() {
                   borderColor: activeTab === 'exercise' ? 'hsl(var(--color-optics))' : ''
                 }}
               >
-                📝 100题每日狂练
+                📝 大单元百题特训
               </button>
             </div>
             
@@ -1011,7 +1011,7 @@ export default function ChemistryModule() {
                   🧪 今天的化学知识听懂了吗？来个课后小测吧！
                 </h4>
                 <p style={{ margin: 0, fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                  每天测试 20 题，做对<b>加1金币</b>，做错扣1金币。
+                  每节课测试 10 题，做对<b>加1金币</b>，做错扣1金币。
                 </p>
               </div>
               <button
@@ -1028,7 +1028,7 @@ export default function ChemistryModule() {
           </div>
         )}
 
-        {/* Tab 2: 20题测试大厅 */}
+        {/* Tab 2: 10题测试大厅 */}
         {activeTab === 'test' && (
           <div className="glass-card" style={{ flex: 1, padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px', minHeight: '500px' }}>
             {!testSubmitted ? (
@@ -1043,7 +1043,7 @@ export default function ChemistryModule() {
                     🧪 开启：Day {selectedDayId.replace('day', '')} 化学小测
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', maxWidth: '440px', margin: '0 auto', lineHeight: '1.6' }}>
-                    测验包含 20 道当天抢跑知识。答题过程中，做对一道<b>+1金币</b>，做错一道<b>-1金币</b>，防止分心小测后统一结算。
+                    测验包含 10 道当天抢跑知识。答题过程中，做对一道<b>+1金币</b>，做错一道<b>-1金币</b>，防止分心小测后统一结算。
                   </p>
                 </div>
                 <button className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.88rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-optics))', borderColor: 'hsl(var(--color-optics))' }} onClick={handleStartTest}>
@@ -1054,12 +1054,12 @@ export default function ChemistryModule() {
               /* 答题中 */
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
-                  <span>当前进度：<b>{currentTestIndex + 1}</b> / 20 题</span>
+                  <span>当前进度：<b>{currentTestIndex + 1}</b> / {testQuestions.length} 题</span>
                   <span>今日小测中...</span>
                 </div>
 
                 <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${((currentTestIndex + 1) / 20) * 100}%`, height: '100%', backgroundColor: 'hsl(var(--color-optics))', transition: 'width 0.3s ease' }}></div>
+                  <div style={{ width: `${((currentTestIndex + 1) / (testQuestions.length || 10)) * 100}%`, height: '100%', backgroundColor: 'hsl(var(--color-optics))', transition: 'width 0.3s ease' }}></div>
                 </div>
 
                 <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid #edf2f7', fontSize: '0.98rem', fontWeight: 'bold' }}>
@@ -1177,7 +1177,7 @@ export default function ChemistryModule() {
                   </div>
                 </div>
 
-                {/* 💡 100 题特训金币奖励提示卡 */}
+                {/* 💡 大单元 100 题特训金币奖励提示卡 */}
                 <div style={{
                   padding: '16px',
                   backgroundColor: 'rgba(16, 185, 129, 0.04)',
@@ -1189,7 +1189,7 @@ export default function ChemistryModule() {
                   maxWidth: '440px',
                   textAlign: 'left'
                 }}>
-                  💡 <b>提分秘籍提示：</b> 恭喜你完成了今天的过关测试！别忘了，每天还有 <b>100 道专项化学题库</b> 供你狂练。挑战它们不仅能帮你稳固薄弱环节，还能<b>获得更多金币</b>哦！
+                  💡 <b>提分秘籍提示：</b> 恭喜你完成了今天的过关测试！别忘了，本大单元还有 <b>100 道阶段性特训题</b> 供你进行周度大单元测试。挑战它们不仅能帮你在宏观上把关知识死角，还能<b>获得更多金币</b>哦！
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                     <button
                       className="btn btn-primary"
@@ -1205,7 +1205,7 @@ export default function ChemistryModule() {
                         setTestSubmitted(false);
                       }}
                     >
-                      🚀 立即挑战 100 题狂练
+                      🚀 立即挑战大单元百题特训
                     </button>
                   </div>
                 </div>
@@ -1226,7 +1226,7 @@ export default function ChemistryModule() {
           </div>
         )}
 
-        {/* Tab 3: 100题特训狂练 */}
+        {/* Tab 3: 大单元百题特训 */}
         {activeTab === 'exercise' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', flex: 1, minHeight: '500px' }}>
@@ -1237,7 +1237,7 @@ export default function ChemistryModule() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span className="badge" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', color: '#047857', fontWeight: 'bold' }}>
-                          Day {selectedDayId.replace('day', '')} 特训 · 第 {currentExerciseIndex + 1} / 100 题
+                          大单元百题特训 · 第 {currentExerciseIndex + 1} / 100 题
                         </span>
                         <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
                           累计金币：{todayGoldCoin >= 0 ? `+${todayGoldCoin}` : todayGoldCoin}
@@ -1317,14 +1317,14 @@ export default function ChemistryModule() {
                     </div>
                   </>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>正在生成今日 100 题化学特训库...</div>
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>正在生成大单元百题化学特训库...</div>
                 )}
               </div>
 
-              {/* 右栏：100题进度网格 */}
+              {/* 右栏：大单元百题特训进度网格 */}
               <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>🎯 100题化学特训卡</span>
+                  <span>🎯 大单元百题特训卡</span>
                   <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
                     已完成：{Object.keys(exerciseAnswers).length} / 100
                   </span>

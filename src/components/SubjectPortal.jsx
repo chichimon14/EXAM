@@ -1,6 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function SubjectPortal({ onSelectSubject }) {
+  const [scores, setScores] = useState({
+    math: 0,
+    physics: 0,
+    chemistry: 0,
+    english: 0
+  });
+  const [showScoreModal, setShowScoreModal] = useState(false);
+
+  useEffect(() => {
+    const calcScore = (subj) => {
+      let total = 0;
+      const maxDays = subj === 'english' ? 30 : 25;
+      const startDay = subj === 'chemistry' ? 0 : 1;
+      for (let i = startDay; i <= maxDays; i++) {
+        const val = localStorage.getItem(`${subj}-score-day${i}`);
+        if (val !== null) {
+          total += parseInt(val, 10);
+        }
+      }
+      return total;
+    };
+
+    setScores({
+      math: calcScore('math'),
+      physics: calcScore('physics'),
+      chemistry: calcScore('chemistry'),
+      english: calcScore('english')
+    });
+  }, []);
+
+  const totalScore = scores.math + scores.physics + scores.chemistry + scores.english;
+
   const subjects = [
     {
       id: 'math',
@@ -55,8 +87,8 @@ export default function SubjectPortal({ onSelectSubject }) {
     {
       id: 'english',
       name: '中考英语特训',
-      subtitle: '时态口诀 · 600词真人读音',
-      desc: '覆盖小学至初二全部 600 必背单词短语及例句美音发音，集成 6 大核心时态名师口诀。配备30天金币奖励测练！',
+      subtitle: '时态口诀 · 1200词真人读音',
+      desc: '覆盖小学至初二全部 1200 必背单词短语及例句美音发音，集成 6 大核心时态名师口诀。配备30天金币奖励测练！',
       icon: (
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: '#a855f7' }}>
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="rgba(168, 85, 247, 0.15)" />
@@ -77,8 +109,37 @@ export default function SubjectPortal({ onSelectSubject }) {
       display: 'flex',
       flexDirection: 'column',
       gap: '32px',
-      alignItems: 'center'
+      alignItems: 'center',
+      position: 'relative'
     }}>
+      
+      {/* 右上角悬浮积分小胶囊 */}
+      <div
+        className="glass-card scale-up"
+        onClick={() => setShowScoreModal(true)}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          padding: '6px 14px',
+          borderRadius: '30px',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.7)',
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          fontSize: '0.78rem',
+          fontWeight: 'bold',
+          color: 'hsl(var(--text-primary))',
+          cursor: 'pointer',
+          zIndex: 10
+        }}
+      >
+        <span>🏆 荣誉积分:</span>
+        <span style={{ color: 'hsl(var(--color-work))', fontSize: '0.85rem' }}>{totalScore} 🪙</span>
+      </div>
       
       {/* 迎新头部 */}
       <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -118,6 +179,101 @@ export default function SubjectPortal({ onSelectSubject }) {
           由资深中考名师联合打造，拒绝钻牛角尖的偏难怪题。专注于用简炼口诀、几何图解与智能变式技术，帮您的孩子把中考基础题的分数全部拿稳！
         </p>
       </div>
+
+      {/* 积分详情弹窗 (Modal) */}
+      {showScoreModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.3)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          animation: 'fadeIn 0.2s ease-out'
+        }}
+        onClick={() => setShowScoreModal(false)}
+        >
+          <div className="glass-card fade-in" style={{
+            width: '100%',
+            maxWidth: '400px',
+            padding: '24px',
+            background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.8)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            borderRadius: 'var(--radius-lg)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+            position: 'relative'
+          }}
+          onClick={(e) => e.stopPropagation()}
+          >
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setShowScoreModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: 'none',
+                border: 'none',
+                fontSize: '1.2rem',
+                cursor: 'pointer',
+                color: '#94a3b8',
+                transition: 'color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.color = '#64748b'}
+              onMouseLeave={(e) => e.target.style.color = '#94a3b8'}
+            >
+              ✕
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(0, 0, 0, 0.04)', paddingBottom: '12px' }}>
+              <span style={{ fontSize: '1.5rem' }}>🏆</span>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 'bold', color: '#1e293b' }}>中考特训全科金币荣誉榜</h3>
+                <p style={{ margin: '2px 0 0 0', fontSize: '0.72rem', color: '#64748b' }}>加油，每天坚持练习累积金币！</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '8px', background: 'rgba(245, 158, 11, 0.04)' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#78350f', display: 'flex', alignItems: 'center', gap: '6px' }}>📐 数学积分</span>
+                <span style={{ fontSize: '0.98rem', fontWeight: 'bold', color: 'hsl(var(--color-work))' }}>{scores.math} 🪙</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '8px', background: 'rgba(59, 130, 246, 0.04)' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '6px' }}>📖 物理积分</span>
+                <span style={{ fontSize: '0.98rem', fontWeight: 'bold', color: 'hsl(var(--color-mech))' }}>{scores.physics} 🪙</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.04)' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#064e3b', display: 'flex', alignItems: 'center', gap: '6px' }}>🧪 化学积分</span>
+                <span style={{ fontSize: '0.98rem', fontWeight: 'bold', color: 'hsl(var(--color-optics))' }}>{scores.chemistry} 🪙</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '8px', background: 'rgba(168, 85, 247, 0.04)' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#581c87', display: 'flex', alignItems: 'center', gap: '6px' }}>🇬🇧 英语积分</span>
+                <span style={{ fontSize: '0.98rem', fontWeight: 'bold', color: '#a855f7' }}>{scores.english} 🪙</span>
+              </div>
+            </div>
+
+            <div style={{
+              marginTop: '8px',
+              paddingTop: '12px',
+              borderTop: '1px solid rgba(0, 0, 0, 0.04)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 'bold', color: '#1e293b' }}>累计总金币数</span>
+              <span style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'hsl(var(--color-work))' }}>{totalScore} 🪙</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 学科选择网格 */}
       <div style={{

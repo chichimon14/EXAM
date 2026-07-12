@@ -3,6 +3,8 @@
  * 支持物理 1200 题与数学 900 题的高清算法级生成，自带智能解析与分步推导步骤。
  */
 
+import { staticQuestions, elementPools } from '../data/chemistryQuestions.js';
+
 // 辅助函数：生成范围内的随机整数 (包含两端)
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -663,496 +665,164 @@ export function generateMathQuestions(topicId, count = 100) {
   return list;
 }
 
-// 导入英语和化学的数据以支持出题
-import { chemistryDays } from '../data/chemistryData';
-import { englishVocabList } from '../data/englishData';
+// 辅助函数：数组洗牌
+function shuffleArray(arr) {
+  const newArr = [...arr];
+  for (let i = newArr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+  }
+  return newArr;
+}
 
-/**
- * 3. 中考化学题库生成器
- */
+// 格式化题目为前端组件期望的结构
+function formatQuestion(q, index, prefix = '化学题') {
+  const shuffledOptions = shuffleArray(q.options);
+  const ansIndex = shuffledOptions.indexOf(q.answer);
+  return {
+    id: `chem_q_${prefix}_${index}_${Math.random().toString(36).substr(2, 5)}`,
+    question: `【${prefix} ${index + 1}】${q.question}`,
+    options: shuffledOptions,
+    answer: ansIndex !== -1 ? ansIndex : 0,
+    explanation: q.explanation || "无解析。"
+  };
+}
+
+// 动态元素题生成器
+function generateDynamicElementQuestions(dayKey, count) {
+  const pool = elementPools[dayKey];
+  if (!pool) return [];
+  const questions = [];
+  pool.forEach(el => {
+    // 问法 1: 中文 ➔ 符号
+    {
+      const otherSymbols = pool.filter(x => x.symbol !== el.symbol).map(x => x.symbol);
+      const distrac = shuffleArray(otherSymbols).slice(0, 3);
+      const options = shuffleArray([el.symbol, ...distrac]);
+      questions.push({
+        question: `化学元素“${el.name}”的元素符号是：`,
+        options: options,
+        answer: el.symbol,
+        explanation: `元素“${el.name}”的英文/拉丁文缩写符号为 ${el.symbol}，核内质子数为 ${el.z}。`
+      });
+    }
+    // 问法 2: 符号 ➔ 中文
+    {
+      const otherNames = pool.filter(x => x.name !== el.name).map(x => x.name);
+      const distrac = shuffleArray(otherNames).slice(0, 3);
+      const options = shuffleArray([el.name, ...distrac]);
+      questions.push({
+        question: `化学元素符号“${el.symbol}”对应的中文名称是：`,
+        options: options,
+        answer: el.name,
+        explanation: `元素符号 ${el.symbol} 对应的是第 ${el.z} 号元素“${el.name}”。`
+      });
+    }
+    // 问法 3: 质子数 ➔ 中文
+    {
+      const otherNames = pool.filter(x => x.name !== el.name).map(x => x.name);
+      const distrac = shuffleArray(otherNames).slice(0, 3);
+      const options = shuffleArray([el.name, ...distrac]);
+      questions.push({
+        question: `核电荷数（核内质子数）为 ${el.z} 的元素是：`,
+        options: options,
+        answer: el.name,
+        explanation: `元素周期表中，质子数与原子序数相等。第 ${el.z} 号元素是“${el.name}”，符号为 ${el.symbol}。`
+      });
+    }
+  });
+  return shuffleArray(questions).slice(0, count);
+}
+
 export function generateChemistryQuestions(topicId, count = 20) {
-  const list = [];
-  const elementData1 = [
-    { name: '氢', symbol: 'H', pinyin: 'qīng', z: 1, val: '+1' },
-    { name: '氦', symbol: 'He', pinyin: 'hài', z: 2, val: '0' },
-    { name: '锂', symbol: 'Li', pinyin: 'lǐ', z: 3, val: '+1' },
-    { name: '铍', symbol: 'Be', pinyin: 'pí', z: 4, val: '+2' }
-  ];
-  const elementData2 = [
-    { name: '硼', symbol: 'B', pinyin: 'péng', z: 5, val: '+3' },
-    { name: '碳', symbol: 'C', pinyin: 'tàn', z: 6, val: '+4, -4' },
-    { name: '氮', symbol: 'N', pinyin: 'dàn', z: 7, val: '-3, +5' },
-    { name: '氧', symbol: 'O', pinyin: 'yǎng', z: 8, val: '-2' },
-    { name: '氟', symbol: 'F', pinyin: 'fú', z: 9, val: '-1' },
-    { name: '氖', symbol: 'Ne', pinyin: 'nǎi', z: 10, val: '0' }
-  ];
-  const elementData3 = [
-    { name: '钠', symbol: 'Na', pinyin: 'nà', z: 11, val: '+1' },
-    { name: '镁', symbol: 'Mg', pinyin: 'měi', z: 12, val: '+2' },
-    { name: '铝', symbol: 'Al', pinyin: 'lǚ', z: 13, val: '+3' },
-    { name: '硅', symbol: 'Si', pinyin: 'guī', z: 14, val: '+4' },
-    { name: '磷', symbol: 'P', pinyin: 'lín', z: 15, val: '-3, +5' },
-    { name: '硫', symbol: 'S', pinyin: 'liú', z: 16, val: '-2, +4, +6' },
-    { name: '氯', symbol: 'Cl', pinyin: 'lǜ', z: 17, val: '-1' },
-    { name: '氩', symbol: 'Ar', pinyin: 'yà', z: 18, val: '0' }
-  ];
-  const elementData4 = [
-    { name: '钾', symbol: 'K', pinyin: 'jiǎ', z: 19, val: '+1' },
-    { name: '钙', symbol: 'Ca', pinyin: 'gài', z: 20, val: '+2' }
-  ];
-  const elementData5 = [
-    { name: '铁', symbol: 'Fe', pinyin: 'tiě', z: 26, val: '+2, +3' },
-    { name: '铜', symbol: 'Cu', pinyin: 'tóng', z: 29, val: '+2' },
-    { name: '锌', symbol: 'Zn', pinyin: 'xīn', z: 30, val: '+2' },
-    { name: '锰', symbol: 'Mn', pinyin: 'měng', z: 25, val: '+2, +4, +7' },
-    { name: '钡', symbol: 'Ba', pinyin: 'bèi', z: 56, val: '+2' }
-  ];
-  const elementData6 = [
-    { name: '金', symbol: 'Au', pinyin: 'jīn', z: 79, val: '+1, +3' },
-    { name: '钛', symbol: 'Ti', pinyin: 'tài', z: 22, val: '+4' },
-    { name: '碘', symbol: 'I', pinyin: 'diǎn', z: 53, val: '-1' },
-    { name: '锡', symbol: 'Sn', pinyin: 'xī', z: 50, val: '+2, +4' },
-    { name: '汞', symbol: 'Hg', pinyin: 'gǒng', z: 80, val: '+1, +2' }
-  ];
+  const blockDays = {
+    chem_block1: ['day0', 'day1', 'day2', 'day3', 'day4', 'day5', 'day6', 'day7'],
+    chem_block2: ['day8', 'day9', 'day10', 'day11', 'day12', 'day13', 'day14'],
+    chem_block3: ['day15', 'day16', 'day17', 'day18', 'day19', 'day20', 'day21'],
+    chem_block4: ['day22', 'day23', 'day24', 'day25']
+  };
 
-  for (let i = 0; i < count; i++) {
-    let qObj = {};
-    const qIdx = i + 1;
+  const topicToDay = {
+    chem_topic_prologue: 'day0',
+    chem_topic_elements1: 'day1',
+    chem_topic_elements2: 'day2',
+    chem_topic_elements3: 'day3',
+    chem_topic_elements4: 'day4',
+    chem_topic_change: 'day5',
+    chem_topic_substance: 'day6',
+    chem_topic_air: 'day7',
+    chem_topic_oxygen: 'day8',
+    chem_topic_mno2: 'day9',
+    chem_topic_kmno4: 'day10',
+    chem_topic_molecule: 'day11',
+    chem_topic_atom: 'day12',
+    chem_topic_ion: 'day13',
+    chem_topic_electrolysis: 'day14',
+    chem_topic_filtration: 'day15',
+    chem_topic_valency: 'day16',
+    chem_topic_conservation: 'day17',
+    chem_topic_equation: 'day18',
+    chem_topic_co2_lab: 'day19',
+    chem_topic_co2_property: 'day20',
+    chem_topic_carbon_allotropes: 'day21',
+    chem_topic_blast_furnace: 'day22',
+    chem_topic_displacement: 'day23',
+    chem_topic_solubility: 'day24',
+    chem_topic_neutralization: 'day25'
+  };
 
-     switch (topicId) {
-      // 化学先导课：通关与信心指南 (Day 0)
-      case 'chem_topic_prologue': {
-        const prologuePool = [
-          {
-            question: "化学（Chemistry）在中文里的字面意思是什么？",
-            options: ["变化的科学", "发光的科学", "受力的科学", "数学的延伸科学"],
-            answer: "变化的科学",
-            explanation: "化学（Chemistry）在中文里就是“变化的科学”，专门研究物质是怎么变成新物质的魔法科学！"
-          },
-          {
-            question: "初三化学计算题很多很复杂吗？学习它需要很强的代数或几何数学基础吗？",
-            options: ["不需要！主要是最基础的加减乘除和比例计算", "需要，必须精通初二的函数与几何证明", "需要，要用到微积分和代数拓扑", "需要很强的受力分析和力学计算基础"],
-            answer: "不需要！主要是最基础的加减乘除 and 比例计算",
-            explanation: "初三化学几乎没有任何复杂的代数或几何，计算只涉及最简单的“比例式”乘除法。只要会算最基本的乘除法，化学计算分就能拿满分！"
-          },
-          {
-            question: "物理变化和化学变化的根本区别是什么？",
-            options: ["变化时是否有“新物质（新积木）”生成", "变化时是否发光发热", "变化后状态是否发生改变", "变化是否极其剧烈"],
-            answer: "变化时是否有“新物质（新积木）”生成",
-            explanation: "物理变化和化学变化的根本区别就是：分子（原子积木）是否拆开重组、是否有新物质诞生。冰融化成水依然是水分子（物理变化）；木柴烧成灰烬生成了二氧化碳（化学变化）。"
-          },
-          {
-            question: "下列变化属于“化学变化”的是：",
-            options: ["铁钉在潮湿空气中生锈", "把一张白纸撕得粉碎", "冰块在太阳下融化成水", "湿衣服在阳光下被晒干"],
-            answer: "铁钉在潮湿空气中生锈",
-            explanation: "铁钉生锈生成了新物质“铁锈”（主要成分是氧化铁），属于化学变化。撕碎纸、冰融化、衣服晒干均没有新物质生成，是物理变化。"
-          },
-          {
-            question: "下列变化中，属于“物理变化”的是：",
-            options: ["矿石被粉碎", "木柴燃烧变成灰烬", "食物在夏天变质发霉", "蜡烛燃烧发光发热"],
-            answer: "矿石被粉碎",
-            explanation: "矿石粉碎只是形状变了，物质本身没有改变，属于物理变化。燃烧、变质发霉都生成了新物质，是化学变化。"
-          },
-          {
-            question: "化学老师说：初三化学更像是一门“半文半理”的学科。为了稳拿90分，我们首先要做的是：",
-            options: ["跟着老师进度，背熟前20个元素符号等基础魔法积木", "刷完高中三年的高难度化学奥赛题", "苦苦钻研微积分和牛顿经典力学", "什么都不用记，只在考前一天死记硬背"],
-            answer: "跟着老师进度，背熟前20个元素符号等基础魔法积木",
-            explanation: "初三化学被称为“理科中的英语”，入门最关键的就是背熟基础元素符号（积木的名字），建立自信，90分保底非常轻松！"
-          },
-          {
-            question: "水是由什么积木（原子）拼接出来的？",
-            options: ["两个氢气积木和一个氧气积木", "两个铁积木和一个碳积木", "一个金积木和一个汞积木", "纯粹的水原子拼接的，没有其他成分"],
-            answer: "两个氢气积木和一个氧气积木",
-            explanation: "水分子（H₂O）是由两个氢原子（H）和一个氧原子（O）拼接出来的微观魔法结构！"
-          },
-          {
-            question: "空气中占比最大（约78%）、能作为食品保鲜防腐保护气的是什么积木气体？",
-            options: ["氮气 (N₂)", "氧气 (O₂)", "二氧化碳 (CO₂)", "稀有气体 (氖气)"],
-            answer: "氮气 (N₂)",
-            explanation: "空气中含量最多的是氮气，占总体积的78%，它化学性质很稳定，常用来作保护气、食品防腐剂。"
-          },
-          {
-            question: "化学家通过把“原子积木”按照核内质子数大小排队，排出来的表格叫做什么？",
-            options: ["元素周期表", "乘法口诀表", "物理常数表", "几何定理汇总表"],
-            answer: "元素周期表",
-            explanation: "排出来的表格叫做元素周期表，这是我们化学王国的核心地图！"
-          },
-          {
-            question: "关于初三化学的学习，下面哪种心态是正确的？",
-            options: ["大家都是在初三零基础起跑，只要跟着老师一步步学，稳拿90保底80！", "化学需要特别天才的数学脑子，我肯定学不会", "物理学得不好，化学也绝对学不好", "化学是女生学的，男生学不会，或者相反"],
-            answer: "大家都是在初三零基础起跑，只要跟着老师一步步学，稳拿90保底80！",
-            explanation: "化学是初三新增的学科，所有同学都是从零起跑！只要你有信心，掌握正确方法，优秀率几乎是手到牵来！"
-          },
-          {
-            question: "人类发现并利用火的意义在于：",
-            options: ["这是人类第一次支配了自然的化学变化，摆脱了茹毛饮血的时代", "只是觉得火很好看，能发光好玩", "火能把冰融化成水（物理变化）", "发现火只是一种物理上的摆设"],
-            answer: "这是人类第一次支配了自然的化学变化，摆脱了茹毛饮血的时代",
-            explanation: "人类对火的支配和使用，是人类利用化学变化的开端，它改善了人类的生存条件，是文明进步的重大里程碑！"
-          },
-          {
-            question: "水结冰了，请问这个变化产生了新物质吗？它是化学变化还是物理变化？",
-            options: ["没有产生新物质，属于物理变化", "产生了新物质“冰分子”，属于化学变化", "产生了新物质“二氧化碳”，属于化学变化", "既不是物理变化，也不是化学变化"],
-            answer: "没有产生新物质，属于物理变化",
-            explanation: "冰和水是同一种物质（都是水分子组成，H₂O），只是物理状态不同，因此没有新物质生成，是物理变化。"
-          },
-          {
-            question: "下列过程涉及化学变化的是：",
-            options: ["酿造小米酒", "把西瓜切成块", "食盐溶解在水里", "把黏土捏成泥人"],
-            answer: "酿造小米酒",
-            explanation: "酿酒过程是将粮食中的淀粉通过微生物转化为酒精（乙醇），产生了新物质，是典型的化学变化。切西瓜、盐溶解、捏泥人都是物理变化。"
-          },
-          {
-            question: "铁在空气中生锈，变成红褐色的铁锈。关于这个变化，下列说法正确的是：",
-            options: ["生锈产生了新物质，属于化学变化", "铁和铁锈是同一种物质", "铁钉生锈不需要氧气和水", "这只是铁钉形状变了，属于物理变化"],
-            answer: "生锈产生了新物质，属于化学变化",
-            explanation: "铁和铁锈是截然不同的物质（铁锈是水合氧化铁），有了新物质诞生，是化学变化。"
-          },
-          {
-            question: "古代中国在化学工艺方面非常先进，以下哪项不属于中国古代四大发明中的化学工艺？",
-            options: ["指南针的制造", "火药的发明", "造纸术的改进", "陶瓷的烧制（虽非四大发明，也是古代杰出化学工艺）"],
-            answer: "指南针的制造",
-            explanation: "指南针利用的是天然磁石的物理磁性，属于物理学应用。火药（硝石、硫磺、木炭混合燃烧）和造纸术都是复杂的化学工艺。"
-          },
-          {
-            question: "我们每天呼吸必不可少、能支持燃烧的气体积木是什么？",
-            options: ["氧气 (O₂)", "氮气 (N₂)", "二氧化碳 (CO₂)", "水蒸气 (H₂O)"],
-            answer: "氧气 (O₂)",
-            explanation: "氧气可以供给呼吸，并且具有助燃性，是我们生命和燃烧不可或缺的积木！"
-          },
-          {
-            question: "下列哪一项是学习化学的“大招口诀”之一？",
-            options: ["前四天把前20个元素符号通过消消乐和背诵彻底背熟！", "每天做300道复杂的二次函数大题", "记住公式，不需要理解其含义", "把整本化学书倒背如流但不做实验题"],
-            answer: "前四天把前20个元素符号通过消消乐和背诵彻底背熟！",
-            explanation: "熟练背出前20个元素符号，是初三化学的“敲门砖”。前四天通关消消乐，以后写化学式信手拈来！"
-          },
-          {
-            question: "在微观世界中，原子积木最核心的部分叫做什么？",
-            options: ["原子核", "外壳", "轨道", "气泡"],
-            answer: "原子核",
-            explanation: "原子的中心部分叫原子核，里面有质子和中子，是原子积木的“心脏”！"
-          },
-          {
-            question: "下列行为中，最能帮助我们学好初三化学的是：",
-            options: ["上课认真听，理解例题和名师避坑点，按时完成每日小测和消消乐", "只刷难题，不管基础概念", "遇到背诵就跳过，指望考试时查书", "坚信自己没有天赋，直接放弃"],
-            answer: "上课认真听，理解例题和名师避坑点，按时完成每日小测和消消乐",
-            explanation: "脚踏实地跟紧抢跑大纲，每天1-1.5小时，理解避坑点，配合好玩的消消乐，90分保底就是这么简单！"
-          },
-          {
-            question: "化学的“魔力”在于能将平凡的物质变成神奇的材料。以下哪项是化学科学的贡献？",
-            options: ["开发新药治愈疾病、制造塑料与化肥、研发芯片材料等", "改变地心引力大小", "让太阳从西边升起", "创造出绝对永动机"],
-            answer: "开发新药治愈疾病、制造塑料与化肥、研发芯片材料等",
-            explanation: "医药、化肥、新材料等都依赖化学合成，化学是造福人类的中心科学！"
-          }
-        ];
-        
-        const qData = prologuePool[i % prologuePool.length];
-        qObj = {
-          id: 39000 + i,
-          question: `【先导课趣味小测 ${qIdx}】${qData.question}`,
-          options: qData.options.slice().sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话避坑指南：\n${qData.explanation}`
-        };
-        qObj.answer = qObj.options.indexOf(qData.answer);
-        break;
+  let allRawQuestions = [];
+  const prefix = topicId.startsWith('chem_block') ? '大单元特训' : '课后练习';
+
+  // 1. 判断是按大单元提取还是按单天提取
+  if (topicId.startsWith('chem_block')) {
+    const days = blockDays[topicId] || [];
+    days.forEach(dayKey => {
+      if (['day1', 'day2', 'day3', 'day4'].includes(dayKey)) {
+        // 动态元素题，生成最大数量以供抽取
+        allRawQuestions = allRawQuestions.concat(generateDynamicElementQuestions(dayKey, 30));
+      } else {
+        // 静态题库
+        allRawQuestions = allRawQuestions.concat(staticQuestions[dayKey] || []);
       }
+    });
 
-      // 1-4号元素 (Day 1)
-      case 'chem_topic_elements1': {
-        const item = elementData1[randomInt(0, 3)];
-        const askSymbol = randomInt(0, 1) === 1;
-        if (askSymbol) {
-          qObj = {
-            id: 40000 + i,
-            question: `【化学题 ${qIdx}】前20号元素中，名称为“${item.name}”的元素符号是什么？其汉语拼音是：`,
-            options: [item.symbol, item.symbol.toUpperCase(), item.symbol.toLowerCase(), 'Hn'].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n根据“青海里皮 (qīng hǎi lǐ pí)”口诀，第${item.z}个是${item.name}，其拼音是【${item.pinyin}】。化学元素符号的书写原则是“一大二小”，所以其符号是 ${item.symbol}。`
-          };
-          qObj.answer = qObj.options.indexOf(item.symbol);
-        } else {
-          qObj = {
-            id: 40100 + i,
-            question: `【化学题 ${qIdx}】元素周期表中排在第 ${item.z} 位的元素名称及汉语拼音正确的是：`,
-            options: [`${item.name} (${item.pinyin})`, '氦 (hài)', '锂 (lǐ)', '氢 (qīng)'].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n元素周期表中，排在第 ${item.z} 位的积木是“${item.name}”，拼音读作【${item.pinyin}】。`
-          };
-          qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+    // 滚动复习兜底：如果本单元总题量不足 count，就从前面学过的其他天数中抽取未重复的题目补充进来
+    if (allRawQuestions.length < count) {
+      const needed = count - allRawQuestions.length;
+      let fallbackPool = [];
+      Object.keys(staticQuestions).forEach(dayKey => {
+        if (!days.includes(dayKey)) {
+          fallbackPool = fallbackPool.concat(staticQuestions[dayKey] || []);
         }
-        break;
-      }
-      
-      // 5-10号元素 (Day 2)
-      case 'chem_topic_elements2': {
-        const item = elementData2[randomInt(0, 5)];
-        const askSymbol = randomInt(0, 1) === 1;
-        if (askSymbol) {
-          qObj = {
-            id: 40200 + i,
-            question: `【化学题 ${qIdx}】前20号元素中，“${item.name}”的元素符号及拼音正确的是：`,
-            options: [`${item.symbol} (${item.pinyin})`, `C (${item.pinyin})`, `O (${item.pinyin})`, `N (${item.pinyin})`].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n“蓬碳蛋养拂奶”口诀中，${item.name}的拼音为【${item.pinyin}】，元素符号为 ${item.symbol}。`
-          };
-          qObj.answer = qObj.options.indexOf(`${item.symbol} (${item.pinyin})`);
-        } else {
-          qObj = {
-            id: 40300 + i,
-            question: `【化学题 ${qIdx}】质子数为 ${item.z} 的元素拼音及名称正确的是：`,
-            options: [`${item.name} (${item.pinyin})`, '氟 (fú)', '碳 (tàn)', '氧 (yǎng)'].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n质子数等于原子序号。质子数为 ${item.z} 的元素是【${item.name}】，拼音是【${item.pinyin}】。`
-          };
-          qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
+      });
+      ['day1', 'day2', 'day3', 'day4'].forEach(dayKey => {
+        if (!days.includes(dayKey)) {
+          fallbackPool = fallbackPool.concat(generateDynamicElementQuestions(dayKey, 30));
         }
-        break;
+      });
+      const shuffledFallback = shuffleArray(fallbackPool);
+      allRawQuestions = allRawQuestions.concat(shuffledFallback.slice(0, needed));
+    }
+  } else {
+    const dayKey = topicToDay[topicId];
+    if (dayKey) {
+      if (['day1', 'day2', 'day3', 'day4'].includes(dayKey)) {
+        allRawQuestions = generateDynamicElementQuestions(dayKey, 30);
+      } else {
+        allRawQuestions = staticQuestions[dayKey] || [];
       }
+    }
+  }
 
-      // 新增 5 个金属/非金属 (金 钛 碘 锡 汞) (Day 4)
-      case 'chem_topic_elements4': {
-        const item = elementData6[randomInt(0, elementData6.length - 1)];
-        const askSymbol = randomInt(0, 1) === 1;
-        if (askSymbol) {
-          qObj = {
-            id: 40500 + i,
-            question: `【化学题 ${qIdx}】关于中考必记元素“${item.name}”，其正确的化学元素符号是：`,
-            options: [item.symbol, 'Ag', 'Pt', 'Pb'].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n根据口诀“金钛碘锡汞 (Au Ti I Sn Hg)”，【${item.name}】的符号是 ${item.symbol}，拼音是【${item.pinyin}】。`
-          };
-          qObj.answer = qObj.options.indexOf(item.symbol);
-        } else {
-          qObj = {
-            id: 40550 + i,
-            question: `【化学题 ${qIdx}】关于化学符号“${item.symbol}”，其对应的中文名称及汉语拼音正确的是：`,
-            options: [`${item.name} (${item.pinyin})`, '银 (yín)', '铂 (bó)', '铅 (qiān)'].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n化学符号【${item.symbol}】对应的元素名称是“${item.name}”，拼音读作【${item.pinyin}】。`
-          };
-          qObj.answer = qObj.options.indexOf(`${item.name} (${item.pinyin})`);
-        }
-        break;
-      }
+  // 2. 将原始问题做洗牌，然后截取 count 个，再转换为组件格式
+  const shuffledRaw = shuffleArray(allRawQuestions);
+  const selectedRaw = shuffledRaw.slice(0, count);
 
-      // 11-20号及重金属常用元素 (Day 3 & Day 4 挑战测)
-      case 'chem_topic_elements3':
-      case 'chem_topic_matching': {
-        const allElements = [...elementData3, ...elementData4, ...elementData5];
-        const item = allElements[randomInt(0, allElements.length - 1)];
-        qObj = {
-          id: 40400 + i,
-          question: `【化学题 ${qIdx}】关于中考必考元素“${item.name}”，其对应的符号及汉语拼音正确的是：`,
-          options: [`${item.symbol} (${item.pinyin})`, `Fe (${item.pinyin})`, `Cu (${item.pinyin})`, `Na (${item.pinyin})`].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话解析：\n中考常用元素中，【${item.name}】的拼音读法是【${item.pinyin}】，其国际化学元素符号为 ${item.symbol}。`
-        };
-        qObj.answer = qObj.options.indexOf(`${item.symbol} (${item.pinyin})`);
-        break;
-      }
+  return selectedRaw.map((q, index) => formatQuestion(q, index, prefix));
+}
 
-      // 物理变化 vs 化学变化 (Day 5)
-      case 'chem_topic_change': {
-        const physicals = ['冰雪融化成水', '瓷碗摔得粉碎', '汽油从瓶中挥发', '电灯泡通电发光放热', '西瓜榨成果汁'];
-        const chemicals = ['钢铁在潮湿空气中生锈', '红磷燃烧产生白烟', '食物在夏天变质发霉', '动植物呼吸消耗氧气', '木柴在火炉中燃烧'];
-        
-        const isAskChemical = randomInt(0, 1) === 1;
-        if (isAskChemical) {
-          const correct = chemicals[randomInt(0, chemicals.length - 1)];
-          const w1 = physicals[0];
-          const w2 = physicals[1];
-          const w3 = physicals[2];
-          
-          qObj = {
-            id: 40500 + i,
-            question: `【化学题 ${qIdx}】下列日常生活中发生的各种变化中，属于【化学变化】的是：`,
-            options: [correct, w1, w2, w3].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n判断化学变化还是物理变化，关键看【有没有新分子（新物质）生成】。“${correct}”中原子重新交换舞伴组装成了全新分子，所以是化学变化。其他选项分子成分根本没变，只是形态、距离改变，属于物理变化。`
-          };
-          qObj.answer = qObj.options.indexOf(correct);
-        } else {
-          const correct = physicals[randomInt(0, physicals.length - 1)];
-          const w1 = chemicals[0];
-          const w2 = chemicals[1];
-          const w3 = chemicals[2];
-          
-          qObj = {
-            id: 40550 + i,
-            question: `【化学题 ${qIdx}】下列日常生活中发生的各种变化中，属于【物理变化】的是：`,
-            options: [correct, w1, w2, w3].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n“${correct}”只是物质的状态、位置发生物理性位移，内部的水分子或物质分子并没有打碎重组，【没有新物质生成】，属于物理变化。而其他选项都产生了全新的物质，属于化学变化。`
-          };
-          qObj.answer = qObj.options.indexOf(correct);
-        }
-        break;
-      }
-
-      // 混合物 vs 纯净物 与 单质 vs 化合物 (Day 6)
-      case 'chem_topic_class': {
-        const questions = [
-          { q: '下列物质属于【纯净物】的是：', a: '冰水混合物', opts: ['冰水混合物', '洁净的空气', '天然矿泉水', '澄清石灰水'], exp: '冰和水是同一种物质的两个化身，微观全都是水分子(H₂O)，所以是纯净物。空气、矿泉水、石灰水里均装有多种分子，是混合物。' },
-          { q: '下列物质属于【单质】的是：', a: '液态氧 (O₂)', opts: ['液态氧 (O₂)', '冰水混合物 (H₂O)', '二氧化碳 (CO₂)', '氯化钠 (NaCl)'], exp: '单质是指由【同一种元素】组成的纯净物。液氧微观全由氧原子结合，是单质。水、二氧化碳和氯化钠由不同原子组合，是化合物。' },
-          { q: '下列物质中，属于【混合物】的是：', a: '澄清石灰水', opts: ['澄清石灰水', '蒸馏水', '五氧化二磷', '铁粉'], exp: '澄清石灰水是氢氧化钙固体溶于水形成的溶液，包含水分子和氢氧化钙粒子，属于混合物。蒸馏水、五氧化二磷和铁粉只有唯一的一种分子或原子，是纯净物。' }
-        ];
-        const item = questions[randomInt(0, questions.length - 1)];
-        qObj = {
-          id: 40600 + i,
-          question: `【化学题 ${qIdx}】${item.q}`,
-          options: item.opts.sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话解析：\n${item.exp}`
-        };
-        qObj.answer = qObj.options.indexOf(item.a);
-        break;
-      }
-
-      // 空气测定氧气实验 (Day 7)
-      case 'chem_topic_air': {
-        const errs = [
-          { reason: '红磷量不足，无法把瓶内的氧气消耗干净', state: '偏小' },
-          { reason: '集气瓶弹簧夹没夹紧，或者装置漏气，导致外部空气被吸入', state: '偏小' },
-          { reason: '红磷燃烧完毕后，试管尚未完全冷却就打开止水夹读取水面', state: '偏小' }
-        ];
-        const errItem = errs[randomInt(0, errs.length - 1)];
-        qObj = {
-          id: 40700 + i,
-          question: `【化学题 ${qIdx}】在红磷燃烧测定空气中氧气含量的实验中，若出现【${errItem.reason}】，测得的氧气体积含量将：`,
-          options: [`比 1/5 ${errItem.state}`, '比 1/5 偏大', '刚好等于 1/5', '无法确定'].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话解析：\n红磷测定氧气必须确保【把氧气吃光、外面空气不许漏进来、降到室温再量体积】。如果${errItem.reason}，产生的吸力就会变小，倒吸入的水体积就会【比 1/5 ${errItem.state}】。`
-        };
-        qObj.answer = qObj.options.indexOf(`比 1/5 ${errItem.state}`);
-        break;
-      }
-
-      // 氧气燃烧现象及防护 (Day 8)
-      case 'chem_topic_oxygen': {
-        const scenarios = [
-          { gas: '铁丝在纯氧中燃烧', formula: '3Fe + 2O₂ ==(点燃)== Fe₃O₄', safety: '集气瓶底部放少量水或铺一层细沙，防止溅落的高温熔融物烫裂瓶底' },
-          { gas: '硫粉在纯氧中燃烧', formula: 'S + O₂ ==(点燃)== SO₂', safety: '集气瓶底部放少量水，用来吸收有毒的二氧化硫气体，防止污染空气' },
-          { gas: '红磷在空气中燃烧', formula: '4P + 5O₂ ==(点燃)== 2P₂O₅', safety: '红磷燃烧会产生大量具有刺激性污染的白烟(五氧化二磷颗粒)' }
-        ];
-        const item = scenarios[randomInt(0, scenarios.length - 1)];
-        const askSafety = randomInt(0, 1) === 1;
-
-        if (askSafety) {
-          qObj = {
-            id: 40800 + i,
-            question: `【化学题 ${qIdx}】在中考化学实验中，做“${item.gas}”实验时，关于集气瓶底部的防护操作，描述正确的是：`,
-            options: [item.safety, '瓶底不需要做任何处理', '瓶底必须装满水将火淹没', '瓶底一定要涂抹凡士林'].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n做“${item.gas}”实验时：${item.safety}。这是中考常考的经典实验安全考分点！`
-          };
-          qObj.answer = qObj.options.indexOf(item.safety);
-        } else {
-          qObj = {
-            id: 40850 + i,
-            question: `【化学题 ${qIdx}】请选出描述“${item.gas}”反应的配平化学方程式：`,
-            options: [item.formula, 'Fe + O₂ == Fe₃O₄', 'S + O₂ == SO₂↑', 'P + O₂ == P₂O₅'].sort(() => 0.5 - Math.random()),
-            answer: 0,
-            explanation: `白话解析：\n化学方程式配平是铁律。左右原子数在反应前后必须完全等重！其正确的方程式为：${item.formula}。`
-          };
-          qObj.answer = qObj.options.indexOf(item.formula);
-        }
-        break;
-      }
-
-      // 双氧水制氧与催化剂一变两不变 (Day 9)
-      case 'chem_topic_prep1': {
-        qObj = {
-          id: 40900 + i,
-          question: `【化学题 ${qIdx}】关于双氧水(H₂O₂)分解制氧气中，作为催化剂的二氧化锰(MnO₂)，下列说法正确的是：`,
-          options: [
-            '反应前后，其自身的质量和化学性质都不发生改变',
-            '反应后，二氧化锰的质量会随之减少',
-            '二氧化锰能使原本不能分解的双氧水强行分解',
-            '反应前后，二氧化锰的物理性质和化学性质都绝对不变'
-          ].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话解析：\n催化剂“化学红娘”的特性是【一变两不变】。一变：改变反应速度 ； 两不变：自身的【质量】和【化学性质】在反应前后绝不改变。物理状态（如颗粒粗细）可能会发生改变。`
-        };
-        qObj.answer = qObj.options.indexOf('反应前后，其自身的质量和化学性质都不发生改变');
-        break;
-      }
-
-      // 加热固体制氧安全与防倒吸 (Day 10)
-      case 'chem_topic_prep2': {
-        qObj = {
-          id: 41000 + i,
-          question: `【化学题 ${qIdx}】用高锰酸钾固体制取氧气并用排水法收集，实验结束时正确的停机熄灯步骤是：`,
-          options: [
-            '先将导管从水槽中移出，再熄灭酒精灯',
-            '先熄灭酒精灯，再将导管从水槽中移出',
-            '熄灭酒精灯与移出导管必须同时进行',
-            '先熄灭酒精灯，然后往试管底浇冷水'
-          ].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话解析：\n中考提分防雷必背：如果先熄灭酒精灯，试管内温度降低气压变小，水槽中的水会顺着导管【倒吸】回滚烫的试管底部，导致试管瞬间炸裂。所以必须【先拔导管，后熄灯】！`
-        };
-        qObj.answer = qObj.options.indexOf('先将导管从水槽中移出，再熄灭酒精灯');
-        break;
-      }
-
-      // 分子与原子特性 (Day 11)
-      case 'chem_topic_molecule': {
-        const examples = [
-          { fact: '50mL 水与 50mL 酒精混合后，总体积小于 100mL', exp: '说明分子之间是有空隙的，大小不同的分子互相钻进了空隙中。' },
-          { fact: '墙内开花墙外香，墨水滴入水中整杯水变色', exp: '说明分子是在不断地进行无规则运动的，温度越高运动越剧烈。' },
-          { fact: '物质的热胀冷缩现象（如温度计液柱受热上升）', exp: '说明温度升高时，分子之间的空隙变大了，而不是分子自己变胖了！' }
-        ];
-        const item = examples[randomInt(0, examples.length - 1)];
-        qObj = {
-          id: 41100 + i,
-          question: `【化学题 ${qIdx}】在微观世界中，生活物理现象“${item.fact}”可以用分子的哪种特性来合理解释？`,
-          options: [item.exp, '说明分子的体积和质量在受热时变大了', '说明分子在物理状态改变时分裂成了原子', '说明分子的电荷发生了改变'].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话解析：\n${item.exp}`
-        };
-        qObj.answer = qObj.options.indexOf(item.exp);
-        break;
-      }
-
-      // 原子结构与电荷守恒 (Day 12)
-      case 'chem_topic_structure': {
-        qObj = {
-          id: 41200 + i,
-          question: `【化学题 ${qIdx}】任何原子在未得失电子的情况下都呈现电中性，这说明在原子内部关系中：`,
-          options: [
-            '质子数 ＝ 核外电子数 ＝ 核电荷数 ＝ 原子序数',
-            '质子数 ＝ 中子数 ＝ 电子数',
-            '中子数和电子数电荷相反，刚好抵消',
-            '原子核占据了原子全部的体积，所以不带电'
-          ].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话解析：\n原子的太阳系模型中，原子核内有带正电的质子，核外有带负电的电子（中子不带电）。因为核内的质子数恰好等于核外的电子数，正负电荷总数刚好抵消，所以不带电。`
-        };
-        qObj.answer = qObj.options.indexOf('质子数 ＝ 核外电子数 ＝ 核电荷数 ＝ 原子序数');
-        break;
-      }
-
-      // 阴阳离子形成与符号书写 (Day 13)
-      case 'chem_topic_ion': {
-        qObj = {
-          id: 41300 + i,
-          question: `【化学题 ${qIdx}】已知镁原子的核内质子数为 12，其最外层有 2 个电子，当它失去最外层电子形成镁离子后，其离子符号书写正确的是：`,
-          options: ['Mg²⁺', 'Mg⁺²', 'Mg²⁻', 'Mg⁻²'].sort(() => 0.5 - Math.random()),
-          answer: 0,
-          explanation: `白话解析：\n镁原子最外层有2个电子，失去2个电子后显 +2 价，记作镁离子。离子符号写法原则：电荷数写在元素符号的右上角，数字在前，正负号在后，故为 Mg²⁺。`
-        };
-        qObj.answer = qObj.options.indexOf('Mg²⁺');
-        break;
-      }
-
-      // 水的电解与气体检验 (Day 14)
-      case 'chem_topic_water1': {
-        qObj = {
-          id: 41400 + i,
-          question: `【化学题 ${qIdx}】关于电解水实验(2H₂O ==通电== 2H₂↑ + O₂↑)，下列说法或现象描述正确的是：`,
-          options: [
-            '负极产生氢气，正极产生氧气，它们的体积比约为 2:1',
-            '正极产生的是氢气，可以用燃着的木条点燃',
+/* function generateChemistryQuestionsOld(topicId, count = 20) {
             '电解水反应生成的氢气 and 氧气的质量比约为 2:1',
             '水中加入稀硫酸是为了将水中的钙镁离子过滤除去'
           ].sort(() => 0.5 - Math.random()),
@@ -1354,7 +1024,7 @@ export function generateChemistryQuestions(topicId, count = 20) {
     list.push(qObj);
   }
   return list;
-}
+} */
 
 /**
  * 4. 中考英语题库生成器

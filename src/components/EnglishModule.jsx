@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { englishBlocks, englishDays, englishVocabList } from '../data/englishData';
 import { generateEnglishQuestions } from '../utils/questionGenerator';
 import WrongBook from './WrongBook';
@@ -10,6 +10,12 @@ export default function EnglishModule() {
   // 30天每日金币积分状态 { [dayId]: score }
   const [dayScores, setDayScores] = useState({});
   const [showBillModal, setShowBillModal] = useState(false);
+
+  // 单词自动跟读状态
+  const [isAutoReading, setIsAutoReading] = useState(false);
+  const [currentReadIndex, setCurrentReadIndex] = useState(-1);
+  const isAutoReadingRef = useRef(false);
+  const audioRef = useRef(null);
 
   // 20题测试状态
   const [testQuestions, setTestQuestions] = useState([]);
@@ -144,18 +150,346 @@ export default function EnglishModule() {
     }
   }, [selectedDayId, activeTab]);
 
-  // 原生 Web Speech TTS 语音朗读播放
+  // 高品质美音真人发音 (有道公开 TTS + 原生 Web Speech 完美兜底)
   const speakText = (text) => {
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel(); // 停止当前所有播放
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'en-US'; // 美音标准
-      utterance.rate = 0.82; // 0.82 倍速，发音更清晰、饱满
-      window.speechSynthesis.speak(utterance);
-    } else {
-      alert('抱歉，当前浏览器不支持原生的语音合成朗读功能。');
+    if (!text) return;
+    try {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // 停止当前所有合成播放
+      }
+      
+      const voiceUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=2`;
+      const audio = new Audio(voiceUrl);
+      
+      audio.play().catch(err => {
+        console.warn('有道 TTS 真人读音播放受阻，已降级为浏览器原生语音合成。', err);
+        fallbackSpeak(text);
+      });
+    } catch (e) {
+      fallbackSpeak(text);
     }
   };
+
+  // 原生语音合成兜底函数
+  const fallbackSpeak = (text) => {
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.82;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // ----------------------------------------------------
+  // 单词自动“三遍循环跟读”引擎开发
+  // ----------------------------------------------------
+
+  // 异步播放英文，优先使用有道真人 TTS，降级为原生美音语音合成并返回 Promise (附带3秒超时安全保护)
+  const playEnglishAudio = (text) => {
+    return new Promise((resolve) => {
+      if (!isAutoReadingRef.current) {
+        resolve();
+        return;
+      }
+
+      // 严格防护：非空和类型校验
+      if (!text || typeof text !== 'string') {
+        resolve();
+        return;
+      }
+
+      let resolved = false;
+      const safeResolve = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve();
+        }
+      };
+
+      // 3000ms 强行超时解锁
+      const timeoutId = setTimeout(() => {
+        console.warn('English audio play timeout, fallback/resolve forced');
+        safeResolve();
+      }, 3000);
+
+      try {
+        const voiceUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=2`;
+        const audio = new Audio(voiceUrl);
+        audio.volume = 0.78; // 稍微下调过响的美音英文音量，以平衡整体听感，烘托中文音量
+        audioRef.current = audio;
+        
+        audio.onended = () => {
+          safeResolve();
+        };
+        audio.onerror = () => {
+          clearTimeout(timeoutId);
+          resolved = true;
+          fallbackEnglishSpeech(text).then(resolve);
+        };
+        audio.play().catch(() => {
+          clearTimeout(timeoutId);
+          resolved = true;
+          fallbackEnglishSpeech(text).then(resolve);
+        });
+      } catch (e) {
+        clearTimeout(timeoutId);
+        resolved = true;
+        fallbackEnglishSpeech(text).then(resolve);
+      }
+    });
+  };
+
+  // 原生英文合成发音 Promise (带3秒超时安全保护)
+  const fallbackEnglishSpeech = (text) => {
+    return new Promise((resolve) => {
+      if (!isAutoReadingRef.current || !('speechSynthesis' in window)) {
+        resolve();
+        return;
+      }
+
+      let resolved = false;
+      const safeResolve = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve();
+        }
+      };
+
+      const timeoutId = setTimeout(() => {
+        safeResolve();
+      }, 3000);
+
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US';
+        utterance.rate = 0.82;
+        utterance.onend = () => {
+          safeResolve();
+        };
+        utterance.onerror = () => {
+          safeResolve();
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        safeResolve();
+      }
+    });
+  };
+
+  // 异步朗读中文意思 Promise (有道中文 TTS 真人发音 ➔ 百度中文 TTS ➔ 原生 Web Speech 三重安全兜底)
+  const playChineseSpeech = (text) => {
+    return new Promise((resolve) => {
+      if (!isAutoReadingRef.current) {
+        resolve();
+        return;
+      }
+
+      // 严格防护：非空和类型校验
+      if (!text || typeof text !== 'string') {
+        resolve();
+        return;
+      }
+
+      let resolved = false;
+      const safeResolve = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve();
+        }
+      };
+
+      // 3000ms 强行超时解锁
+      const timeoutId = setTimeout(() => {
+        console.warn('Chinese speech timeout, force resolve');
+        safeResolve();
+      }, 3000);
+
+      let cleanText = '';
+
+      try {
+        // 去掉所有的中英文括号及括号内的修饰词 (比如 "pron. 他 (主格)" -> "pron. 他 ")
+        const noBrackets = text.replace(/\(.*?\)/g, '').replace(/（.*?）/g, '');
+        // 匹配提取出其中的中文汉字
+        const chineseChars = noBrackets.match(/[\u4e00-\u9fa5]+/g);
+        cleanText = chineseChars ? chineseChars.join('') : '';
+
+        if (!cleanText) {
+          cleanText = text.replace(/^[a-zA-Z\.\s\/、，\d\(\)]+/, '').trim();
+        }
+        if (!cleanText) cleanText = text;
+
+        // 第一层：有道中文真人发音 (显式指定 le=zh 中文引擎)
+        const voiceUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(cleanText)}&le=zh`;
+        const audio = new Audio(voiceUrl);
+        audio.volume = 1.0; // 显式设置为最大音量，保障发声清晰洪亮
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          safeResolve();
+        };
+        audio.onerror = () => {
+          clearTimeout(timeoutId);
+          resolved = true;
+          tryBaiduChineseSpeech(cleanText).then(resolve);
+        };
+        audio.play().catch(() => {
+          clearTimeout(timeoutId);
+          resolved = true;
+          tryBaiduChineseSpeech(cleanText).then(resolve);
+        });
+      } catch (e) {
+        console.error('Chinese TTS catch error:', e);
+        clearTimeout(timeoutId);
+        resolved = true;
+        tryBaiduChineseSpeech(cleanText || text).then(resolve);
+      }
+    });
+  };
+
+  // 第二层：百度普通话真人发音
+  const tryBaiduChineseSpeech = (cleanText) => {
+    return new Promise((resolve) => {
+      if (!isAutoReadingRef.current) {
+        resolve();
+        return;
+      }
+
+      let resolved = false;
+      const safeResolve = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve();
+        }
+      };
+
+      const timeoutId = setTimeout(() => {
+        safeResolve();
+      }, 3000);
+
+      try {
+        const voiceUrl = `https://tts.baidu.com/text2audio?lan=zh&ie=UTF-8&spd=5&text=${encodeURIComponent(cleanText)}`;
+        const audio = new Audio(voiceUrl);
+        audio.volume = 1.0; // 显式设置为最大音量，保障发声清晰洪亮
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          safeResolve();
+        };
+        audio.onerror = () => {
+          clearTimeout(timeoutId);
+          resolved = true;
+          fallbackChineseSpeech(cleanText).then(resolve);
+        };
+        audio.play().catch(() => {
+          clearTimeout(timeoutId);
+          resolved = true;
+          fallbackChineseSpeech(cleanText).then(resolve);
+        });
+      } catch (e) {
+        clearTimeout(timeoutId);
+        resolved = true;
+        fallbackChineseSpeech(cleanText).then(resolve);
+      }
+    });
+  };
+
+  // 原生中文 SpeechSynthesis 兜底 (带3秒超时安全保护)
+  const fallbackChineseSpeech = (text) => {
+    return new Promise((resolve) => {
+      if (!isAutoReadingRef.current || !('speechSynthesis' in window)) {
+        resolve();
+        return;
+      }
+
+      let resolved = false;
+      const safeResolve = () => {
+        if (!resolved) {
+          resolved = true;
+          clearTimeout(timeoutId);
+          resolve();
+        }
+      };
+
+      const timeoutId = setTimeout(() => {
+        safeResolve();
+      }, 3000);
+
+      try {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'zh-CN';
+        utterance.rate = 0.9;
+        utterance.onend = () => {
+          safeResolve();
+        };
+        utterance.onerror = () => {
+          safeResolve();
+        };
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        safeResolve();
+      }
+    });
+  };
+
+  // 开始三遍循环自动跟读
+  const startAutoReading = async () => {
+    if (currentDayWords.length === 0) return;
+    setIsAutoReading(true);
+    isAutoReadingRef.current = true;
+    
+    for (let i = 0; i < currentDayWords.length; i++) {
+      if (!isAutoReadingRef.current) break;
+      setCurrentReadIndex(i);
+      
+      // 自动滚屏到当前正在背诵的卡片位置以增强体验
+      const wordCardElement = document.getElementById(`word-card-${i}`);
+      if (wordCardElement) {
+        wordCardElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      
+      const item = currentDayWords[i];
+      for (let loop = 1; loop <= 3; loop++) {
+        if (!isAutoReadingRef.current) break;
+        
+        await playEnglishAudio(item.word);
+        if (!isAutoReadingRef.current) break;
+        await new Promise(r => setTimeout(r, 150)); // 英中衔接微顿（150ms），合为“英文+中文”发音单元
+        
+        await playChineseSpeech(item.translation);
+        if (!isAutoReadingRef.current) break;
+        await new Promise(r => setTimeout(r, 450)); // 一遍朗读后的适度切换微顿（450ms）
+      }
+    }
+    stopAutoReading();
+  };
+
+  // 停止跟读并清空状态
+  const stopAutoReading = () => {
+    isAutoReadingRef.current = false;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsAutoReading(false);
+    setCurrentReadIndex(-1);
+  };
+
+  // 监听天数与Tab变化，自动断开跟读，防止泄漏
+  useEffect(() => {
+    stopAutoReading();
+    return () => {
+      stopAutoReading();
+    };
+  }, [selectedDayId, activeTab]);
 
   // 更新金币分值：做对 +1，做错 -1
   const updateGoldCoin = (isCorrect) => {
@@ -606,7 +940,50 @@ export default function EnglishModule() {
               <div className="glass-card" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '16px 20px' }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 'bold', margin: '0 0 4px 0', color: 'hsl(var(--color-optics))', borderBottom: '2px solid rgba(59,130,246,0.06)', paddingBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>🔊 今日必背词汇 (40 个 / 1200)</span>
-                  <span style={{ fontSize: '0.72rem', opacity: 0.6 }}>点击喇叭朗读发音</span>
+                  
+                  {isAutoReading ? (
+                    <button
+                      onClick={stopAutoReading}
+                      className="scale-up"
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 'bold',
+                        color: '#ffffff',
+                        backgroundColor: '#ef4444',
+                        border: 'none',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 8px rgba(239, 68, 68, 0.2)'
+                      }}
+                    >
+                      ⏹️ 停止跟读 ({currentReadIndex + 1}/40)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={startAutoReading}
+                      className="scale-up"
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 'bold',
+                        color: '#ffffff',
+                        backgroundColor: '#a855f7',
+                        border: 'none',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 8px rgba(168, 85, 247, 0.2)'
+                      }}
+                    >
+                      🔁 三遍跟读词表
+                    </button>
+                  )}
                 </h3>
                 
                 {/* 智能筛词天平状态条 */}
@@ -638,7 +1015,12 @@ export default function EnglishModule() {
                     let cardOpacity = 1;
                     let cardGlow = 'none';
 
-                    if (isMastered) {
+                    if (isAutoReading && currentReadIndex === idx) {
+                      cardBg = 'linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%)';
+                      cardBorder = '1.8px solid #a855f7';
+                      cardGlow = '0 4px 16px rgba(168, 85, 247, 0.25)';
+                      cardOpacity = 1;
+                    } else if (isMastered) {
                       cardBg = '#f1f5f9';
                       cardBorder = '1px solid #e2e8f0';
                       cardOpacity = 0.55;
@@ -651,6 +1033,7 @@ export default function EnglishModule() {
                     return (
                       <div
                         key={idx}
+                        id={`word-card-${idx}`}
                         style={{
                           padding: '14px',
                           border: cardBorder,
@@ -773,35 +1156,6 @@ export default function EnglishModule() {
 
                         <div style={{ fontSize: '0.76rem', color: '#b45309', backgroundColor: '#fffbeb', padding: '6px 10px', borderRadius: '4px', borderLeft: '3px solid #f59e0b' }}>
                           💡 <b>助记捷径：</b>{item.tip}
-                        </div>
-
-                        <div style={{
-                          fontSize: '0.8rem',
-                          backgroundColor: '#ffffff',
-                          padding: '8px 10px',
-                          borderRadius: '6px',
-                          border: '1px solid rgba(0,0,0,0.02)',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}>
-                          <div style={{ paddingRight: '8px' }}>
-                            <div style={{ fontStyle: 'italic', color: '#4a5568' }}>“ {item.sentence} ”</div>
-                            <div style={{ fontSize: '0.74rem', color: '#718096', marginTop: '2px' }}>{item.sentence_translation}</div>
-                          </div>
-                          <button
-                            style={{
-                              border: 'none',
-                              backgroundColor: 'transparent',
-                              color: '#718096',
-                              fontSize: '0.85rem',
-                              cursor: 'pointer'
-                            }}
-                            title="听例句发音"
-                            onClick={() => speakText(item.sentence)}
-                          >
-                            🗣️
-                          </button>
                         </div>
                       </div>
                     );
