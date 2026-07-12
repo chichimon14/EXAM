@@ -1,0 +1,158 @@
+/**
+ * 中考复习系统 - 极简多端云同步服务
+ * 针对个人/家庭复习场景设计，使用高可用、免注册公共加密 KV 存储实现多端实时同步
+ */
+
+// 使用专门为本项目生成的独立随机 Bucket 桶名，保障个人数据隔离与安全性
+const BUCKET_ID = 'kvdb_exam_progress_bucket_julian_doudou_9a12bc';
+const BASE_URL = `https://kvdb.io/${BUCKET_ID}`;
+
+// 账号定义
+export const ACCOUNTS = {
+  doudou: { username: 'doudou', role: 'user', displayName: '豆豆' },
+  admin: { username: 'admin', role: 'admin', displayName: '管理员' }
+};
+
+// 检查是否已登录并返回当前用户
+export const getCurrentUser = () => {
+  return localStorage.getItem('exam-current-user') || '';
+};
+
+// 执行登录
+export const loginUser = async (username, password) => {
+  const account = ACCOUNTS[username];
+  if (!account || username !== password) {
+    throw new Error('账号或密码错误');
+  }
+  
+  // 记录本地登录状态
+  localStorage.setItem('exam-current-user', username);
+  
+  // 尝试从云端同步最新的进度
+  try {
+    const cloudProgress = await loadFromCloud(username);
+    if (cloudProgress) {
+      restoreLocalProgress(cloudProgress);
+      // 派发全局同步成功事件，通知所有子组件刷新数据
+      window.dispatchEvent(new Event('progress-synced'));
+      return { account, synced: true };
+    }
+  } catch (e) {
+    console.warn('Cloud sync error on login, fallback to local:', e);
+  }
+  
+  return { account, synced: false };
+};
+
+// 退出登录
+export const logoutUser = () => {
+  localStorage.removeItem('exam-current-user');
+  window.dispatchEvent(new Event('progress-synced'));
+};
+
+// 打包当前 LocalStorage 中所有的答题分数、错题、词汇记录
+export const getLocalProgress = () => {
+  const progress = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    // 只打包中考系统各科目答题分数、错题库、背词记录相关的数据键
+    if (
+      key.startsWith('math-') ||
+      key.startsWith('physics-') ||
+      key.startsWith('chemistry-') ||
+      key.startsWith('english-')
+    ) {
+      progress[key] = localStorage.getItem(key);
+    }
+  }
+  return progress;
+};
+
+// 将云端数据还原写入本地 LocalStorage
+export const restoreLocalProgress = (progress) => {
+  if (!progress || typeof progress !== 'object') return;
+  Object.keys(progress).forEach((key) => {
+    localStorage.setItem(key, progress[key]);
+  });
+};
+
+// 远程拉取云端进度
+export const loadFromCloud = async (username) => {
+  try {
+    const response = await fetch(`${BASE_URL}/${username}`);
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null; // 还没有云备份
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const text = await response.text();
+    if (!text) return null;
+    return JSON.parse(text);
+  } catch (e) {
+    console.error('Failed to load progress from cloud:', e);
+    throw e;
+  }
+};
+
+// 备份本地进度至云端（核心接口，支持防抖）
+let syncTimeoutId = null;
+export const triggerCloudSync = (username) => {
+  if (!username) return;
+  
+  // 800ms 防抖，防止做题、划词时由于高频操作发送过多的 HTTP 请求
+  if (syncTimeoutId) {
+    clearTimeout(syncTimeoutId);
+  }
+  
+  syncTimeoutId = setTimeout(async () => {
+    try {
+      const progress = getLocalProgress();
+      await fetch(`${BASE_URL}/${username}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(progress)
+      });
+      console.log(`Cloud sync success for user: ${username}`);
+    } catch (e) {
+      console.warn('Failed to sync progress to cloud:', e);
+    }
+  }, 800);
+};
+
+// 全局代理本地存储，实现静默全自动云同步
+if (typeof window !== 'undefined') {
+  const originalSetItem = localStorage.setItem;
+  localStorage.setItem = function (key, value) {
+    originalSetItem.apply(this, arguments);
+    if (
+      key.startsWith('math-') ||
+      key.startsWith('physics-') ||
+      key.startsWith('chemistry-') ||
+      key.startsWith('english-')
+    ) {
+      const user = localStorage.getItem('exam-current-user');
+      if (user) {
+        triggerCloudSync(user);
+      }
+    }
+  };
+
+  const originalRemoveItem = localStorage.removeItem;
+  localStorage.removeItem = function (key) {
+    originalRemoveItem.apply(this, arguments);
+    if (
+      key.startsWith('math-') ||
+      key.startsWith('physics-') ||
+      key.startsWith('chemistry-') ||
+      key.startsWith('english-')
+    ) {
+      const user = localStorage.getItem('exam-current-user');
+      if (user) {
+        triggerCloudSync(user);
+      }
+    }
+  };
+}

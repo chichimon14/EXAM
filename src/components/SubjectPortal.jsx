@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getCurrentUser, loginUser, logoutUser, ACCOUNTS } from '../utils/syncService';
 
 export default function SubjectPortal({ onSelectSubject }) {
   const [scores, setScores] = useState({
@@ -8,30 +9,77 @@ export default function SubjectPortal({ onSelectSubject }) {
     english: 0
   });
   const [showScoreModal, setShowScoreModal] = useState(false);
+  
+  // 云端同步账户状态
+  const [currentUser, setCurrentUser] = useState(getCurrentUser());
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginForm, setLoginForm] = useState({ username: '', password: '' });
+  const [loginError, setLoginError] = useState('');
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    const calcScore = (subj) => {
-      let total = 0;
-      const maxDays = subj === 'english' ? 30 : 25;
-      const startDay = subj === 'chemistry' ? 0 : 1;
-      for (let i = startDay; i <= maxDays; i++) {
-        const val = localStorage.getItem(`${subj}-score-day${i}`);
-        if (val !== null) {
-          total += parseInt(val, 10);
+    const loadAllScores = () => {
+      const calcScore = (subj) => {
+        let total = 0;
+        const maxDays = subj === 'english' ? 30 : 25;
+        const startDay = subj === 'chemistry' ? 0 : 1;
+        for (let i = startDay; i <= maxDays; i++) {
+          const val = localStorage.getItem(`${subj}-score-day${i}`);
+          if (val !== null) {
+            total += parseInt(val, 10);
+          }
         }
-      }
-      return total;
+        return total;
+      };
+
+      setScores({
+        math: calcScore('math'),
+        physics: calcScore('physics'),
+        chemistry: calcScore('chemistry'),
+        english: calcScore('english')
+      });
     };
 
-    setScores({
-      math: calcScore('math'),
-      physics: calcScore('physics'),
-      chemistry: calcScore('chemistry'),
-      english: calcScore('english')
-    });
+    loadAllScores();
+
+    // 监听云同步成功广播事件，自动更新视图上的所有积分与登录人信息
+    const handleSync = () => {
+      loadAllScores();
+      setCurrentUser(getCurrentUser());
+    };
+
+    window.addEventListener('progress-synced', handleSync);
+    return () => {
+      window.removeEventListener('progress-synced', handleSync);
+    };
   }, []);
 
   const totalScore = scores.math + scores.physics + scores.chemistry + scores.english;
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsSyncing(true);
+    try {
+      const result = await loginUser(loginForm.username, loginForm.password);
+      setCurrentUser(loginForm.username);
+      setShowLoginModal(false);
+      setLoginForm({ username: '', password: '' });
+      alert(result.synced ? '🎉 登录成功！已从云端拉取恢复您的学习进度。' : '🎉 登录成功！首次备份已同步至云端。');
+    } catch (err) {
+      setLoginError(err.message || '登录失败，请检查账号密码');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm('提示：确定要退出登录吗？退出后，新的学习进度和获得的积分将仅保存在当前浏览器本地。')) {
+      logoutUser();
+      setCurrentUser('');
+      alert('已成功退出登录，云同步已挂起。');
+    }
+  };
 
   const subjects = [
     {
@@ -113,32 +161,71 @@ export default function SubjectPortal({ onSelectSubject }) {
       position: 'relative'
     }}>
       
-      {/* 右上角悬浮积分小胶囊 */}
-      <div
-        className="glass-card scale-up"
-        onClick={() => setShowScoreModal(true)}
-        style={{
-          position: 'absolute',
-          top: '20px',
-          right: '20px',
-          padding: '6px 14px',
-          borderRadius: '30px',
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.7)',
-          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          fontSize: '0.78rem',
-          fontWeight: 'bold',
-          color: 'hsl(var(--text-primary))',
-          cursor: 'pointer',
-          zIndex: 10
-        }}
-      >
-        <span>🏆 荣誉积分:</span>
-        <span style={{ color: 'hsl(var(--color-work))', fontSize: '0.85rem' }}>{totalScore} 🪙</span>
+      {/* 右上角悬浮积分与同步控制区 */}
+      <div style={{
+        position: 'absolute',
+        top: '20px',
+        right: '20px',
+        display: 'flex',
+        gap: '12px',
+        zIndex: 10
+      }}>
+        {/* 🏆 荣誉积分小胶囊 */}
+        <div
+          className="glass-card scale-up"
+          onClick={() => setShowScoreModal(true)}
+          style={{
+            padding: '6px 14px',
+            borderRadius: '30px',
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.7)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.78rem',
+            fontWeight: 'bold',
+            color: 'hsl(var(--text-primary))',
+            cursor: 'pointer'
+          }}
+        >
+          <span>🏆 荣誉积分:</span>
+          <span style={{ color: 'hsl(var(--color-work))', fontSize: '0.85rem' }}>{totalScore} 🪙</span>
+        </div>
+
+        {/* 👤 登录同步小胶囊 */}
+        <div
+          className="glass-card scale-up"
+          onClick={currentUser ? handleLogout : () => {
+            setLoginError('');
+            setShowLoginModal(true);
+          }}
+          style={{
+            padding: '6px 14px',
+            borderRadius: '30px',
+            background: currentUser
+              ? 'linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: currentUser
+              ? '1px solid rgba(168, 85, 247, 0.25)'
+              : '1px solid rgba(255, 255, 255, 0.7)',
+            boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.78rem',
+            fontWeight: 'bold',
+            color: 'hsl(var(--text-primary))',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          title={currentUser ? "点击退出登录" : "点击开启多端云备份同步"}
+        >
+          <span>👤 {currentUser ? (ACCOUNTS[currentUser]?.displayName || currentUser) : '登录同步'}</span>
+          {currentUser && <span style={{ fontSize: '0.74rem', color: '#a855f7' }}>☁️</span>}
+        </div>
       </div>
       
       {/* 迎新头部 */}
@@ -424,6 +511,166 @@ export default function SubjectPortal({ onSelectSubject }) {
       }}>
         💡 <b>中考名师寄语：</b>中考计算不丢分是冲击深圳名校的基本底线。每天使用本系统狂练 15 分钟，让计算成为潜意识的肌肉记忆！
       </div>
+
+      {/* 👤 多端进度云同步登录弹窗 (Modal) */}
+      {showLoginModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(15, 23, 42, 0.35)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 100,
+          animation: 'fadeIn 0.25s ease-out'
+        }}>
+          {/* 弹窗本体 */}
+          <div style={{
+            width: '380px',
+            padding: '28px',
+            borderRadius: '20px',
+            backgroundColor: '#ffffff',
+            border: '1px solid rgba(0, 0, 0, 0.05)',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px',
+            position: 'relative',
+            animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}>
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setShowLoginModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                border: 'none',
+                backgroundColor: 'transparent',
+                fontSize: '1.2rem',
+                color: '#a0aec0',
+                cursor: 'pointer',
+                lineHeight: 1
+              }}
+            >
+              ✕
+            </button>
+
+            {/* 头部介绍 */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>☁️</div>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: '1.2rem', fontWeight: 'bold', color: '#1e293b' }}>
+                多端进度云端同步
+              </h3>
+              <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.5 }}>
+                登录后可将分数与错题同步至云数据库，<br />在 iPad、手机或其它设备上学习不丢失积分！
+              </p>
+            </div>
+
+            {/* 登录表单 */}
+            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#475569' }}>学习账号</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="请输入您的账号"
+                  value={loginForm.username}
+                  onChange={(e) => setLoginForm({ ...loginForm, username: e.target.value })}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.85rem',
+                    color: '#334155',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#475569' }}>登录密码</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="请输入您的密码"
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.85rem',
+                    color: '#334155',
+                    outline: 'none',
+                    transition: 'border-color 0.2s'
+                  }}
+                />
+              </div>
+
+              {loginError && (
+                <div style={{
+                  fontSize: '0.76rem',
+                  color: '#ef4444',
+                  backgroundColor: '#fef2f2',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #fee2e2',
+                  textAlign: 'center'
+                }}>
+                  ⚠️ {loginError}
+                </div>
+              )}
+
+              {/* 提交按钮 */}
+              <button
+                type="submit"
+                disabled={isSyncing}
+                style={{
+                  marginTop: '6px',
+                  padding: '12px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #a855f7 0%, #3b82f6 100%)',
+                  color: '#ffffff',
+                  fontSize: '0.88rem',
+                  fontWeight: 'bold',
+                  cursor: isSyncing ? 'not-allowed' : 'pointer',
+                  boxShadow: '0 4px 12px rgba(168, 85, 247, 0.2)',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isSyncing ? '正在拉取云端存档...' : '确认登录并云同步'}
+              </button>
+            </form>
+
+            {/* 底部备注提示 */}
+            <div style={{
+              fontSize: '0.72rem',
+              color: '#94a3b8',
+              textAlign: 'center',
+              backgroundColor: '#f8fafc',
+              padding: '10px',
+              borderRadius: '8px',
+              border: '1px solid #f1f5f9',
+              lineHeight: 1.5
+            }}>
+              💡 <b>温馨提示：</b><br />
+              • 学生账号：用户名 <b>doudou</b>，密码 <b>doudou</b><br />
+              • 教师账号：用户名 <b>admin</b>，密码 <b>admin</b>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

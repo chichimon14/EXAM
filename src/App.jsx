@@ -4,6 +4,7 @@ import PhysicsModule from './components/PhysicsModule';
 import MathModule from './components/MathModule';
 import ChemistryModule from './components/ChemistryModule';
 import EnglishModule from './components/EnglishModule';
+import './utils/syncService';
 
 export default function App() {
   const [activeSubject, setActiveSubject] = useState(null); // null (门户首页) | 'physics' | 'math' | 'chemistry' | 'english'
