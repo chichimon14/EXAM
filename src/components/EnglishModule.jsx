@@ -18,7 +18,7 @@ export default function EnglishModule() {
   const isAutoReadingRef = useRef(false);
   const audioRef = useRef(null);
 
-  // 20题测试状态
+  // 10题测试状态
   const [testQuestions, setTestQuestions] = useState([]);
   const [testAnswers, setTestAnswers] = useState({}); // { [qId]: selectedOpt }
   const [currentTestIndex, setCurrentTestIndex] = useState(0);
@@ -134,10 +134,10 @@ export default function EnglishModule() {
     localStorage.setItem('english-unfamiliar-words', JSON.stringify(nextUnfamiliar));
   };
 
-  // 开启20题测试
+  // 开启10题测试
   const handleStartTest = () => {
     const dayData = englishDays[selectedDayId] || englishDays['day1'];
-    const generated = generateEnglishQuestions(dayData.topicId, 20);
+    const generated = generateEnglishQuestions(dayData.topicId, 10);
     setTestQuestions(generated);
     setTestAnswers({});
     setCurrentTestIndex(0);
@@ -610,7 +610,7 @@ export default function EnglishModule() {
     }
   };
 
-  // 20题测试单步提交
+  // 10题测试单步提交
   const handleTestSubmit = () => {
     if (selectedTestOpt === null) return;
     const currentQ = testQuestions[currentTestIndex];
@@ -633,7 +633,7 @@ export default function EnglishModule() {
     setTestChecked(true);
   };
 
-  // 20题测试下一题
+  // 10题测试下一题
   const handleNextTest = () => {
     setSelectedTestOpt(null);
     setTestChecked(false);
@@ -1009,7 +1009,7 @@ export default function EnglishModule() {
                   borderColor: activeTab === 'test' ? '#a855f7' : ''
                 }}
               >
-                ✍️ 20题过关小测
+                ✍️ 10题过关小测
               </button>
               <button
                 className={`btn ${activeTab === 'exercise' ? 'btn-primary' : 'btn-secondary'}`}
@@ -1329,7 +1329,7 @@ export default function EnglishModule() {
           </div>
         )}
 
-        {/* Tab 2: 20题测试大厅 */}
+        {/* Tab 2: 10题测试大厅 */}
         {activeTab === 'test' && (
           <div className="glass-card" style={{ flex: 1, padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px', minHeight: '500px', overflowY: 'auto' }}>
             {!testSubmitted ? (
@@ -1344,7 +1344,7 @@ export default function EnglishModule() {
                     🇬🇧 开启：Day {selectedDayId.replace('day', '')} 英语小测
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', maxWidth: '440px', margin: '0 auto', lineHeight: '1.6' }}>
-                    测验包含 20 道当天词汇拼写与时态填空。做对一道<b>+1金币</b>，做错一道<b>-1金币</b>，防止分心小测后结算。
+                    测验包含 10 道当天词汇连线与语法单选。做对一道<b>+1金币</b>，做错一道<b>-1金币</b>，防止分心小测后结算。
                   </p>
                 </div>
                 <button className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.88rem', fontWeight: 'bold', backgroundColor: '#a855f7', borderColor: '#a855f7' }} onClick={handleStartTest}>
@@ -1355,12 +1355,12 @@ export default function EnglishModule() {
               /* 答题中 */
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
-                  <span>当前进度：<b>{currentTestIndex + 1}</b> / 20 题</span>
+                  <span>当前进度：<b>{currentTestIndex + 1}</b> / {testQuestions.length} 题</span>
                   <span>今日小测中...</span>
                 </div>
 
                 <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${((currentTestIndex + 1) / 20) * 100}%`, height: '100%', backgroundColor: '#a855f7', transition: 'width 0.3s ease' }}></div>
+                  <div style={{ width: `${((currentTestIndex + 1) / testQuestions.length) * 100}%`, height: '100%', backgroundColor: '#a855f7', transition: 'width 0.3s ease' }}></div>
                 </div>
 
                 <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid #edf2f7', fontSize: '0.98rem', fontWeight: 'bold' }}>
