@@ -117,6 +117,7 @@ export default function ChemistryModule() {
   // 更新金币积分：做对 +1，做错 -1
   const updateGoldCoin = (isCorrect) => {
     const currentScore = dayScores[selectedDayId] || 0;
+    if (currentScore > 0) return; // 重复学习不加分/扣分，分值锁定
     const delta = isCorrect ? 1 : -1;
     const newScore = currentScore + delta;
     
@@ -801,6 +802,10 @@ export default function ChemistryModule() {
                         itemBg = 'linear-gradient(135deg, hsl(var(--color-optics)), #10b981)';
                         itemColor = '#ffffff';
                         fontW = 'bold';
+                      } else if (isPassed) {
+                        itemBg = 'rgba(16, 185, 129, 0.12)'; // 已学过标注特殊色（淡绿色背景）
+                        itemColor = '#059669'; // 绿色字体
+                        fontW = '500';
                       }
 
                       return (

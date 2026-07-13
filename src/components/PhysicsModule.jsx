@@ -92,6 +92,7 @@ export default function PhysicsModule() {
   // 更新金币分值：做对 +1，做错 -1
   const updateGoldCoin = (isCorrect) => {
     const currentScore = dayScores[selectedChapterId] || 0;
+    if (currentScore > 0) return; // 重复学习不加分/扣分，分值锁定
     const delta = isCorrect ? 1 : -1;
     const newScore = currentScore + delta;
     
@@ -1217,6 +1218,10 @@ export default function PhysicsModule() {
                         itemBg = 'linear-gradient(135deg, hsl(var(--color-mech)), #8b5cf6)';
                         itemColor = '#ffffff';
                         fontW = 'bold';
+                      } else if (isPassed) {
+                        itemBg = 'rgba(59, 130, 246, 0.12)'; // 已学过标注特殊色（淡蓝色背景）
+                        itemColor = '#2563eb'; // 蓝色字体
+                        fontW = '500';
                       }
 
                       return (

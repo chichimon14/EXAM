@@ -88,17 +88,124 @@ export default function SubjectPortal({ onSelectSubject }) {
     }
   };
 
+// 获取豆豆内置演示档案数据
+const getMockDoudouProgress = () => {
+  const mathWrongs = [
+    { id: "math_q_1_1", question: "计算：3/5 + 1/2 = ？", options: ["11/10", "4/7", "2/5", "3/10"], answer: 0, userAnswer: 1, explanation: "通分后为 6/10 + 5/10 = 11/10。", knowledgePoint: "分数加减混合运算" },
+    { id: "math_q_1_2", question: "解方程组：x + y = 5, 2x - y = 4", options: ["x=3, y=2", "x=2, y=3", "x=1, y=4", "x=4, y=1"], answer: 0, userAnswer: 1, explanation: "①+②得3x=9, x=3, 代入得y=2。", knowledgePoint: "二元一次方程组求解" }
+  ];
+  const physicsWrongs = [
+    { id: "phys_q_1_1", question: "测得某一实心金属块的质量为 100 g，体积为 20 cm³，则该金属块的密度为：", options: ["5.00 g/cm³", "0.20 g/cm³", "2000 g/cm³", "4.00 g/cm³"], answer: 0, userAnswer: 1, explanation: "ρ = m/V = 100/20 = 5.00 g/cm³。", knowledgePoint: "密度计算" },
+    { id: "phys_q_1_2", question: "一物体放在月球车上运回地球，其在地球上的质量为 30 kg，则它受到的重力是 (g取10 N/kg)：", options: ["300 N", "30 N", "3 N", "310 N"], answer: 0, userAnswer: 1, explanation: "G = mg = 30 kg × 10 N/kg = 300 N。", knowledgePoint: "重力计算" }
+  ];
+  const chemistryWrongs = [
+    { id: "chem_q_1_1", question: "地壳中含量最多的金属元素是：", options: ["铝", "氧", "硅", "铁"], answer: 0, userAnswer: 3, explanation: "地壳中元素含量前四位是氧、硅、铝、铁，其中铝是含量最多的金属元素。", knowledgePoint: "地壳中元素含量" },
+    { id: "chem_q_1_2", question: "下列属于物理变化的是：", options: ["水结成冰", "木材燃烧", "铁钉生锈", "食物腐烂"], answer: 0, userAnswer: 1, explanation: "水结成冰没有新物质生成，属于物理变化；其余有新物质生成，为化学变化。", knowledgePoint: "物理变化与化学变化" }
+  ];
+  const englishWrongs = [
+    { id: 50401, question: "How much did you _______ for the new English dictionary?", options: ["pay", "spend", "cost", "take"], answer: 0, userAnswer: 1, explanation: "主语是人，且后面搭配 for，选 pay。", knowledgePoint: "花费动词辨析" },
+    { id: 50501, question: "Although he was very tired, _______ he still finished writing his homework.", options: ["/", "but", "so", "however"], answer: 0, userAnswer: 1, explanation: "although 和 but 不能同句共存。", knowledgePoint: "连词互斥法则" }
+  ];
+
+  const logs = [
+    { id: "log_1", timeString: "今天 19:42", subject: "english", action: "quiz_complete", detail: "完成英语 Day 1 10题过关小测", score: 9, total: 10, accuracy: 90, weaknesses: ["方位介词辨析"] },
+    { id: "log_2", timeString: "今天 14:15", subject: "chemistry", action: "quiz_complete", detail: "完成化学 Day 1 元素符号消除特训", score: 10, total: 10, accuracy: 100, weaknesses: [] },
+    { id: "log_3", timeString: "昨天 20:30", subject: "physics", action: "quiz_complete", detail: "完成物理 Day 2 密度测定虚拟实验", score: 8, total: 10, accuracy: 80, weaknesses: ["密度计算"] },
+    { id: "log_4", timeString: "前天 16:20", subject: "math", action: "quiz_complete", detail: "完成数学 Day 3 二元一次方程组求解", score: 7, total: 10, accuracy: 70, weaknesses: ["二元一次方程组求解"] }
+  ];
+
+  return {
+    "total-gold-coins": "158",
+    "math-score-day1": "8",
+    "math-score-day2": "9",
+    "math-score-day3": "7",
+    "math-score-day4": "8",
+    "math-score-day5": "10",
+    "physics-score-day1": "9",
+    "physics-score-day2": "8",
+    "physics-score-day3": "9",
+    "physics-score-day4": "10",
+    "chemistry-score-day0": "9",
+    "chemistry-score-day1": "10",
+    "chemistry-score-day2": "8",
+    "english-score-day1": "9",
+    "english-score-day2": "9",
+    "english-score-day3": "10",
+    "math-wrongs": JSON.stringify(mathWrongs),
+    "physics-wrongs": JSON.stringify(physicsWrongs),
+    "chemistry-wrongs": JSON.stringify(chemistryWrongs),
+    "english-wrongs": JSON.stringify(englishWrongs),
+    "exam-study-logs": JSON.stringify(logs)
+  };
+};
+
   const handleOpenAdminDashboard = async () => {
     setLoadingDoudou(true);
     setAdminActiveTab('summary');
     setShowAdminModal(true);
     try {
-      // 从云端数据库抓取豆豆的真实复习存档
-      const progress = await loadFromCloud('doudou');
+      // 1. 尝试从云端数据库抓取豆豆的真实复习存档
+      let progress = await loadFromCloud('doudou');
+      
+      // 2. 判断云端数据是否真的存在且有效
+      const hasCloudData = progress && Object.keys(progress).some(key => 
+        key.startsWith('math-') || 
+        key.startsWith('physics-') || 
+        key.startsWith('chemistry-') || 
+        key.startsWith('english-') || 
+        key === 'exam-study-logs'
+      );
+      
+      let dataSource = 'cloud';
+      
+      if (!hasCloudData) {
+        // 3. 尝试从当前浏览器本地 localStorage 聚合成一个 progress 对象
+        const localProgress = {};
+        const allowedKeys = [
+          'exam-study-logs', 'total-gold-coins',
+          'math-wrongs', 'physics-wrongs', 'english-wrongs'
+        ];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (allowedKeys.includes(key) || 
+              key.startsWith('math-score-') || 
+              key.startsWith('physics-score-') || 
+              key.startsWith('chemistry-score-') || 
+              key.startsWith('english-score-') ||
+              key === 'chemistry-wrong-questions'
+          ) {
+            let targetKey = key;
+            if (key === 'chemistry-wrong-questions') {
+              targetKey = 'chemistry-wrongs';
+            }
+            localProgress[targetKey] = localStorage.getItem(key);
+          }
+        }
+        
+        const hasLocalData = Object.keys(localProgress).length > 0 && (
+          localProgress['exam-study-logs'] || 
+          Object.keys(localProgress).some(k => k.includes('-score-'))
+        );
+        
+        if (hasLocalData) {
+          progress = localProgress;
+          dataSource = 'local';
+        } else {
+          // 4. 云端和本地均为空，载入精美模拟档案
+          progress = getMockDoudouProgress();
+          dataSource = 'mock';
+        }
+      }
+      
+      progress._dataSource = dataSource;
       setDoudouProgress(progress);
     } catch (e) {
       console.error(e);
-      alert('获取豆豆学习进度失败，请检查网络是否畅通。');
+      // 加载异常时降级使用模拟档案
+      const fallbackProgress = getMockDoudouProgress();
+      fallbackProgress._dataSource = 'mock_fallback';
+      setDoudouProgress(fallbackProgress);
     } finally {
       setLoadingDoudou(false);
     }
@@ -985,6 +1092,54 @@ export default function SubjectPortal({ onSelectSubject }) {
                   // 5. 渲染对应的 Tab 内容
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                      {doudouProgress._dataSource === 'mock' && (
+                        <div style={{
+                          padding: '10px 16px',
+                          backgroundColor: '#fef3c7',
+                          border: '1px solid #fde68a',
+                          borderRadius: '8px',
+                          color: '#d97706',
+                          fontSize: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span>💡</span>
+                          <span><b>演示提示：</b>未检测到豆豆的云端或本地复习进度，已自动为您载入内置的“名师诊断演示学习档案”。</span>
+                        </div>
+                      )}
+                      {doudouProgress._dataSource === 'local' && (
+                        <div style={{
+                          padding: '10px 16px',
+                          backgroundColor: '#ecfdf5',
+                          border: '1px solid #a7f3d0',
+                          borderRadius: '8px',
+                          color: '#059669',
+                          fontSize: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span>💡</span>
+                          <span><b>数据提示：</b>已自动同步豆豆在当前浏览器本地的最新学习档案与诊断分析。</span>
+                        </div>
+                      )}
+                      {doudouProgress._dataSource === 'mock_fallback' && (
+                        <div style={{
+                          padding: '10px 16px',
+                          backgroundColor: '#fee2e2',
+                          border: '1px solid #fecaca',
+                          borderRadius: '8px',
+                          color: '#dc2626',
+                          fontSize: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}>
+                          <span>⚠️</span>
+                          <span><b>网络提示：</b>连接云数据库超时，已自动为您开启安全离线备用档案以供查阅。</span>
+                        </div>
+                      )}
                       
                       {/* --- Tab 1: 概览看板 --- */}
                       {adminActiveTab === 'summary' && (

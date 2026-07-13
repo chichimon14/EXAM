@@ -99,6 +99,7 @@ export default function MathModule() {
   // 更新金币分值助手函数：做对 +1，做错 -1
   const updateGoldCoin = (isCorrect) => {
     const currentScore = dayScores[selectedDayId] || 0;
+    if (currentScore > 0) return; // 重复学习不加分/扣分，分值锁定
     const delta = isCorrect ? 1 : -1;
     const newScore = currentScore + delta;
     
@@ -601,6 +602,10 @@ export default function MathModule() {
                         itemBg = 'linear-gradient(135deg, hsl(var(--color-work)), #f59e0b)';
                         itemColor = '#ffffff';
                         fontW = 'bold';
+                      } else if (isPassed) {
+                        itemBg = 'rgba(245, 158, 11, 0.12)'; // 已学过标注特殊色（淡橙色背景）
+                        itemColor = '#d97706'; // 橙色字体
+                        fontW = '500';
                       }
 
                       return (
