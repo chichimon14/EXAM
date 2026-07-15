@@ -40,7 +40,7 @@ export default function MathModule() {
       const dayKey = `day${i}`;
       const val = localStorage.getItem(`math-score-${dayKey}`);
       if (val !== null) {
-        scores[dayKey] = parseInt(val, 10);
+        scores[dayKey] = parseFloat(val);
       } else {
         scores[dayKey] = 0; // 默认 0
       }
@@ -96,12 +96,12 @@ export default function MathModule() {
     }
   }, [selectedDayId, activeTab]);
 
-  // 更新金币分值助手函数：做对 +1，做错 -1
-  const updateGoldCoin = (isCorrect) => {
+  // 更新金币分值助手函数：做对 +weight，做错 -weight
+  const updateGoldCoin = (isCorrect, weight = 1) => {
     const currentScore = dayScores[selectedDayId] || 0;
-    if (currentScore > 0) return; // 重复学习不加分/扣分，分值锁定
-    const delta = isCorrect ? 1 : -1;
-    const newScore = currentScore + delta;
+    const delta = isCorrect ? weight : -weight;
+    // 确保积分不为负数，且保留一位小数
+    const newScore = Math.round(Math.max(0, currentScore + delta) * 10) / 10;
     
     const nextScores = { ...dayScores, [selectedDayId]: newScore };
     setDayScores(nextScores);
@@ -178,8 +178,8 @@ export default function MathModule() {
     };
     setExerciseAnswers(nextAnswers);
 
-    // 金币结算 (+1 / -1)
-    updateGoldCoin(isCorrect);
+    // 金币结算 (+0.5 / -0.5)
+    updateGoldCoin(isCorrect, 0.5);
 
     // 做错自动收录到数学错题本
     if (!isCorrect) {

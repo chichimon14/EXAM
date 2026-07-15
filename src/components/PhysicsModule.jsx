@@ -81,7 +81,7 @@ export default function PhysicsModule() {
       const dayKey = `day${i}`;
       const val = localStorage.getItem(`physics-score-${dayKey}`);
       if (val !== null) {
-        scores[dayKey] = parseInt(val, 10);
+        scores[dayKey] = parseFloat(val);
       } else {
         scores[dayKey] = 0;
       }
@@ -89,12 +89,12 @@ export default function PhysicsModule() {
     setDayScores(scores);
   }, []);
 
-  // 更新金币分值：做对 +1，做错 -1
-  const updateGoldCoin = (isCorrect) => {
+  // 更新金币分值：做对 +weight，做错 -weight
+  const updateGoldCoin = (isCorrect, weight = 1) => {
     const currentScore = dayScores[selectedChapterId] || 0;
-    if (currentScore > 0) return; // 重复学习不加分/扣分，分值锁定
-    const delta = isCorrect ? 1 : -1;
-    const newScore = currentScore + delta;
+    const delta = isCorrect ? weight : -weight;
+    // 确保分数不为负数，且保留一位小数
+    const newScore = Math.round(Math.max(0, currentScore + delta) * 10) / 10;
     
     const nextScores = { ...dayScores, [selectedChapterId]: newScore };
     setDayScores(nextScores);
@@ -226,8 +226,8 @@ export default function PhysicsModule() {
     };
     setExerciseAnswers(nextAnswers);
 
-    // 金币扣减与累加
-    updateGoldCoin(isCorrect);
+    // 金币扣减与累加 (+0.5 / -0.5)
+    updateGoldCoin(isCorrect, 0.5);
 
     // 如果做错了，自动收录物理错题本
     if (!isCorrect) {
