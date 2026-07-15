@@ -41,7 +41,7 @@ export const mathDays = {
   day2: {
     id: 'day2',
     blockId: 'math_block1',
-    topicId: 'math_topic1',
+    topicId: 'math_topic2',
     name: 'Day 2：乘除法基本功与多重括号优先级',
     summary: '★【今日目标】2小时。熟练掌握多位数乘除法，牢记括号优先级判定法。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：运算优先级的本质是轻重缓急】\n' +
@@ -74,7 +74,7 @@ export const mathDays = {
   day3: {
     id: 'day3',
     blockId: 'math_block1',
-    topicId: 'math_topic1',
+    topicId: 'math_topic3',
     name: 'Day 3：分数的概念与假分数、带分数的互化',
     summary: '★【今日目标】2小时。掌握分子分母本质，熟练带分数假分数互化技巧。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：分母是西瓜切几块，分子是拿走几块】\n' +
@@ -97,7 +97,7 @@ export const mathDays = {
   day4: {
     id: 'day4',
     blockId: 'math_block1',
-    topicId: 'math_topic1',
+    topicId: 'math_topic4',
     name: 'Day 4：约分与通分的秘密武器 —— 最大公约数与最小公倍数',
     summary: '★【今日目标】2小时。掌握公约数公倍数，用“短除法”彻底通关约分和通分。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：通分约分的本质是“乘以 1”的大法】\n' +
@@ -119,7 +119,7 @@ export const mathDays = {
   day5: {
     id: 'day5',
     blockId: 'math_block1',
-    topicId: 'math_topic1',
+    topicId: 'math_topic5',
     name: 'Day 5：异分母分数加减法与分数乘除法',
     summary: '★【今日目标】2小时。掌握分数四则运算，突破异分母相加和除法倒数转化法则。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：分数除法的翻跟头原理】\n' +
@@ -139,7 +139,7 @@ export const mathDays = {
   day6: {
     id: 'day6',
     blockId: 'math_block1',
-    topicId: 'math_topic1',
+    topicId: 'math_topic6',
     name: 'Day 6：巧用乘法分配律在分数简便运算中',
     summary: '★【今日目标】2小时。学会使用乘法分配律简化大分数计算，规避大数硬算粗心风险。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：分配律的本质是“把苹果派发给括号里的每个人”】\n' +
@@ -162,7 +162,7 @@ export const mathDays = {
   day7: {
     id: 'day7',
     blockId: 'math_block2',
-    topicId: 'math_topic2',
+    topicId: 'math_topic7',
     name: 'Day 7：数的家族谱分类 —— 有理数与无理数',
     summary: '★【今日目标】2小时。掌握实数分类树形图，扫清中考第一题数系概念判定盲区。\n\n' +
              '=========================================\n' +
@@ -192,7 +192,7 @@ export const mathDays = {
   day8: {
     id: 'day8',
     blockId: 'math_block2',
-    topicId: 'math_topic2',
+    topicId: 'math_topic8',
     name: 'Day 8：数轴、相反数与绝对值的去符号混合计算',
     summary: '★【今日目标】2小时。理解相反数绝对值的几何本源，熟练掌握绝对值变号规则。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：绝对值是非负数的几何本质是“距离”】\n' +
@@ -217,7 +217,7 @@ export const mathDays = {
   day9: {
     id: 'day9',
     blockId: 'math_block2',
-    topicId: 'math_topic2',
+    topicId: 'math_topic9',
     name: 'Day 9：有理数加减混合运算与多重去括号变号雷区',
     summary: '★【今日目标】2小时。掌握负数相加减，死磕括号前有“-”号的去括号变号铁律。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：去括号变号的本质是 -1 的乘法分配律】\n' +
@@ -244,7 +244,7 @@ export const mathDays = {
   day10: {
     id: 'day10',
     blockId: 'math_block2',
-    topicId: 'math_topic2',
+    topicId: 'math_topic10',
     name: 'Day 10：有理数乘除与偶奇数次方负号判定',
     summary: '★【今日目标】2小时。掌握乘除号确定法则，扫除 (-3)² 与 -3² 乘方符号盲区。\n\n' +
              '1. 乘除法负号判定 —— “奇负偶正”：\n' +
@@ -266,7 +266,7 @@ export const mathDays = {
   day11: {
     id: 'day11',
     blockId: 'math_block2',
-    topicId: 'math_topic2',
+    topicId: 'math_topic11',
     name: 'Day 11：有理数加减乘除与乘方的超级混合运算综合特训',
     summary: '★【今日目标】2小时。通过混合运算大作战，强力纠正算错正负号、算乱优先级的毛病。\n\n' +
              '运算顺序总决选：\n' +
@@ -294,7 +294,7 @@ export const mathDays = {
   day12: {
     id: 'day12',
     blockId: 'math_block2',
-    topicId: 'math_topic2',
+    topicId: 'math_topic12',
     name: 'Day 12：科学记数法、近似数与有效数字',
     summary: '★【今日目标】2小时。掌握科学记数法确定规则，拿稳中考第二题选择题的送分分值。\n\n' +
              '1. 科学记数法公式： a × 10^n\n' +
@@ -312,7 +312,7 @@ export const mathDays = {
   day13: {
     id: 'day13',
     blockId: 'math_block3',
-    topicId: 'math_topic3',
+    topicId: 'math_topic13',
     name: 'Day 13：代数式、同类项与合并同类项的代数式加减',
     summary: '★【今日目标】2小时。判定同类项，学会去括号和进行多项式合并化简。\n\n' +
              '1. 什么是同类项？\n' +
@@ -333,7 +333,7 @@ export const mathDays = {
   day14: {
     id: 'day14',
     blockId: 'math_block3',
-    topicId: 'math_topic3',
+    topicId: 'math_topic14',
     name: 'Day 14：幂的指数相加相乘三大性质定理',
     summary: '★//【今日目标】2小时。深刻掌握底数幂乘法、积的乘方，避免指数算乱。\n\n' +
              '1. 同底数幂相乘 ➔ 【底数不变，指数相加】：\n' +
@@ -353,7 +353,7 @@ export const mathDays = {
   day15: {
     id: 'day15',
     blockId: 'math_block3',
-    topicId: 'math_topic3',
+    topicId: 'math_topic15',
     name: 'Day 15：乘法公式双壁 —— 平方差与完全平方公式避坑指南',
     summary: '★【今日目标】2小时。掌握乘法公式，突破完全平方漏项的大坑。\n\n' +
              '=========================================\n' +
@@ -384,7 +384,7 @@ export const mathDays = {
   day16: {
     id: 'day16',
     blockId: 'math_block3',
-    topicId: 'math_topic4',
+    topicId: 'math_topic16',
     name: 'Day 16：因式分解第一步 —— 提公因式与公式法',
     summary: '★【今日目标】2小时。掌握因式分解定义，熟练按照“先提公，后公式”步骤进行分解。\n\n' +
              '1. 什么是因式分解？\n' +
@@ -405,7 +405,7 @@ export const mathDays = {
   day17: {
     id: 'day17',
     blockId: 'math_block3',
-    topicId: 'math_topic4',
+    topicId: 'math_topic17',
     name: 'Day 17：因式分解进阶法 —— 十十字相乘分解法',
     summary: '★【今日目标】2小时。掌握十字相乘法分解二次三项式原理，提升口算能力。\n\n' +
              '对于形如 `x² + bx + c` 的三项式：\n' +
@@ -426,7 +426,7 @@ export const mathDays = {
   day18: {
     id: 'day18',
     blockId: 'math_block4',
-    topicId: 'math_topic7',
+    topicId: 'math_topic18',
     name: 'Day 18：一元一次方程的解法与“实际问题列方程”',
     summary: '★【今日目标】2小时。熟解一元方程，掌握根据实际问题提取等量列出算式方程的技巧。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：解方程移项的本质是“天平平衡原理”】\n' +
@@ -453,7 +453,7 @@ export const mathDays = {
   day19: {
     id: 'day19',
     blockId: 'math_block4',
-    topicId: 'math_topic7',
+    topicId: 'math_topic19',
     name: 'Day 19：二元一次方程组消元与“列方程组解决问题”',
     summary: '★【今日目标】2小时。掌握消元法解二元一次方程组，学习列方程组的应用题式子建立。\n\n' +
              '1. 方程组消元：\n' +
@@ -479,7 +479,7 @@ export const mathDays = {
   day20: {
     id: 'day20',
     blockId: 'math_block4',
-    topicId: 'math_topic5',
+    topicId: 'math_topic20',
     name: 'Day 20：分式的通分、约分与乘除混合运算',
     summary: '★【今日目标】2小时。掌握最简公分母，熟练利用因式分解化简约分。\n\n' +
              '1. 约分的灵魂 —— 【先因式分解】：\n' +
@@ -504,7 +504,7 @@ export const mathDays = {
   day21: {
     id: 'day21',
     blockId: 'math_block4',
-    topicId: 'math_topic5',
+    topicId: 'math_topic21',
     name: 'Day 21：分式化简求值 —— 深圳中考必考 8分大作突破',
     summary: '★【今日目标】2小时。攻克中考分式化简大题，拿稳选数防雷得分点。\n\n' +
              '中考分式化简求值 8 分必得题解题铁律：\n' +
@@ -532,7 +532,7 @@ export const mathDays = {
   day22: {
     id: 'day22',
     blockId: 'math_block4',
-    topicId: 'math_topic6',
+    topicId: 'math_topic22',
     name: 'Day 22：二次根式的最简根式化简与分母有理化',
     summary: '★【今日目标】2小时。最简二次根式化简，去除分母根号有理化。\n\n' +
              '1. 什么样的二次根式叫最简？\n' +
@@ -558,7 +558,7 @@ export const mathDays = {
   day23: {
     id: 'day23',
     blockId: 'math_block5',
-    topicId: 'math_topic8',
+    topicId: 'math_topic23',
     name: 'Day 23：一元二次方程解法与根的判别式判定',
     summary: '★【今日目标】2小时。掌握一元二次方程因式分解与公式法，学会用 Δ 确定根的个数。\n\n' +
              '1. 十字相乘法解一元二次方程：\n' +
@@ -583,7 +583,7 @@ export const mathDays = {
   day24: {
     id: 'day24',
     blockId: 'math_block5',
-    topicId: 'math_topic9',
+    topicId: 'math_topic24',
     name: 'Day 24：一元一次不等式组解集及数轴空实心绘制',
     summary: '★【今日目标】2小时。解一元一次不等式组，在数轴上绘制相交解集。\n\n' +
              '👨&zwj;🏫【名师白话辅导课：为什么乘以/除以负数，不等号必须调转方向？】\n' +
@@ -609,7 +609,7 @@ export const mathDays = {
   day25: {
     id: 'day25',
     blockId: 'math_block5',
-    topicId: 'math_topic10',
+    topicId: 'math_topic25',
     name: 'Day 25：勾股定理几何线段计算与中考数据统计计算',
     summary: '★【今日目标】2小时。掌握直角三角形勾股定理三边求值，学会计算平均数与中位数。\n\n' +
              '1. 勾股定理：\n' +

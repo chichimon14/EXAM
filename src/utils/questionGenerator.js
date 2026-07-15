@@ -261,47 +261,314 @@ export function generateMathQuestions(topicId, count = 100) {
     let qObj = {};
 
     switch (topicId) {
-      // 1. 小数与分数的四则混合运算
+      // 1. 多位数的加减法与“巧算”魔法
       case 'math_topic1': {
-        const a = randomInt(2, 6);
-        const b = randomInt(2, 5);
-        const c = randomInt(1, 4);
+        const a_unit = randomInt(1, 9);
+        const a = randomInt(10, 89) * 10 + a_unit;
+        const c = randomInt(10, 89) * 10 + (10 - a_unit);
+        const b = randomInt(100, 800);
+        const ansVal = a + b + c;
+        
+        const correct = `${ansVal}`;
+        const wrong1 = `${ansVal + 10}`;
+        const wrong2 = `${ansVal - 10}`;
+        const wrong3 = `${ansVal + 2}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`30100${qIndex}`),
+          category: '加法凑整巧算',
+          question: `【习题 ${qIndex}】计算：${a} + ${b} + ${c} = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 观察凑整：由于 ${a} 的个位是 ${a_unit}，${c} 的个位是 ${10 - a_unit}，两者相加可以凑成整百：${a} + ${c} = ${a + c}。\n步骤 2. 简便运算：原式 = (${a} + ${c}) + ${b} = ${a + c} + ${b} = ${ansVal}。`
+        };
+        break;
+      }
+
+      // 2. 乘除法基本功与多重括号优先级
+      case 'math_topic2': {
+        const pairs = [{a: 25, b: 4, mul: 100}, {a: 125, b: 8, mul: 1000}, {a: 5, b: 2, mul: 10}];
+        const pair = pairs[randomInt(0, pairs.length - 1)];
+        const c = randomInt(3, 19);
+        const ansVal = pair.mul * c;
+        
+        const correct = `${ansVal}`;
+        const wrong1 = `${ansVal + pair.a}`;
+        const wrong2 = `${ansVal - pair.b}`;
+        const wrong3 = `${pair.a * c + pair.b}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`30200${qIndex}`),
+          category: '乘法结合律巧算',
+          question: `【习题 ${qIndex}】计算：${pair.a} × ${c} × ${pair.b} = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 观察凑整：记住乘积为整百整千的“好朋友”对：${pair.a} × ${pair.b} = ${pair.mul}。\n步骤 2. 巧算过程：原式 = (${pair.a} × ${pair.b}) × ${c} = ${pair.mul} × ${c} = ${ansVal}。`
+        };
+        break;
+      }
+
+      // 3. 分数的概念与假分数、带分数的互化
+      case 'math_topic3': {
+        const den = randomInt(3, 11);
+        const whole = randomInt(1, 9);
+        const num = randomInt(1, den - 1);
+        const top = whole * den + num;
+        const askToMixed = randomInt(0, 1) === 1;
+
+        let question = '';
+        let correct = '';
+        let wrong1 = '';
+        let wrong2 = '';
+        let wrong3 = '';
+        let explanation = '';
+
+        if (askToMixed) {
+          question = `【习题 ${qIndex}】将假分数 ${top}/${den} 化为带分数是：`;
+          correct = `${whole}又${num}/${den}`;
+          wrong1 = `${whole}又${(num + 1) % den}/${den}`;
+          wrong2 = `${whole + 1}又${num}/${den}`;
+          wrong3 = `${top}又1/${den}`;
+          explanation = `名师分步解析：\n步骤 1. 假分数化带分数：分子除以分母，商作为整数部分，余数作为新的分子，分母保持不变。\n步骤 2. 计算：${top} ÷ ${den} = ${whole} 余 ${num}。\n步骤 3. 写出结果：${whole}又${num}/${den}。`;
+        } else {
+          question = `【习题 ${qIndex}】将带分数 ${whole}又${num}/${den} 化为假分数是：`;
+          correct = `${top}/${den}`;
+          wrong1 = `${whole * den}/${den}`;
+          wrong2 = `${(whole * den + num + 1)}/${den}`;
+          wrong3 = `${(whole + num)}/${den}`;
+          explanation = `名师分步解析：\n步骤 1. 带分数化假分数：分母保持不变，新分子 = 整数部分 × 分母 + 原分子。\n步骤 2. 计算新分子：${whole} × ${den} + ${num} = ${top}。\n步骤 3. 写出结果：${top}/${den}。`;
+        }
+
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`30300${qIndex}`),
+          category: '假分数与带分数互化',
+          question,
+          options: opts,
+          answer: ansIdx,
+          explanation
+        };
+        break;
+      }
+
+      // 4. 约分与通分的秘密武器 —— 最大公约数与最小公倍数
+      case 'math_topic4': {
+        const common = randomInt(2, 6);
+        const p = randomInt(2, 5);
+        const q = randomInt(p + 1, 7);
+        const a = common * p;
+        const b = common * q;
+        const askGcd = randomInt(0, 1) === 1;
+
+        let question = '';
+        let correct = '';
+        let wrong1 = '';
+        let wrong2 = '';
+        let wrong3 = '';
+        let explanation = '';
+
+        if (askGcd) {
+          question = `【习题 ${qIndex}】求 ${a} 和 ${b} 的最大公约数是：`;
+          correct = `${common}`;
+          wrong1 = `1`;
+          wrong2 = `${common * 2}`;
+          wrong3 = `${common * p * q}`;
+          explanation = `名师分步解析：\n步骤 1. 分解因数：${a} = ${common} × ${p}，${b} = ${common} × ${q}，其中 ${p} 和 ${q} 互质。\n步骤 2. 提取最大公约数：两数共有的最大因数即为 ${common}。`;
+        } else {
+          question = `【习题 ${qIndex}】求 ${a} 和 ${b} 的最小公倍数是：`;
+          correct = `${common * p * q}`;
+          wrong1 = `${a * b}`;
+          wrong2 = `${common}`;
+          wrong3 = `${common * p * q + common}`;
+          explanation = `名师分步解析：\n步骤 1. 分解并求最小公倍数：提取两数的公因数 ${common}，乘以各自独有的因数 ${p} 和 ${q}。\n步骤 2. 计算：${common} × ${p} × ${q} = ${common * p * q}。`;
+        }
+
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`30400${qIndex}`),
+          category: '公约数公倍数计算',
+          question,
+          options: opts,
+          answer: ansIdx,
+          explanation
+        };
+        break;
+      }
+
+      // 5. 异分母分数加减法与分数乘除法
+      case 'math_topic5': {
+        const a = randomInt(1, 4);
+        const b = randomInt(2, 4);
+        const c = randomInt(1, 3);
         const d = randomInt(2, 5);
         
-        // 计算 a/b + c/d
         const num = a * d + c * b;
         const den = b * d;
         const ansStr = simplifyFraction(num, den);
         
         const correct = ansStr;
-        const wrong1 = simplifyFraction(a + c, b + d); // 易错：分子分母直接相加
+        const wrong1 = simplifyFraction(a + c, b + d);
         const wrong2 = simplifyFraction(a * d - c * b, den);
         const wrong3 = simplifyFraction(a * c, b * d);
         
         const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
         while (opts.length < 4) {
-          opts.push(simplifyFraction(randomInt(1, 20), randomInt(2, 15)));
+          opts.push(simplifyFraction(randomInt(1, 15), randomInt(2, 10)));
         }
         opts.sort(() => 0.5 - Math.random());
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
-          id: parseInt(`30100${qIndex}`),
-          category: '分数加减混合运算',
-          question: `【习题 ${qIndex}】计算：${a}/${b} + ${c}/${d} = ？`,
+          id: parseInt(`30500${qIndex}`),
+          category: '分数的加减运算',
+          question: `【习题 ${qIndex}】计算分数加法：${a}/${b} + ${c}/${d} = ？`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 通分：分母 ${b} 和 ${d} 的最小公倍数是 ${den}。\n步骤 2. 转换：${a}/${b} = ${a * d}/${den}，${c}/${d} = ${c * b}/${den}。\n步骤 3. 相加：${a * d}/${den} + ${c * b}/${den} = (${a * d} + ${c * b})/${den} = ${num}/${den}。\n步骤 4. 约分化简：最终结果为 ${ansStr}。`
+          explanation: `名师分步解析：\n步骤 1. 寻找最小公倍数通分：分母 ${b} 和 ${d} 的公分母是 ${den}。\n步骤 2. 分子进行等比转换：${a}/${b} = ${a * d}/${den}，${c}/${d} = ${c * b}/${den}。\n步骤 3. 相加并化简：(${a * d} + ${c * b})/${den} = ${num}/${den} ➔ 约分结果为 ${ansStr}。`
         };
         break;
       }
 
-      // 2. 有理数的四则混合运算
-      case 'math_topic2': {
-        // (-a) * b + c - d^2
-        const a = randomInt(2, 5);
-        const b = randomInt(2, 4);
-        const c = randomInt(3, 10);
+      // 6. 巧用乘法分配律在分数简便运算中
+      case 'math_topic6': {
+        const num = randomInt(2, 7);
+        const den = randomInt(6, 12);
+        const c = randomInt(2, den - 2);
+        const d = den - c;
+        const ansVal = num;
+        
+        const correct = `${ansVal}`;
+        const wrong1 = `${num}/${den}`;
+        const wrong2 = `${num * 2}`;
+        const wrong3 = `${num + 1}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`30600${qIndex}`),
+          category: '乘法分配律分数巧算',
+          question: `【习题 ${qIndex}】计算：(${num}/${den}) × ${c} + (${num}/${den}) × ${d} = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 提取公因数：两项均含有分数因子 ${num}/${den}，利用乘法分配律逆运算：a×b + a×c = a×(b+c)。\n步骤 2. 巧算化简：原式 = ${num}/${den} × (${c} + ${d}) = ${num}/${den} × ${den} = ${ansVal}。`
+        };
+        break;
+      }
+
+      // 7. 数的家族谱分类 —— 有理数与无理数
+      case 'math_topic7': {
+        const irrationals = ['π', '√2', '√3', '√5', '√7'];
+        const rationals = ['0', '-3', '1/3', '3.14', '0.5', '22/7'];
+        const correct = irrationals[randomInt(0, irrationals.length - 1)];
+        
+        const distrac = shuffleArray(rationals).slice(0, 3);
+        const opts = shuffleArray([correct, ...distrac]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`30700${qIndex}`),
+          category: '有理数无理数分类辨析',
+          question: `【习题 ${qIndex}】下列各数中，属于“无理数”的是：`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 有理数定义：可以表示为两个整数之比（分数形式）的数，包括整数、有限小数和无限循环小数。\n步骤 2. 无理数定义：无限不循环小数。如圆周率 π，以及开方开不尽的根式如 ${correct}。`
+        };
+        break;
+      }
+
+      // 8. 数轴、相反数与绝对值的去符号混合计算
+      case 'math_topic8': {
+        const a = randomInt(-9, -2);
+        const b = randomInt(2, 9);
+        const ansVal = Math.abs(a) + b;
+        
+        const correct = `${ansVal}`;
+        const wrong1 = `${Math.abs(a) - b}`;
+        const wrong2 = `${a + b}`;
+        const wrong3 = `${a - b}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`30800${qIndex}`),
+          category: '绝对值相反数混合运算',
+          question: `【习题 ${qIndex}】计算绝对值与相反数：|${a}| - (-${b}) = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 去除绝对值符号：因为负数 ${a} 的绝对值等于它的相反数，所以 |${a}| = ${Math.abs(a)}。\n步骤 2. 去除负负相反数：减去一个负数等于加上它的相反数，即 -(-${b}) = +${b}。\n步骤 3. 计算结果：${Math.abs(a)} + ${b} = ${ansVal}。`
+        };
+        break;
+      }
+
+      // 9. 有理数加减混合运算与多重去括号变号雷区
+      case 'math_topic9': {
+        const a = randomInt(2, 9);
+        const b = randomInt(11, 20);
+        const c = randomInt(3, 8);
+        const ansVal = -a + b - c;
+        
+        const correct = `${ansVal}`;
+        const wrong1 = `${-a - b - c}`;
+        const wrong2 = `${-a + b + c}`;
+        const wrong3 = `${a + b - c}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`30900${qIndex}`),
+          category: '有理数去括号加减',
+          question: `【习题 ${qIndex}】计算：(-${a}) - (-${b}) + (-${c}) = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 去括号变号法则：\n   - 括号前是减号，去掉括号后里面所有项要变号： -(-${b}) ➔ +${b}。\n   - 括号前是加号，去掉括号后里面所有项保持不变： +(-${c}) ➔ -${c}。\n步骤 2. 算式化简：原式 = -${a} + ${b} - ${c} = ${-a + b} - ${c} = ${ansVal}。`
+        };
+        break;
+      }
+
+      // 10. 有理数乘除与偶奇数次方负号判定
+      case 'math_topic10': {
+        const a = randomInt(2, 4);
+        const term1 = -(a * a);
+        const term2 = 1;
+        const ansVal = term1 + term2;
+        
+        const correct = `${ansVal}`;
+        const wrong1 = `${a * a + 1}`;
+        const wrong2 = `${term1 - 1}`;
+        const wrong3 = `${a * a - 1}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`31000${qIndex}`),
+          category: '有理数乘方符号判定',
+          question: `【习题 ${qIndex}】计算：-${a}² + (-1)⁴ = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 辨析底数与乘方：\n   - -${a}² 的底数是 ${a}，负号在外面，所以 -${a}² = -(${a} × ${a}) = ${term1}。\n   - (-1)⁴ 表示 4 个 -1 相乘，因为幂指数是偶数，结果为正数：(-1)⁴ = 1。\n步骤 2. 算式求值：${term1} + 1 = ${ansVal}。`
+        };
+        break;
+      }
+
+      // 11. 有理数加减乘除与乘方的超级混合运算综合特训
+      case 'math_topic11': {
+        const a = randomInt(2, 4);
+        const b = randomInt(2, 3);
+        const c = randomInt(3, 8);
         const d = randomInt(2, 3);
         
         const term1 = -a * b;
@@ -309,38 +576,62 @@ export function generateMathQuestions(topicId, count = 100) {
         const ansVal = term1 + c - term2;
         
         const correct = `${ansVal}`;
-        const wrong1 = `${term1 + c + term2}`; // 乘方负号易错
+        const wrong1 = `${term1 + c + term2}`;
         const wrong2 = `${-a * (b + c) - term2}`;
         const wrong3 = `${-a * b - c - term2}`;
         
         const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
         while (opts.length < 4) {
-          opts.push(`${randomInt(-50, 50)}`);
+          opts.push(`${randomInt(-40, 40)}`);
         }
         opts.sort(() => 0.5 - Math.random());
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
-          id: parseInt(`30200${qIndex}`),
-          category: '有理数四则混合运算',
-          question: `【习题 ${qIndex}】计算：(-${a}) × ${b} + ${c} - ${d}² = ？`,
+          id: parseInt(`31100${qIndex}`),
+          category: '有理数混合计算',
+          question: `【习题 ${qIndex}】计算有理数混合式：(-${a}) × ${b} + ${c} - ${d}² = ？`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 计算乘方：${d}² = ${term2}，原式变为 (-${a}) × ${b} + ${c} - ${term2}。\n步骤 2. 计算乘法：(-${a}) × ${b} = ${term1}，原式变为 ${term1} + ${c} - ${term2}。\n步骤 3. 进行加减：${term1} + ${c} = ${term1 + c}，接着 ${term1 + c} - ${term2} = ${ansVal}。\n注意：-${d}² 的负号在乘方外面，应先算乘方，再加负号。`
+          explanation: `名师分步解析：\n步骤 1. 先乘方：${d}² = ${term2}。\n步骤 2. 再乘除：(-${a}) × ${b} = ${term1}。\n步骤 3. 后加减：${term1} + ${c} - ${term2} = ${term1 + c} - ${term2} = ${ansVal}。`
         };
         break;
       }
 
-      // 3. 整式的乘除与化简
-      case 'math_topic3': {
-        // 化简：a(x + b) - c(x - d)
+      // 12. 科学记数法、近似数与有效数字
+      case 'math_topic12': {
+        const base = randomInt(11, 99) / 10;
+        const exp = randomInt(5, 8);
+        const num = base * Math.pow(10, exp);
+        
+        const correct = `${base} × 10^${exp}`;
+        const wrong1 = `${base * 10} × 10^${exp - 1}`;
+        const wrong2 = `${base} × 10^${exp + 1}`;
+        const wrong3 = `${base / 10} × 10^${exp + 1}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`31200${qIndex}`),
+          category: '科学记数法转换',
+          question: `【习题 ${qIndex}】将数字 ${num.toLocaleString('zh-CN', {useGrouping:false})} 用科学记数法表示为：`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 科学记数法标准形式为 a × 10^n，其中 1 ≤ |a| < 10。\n步骤 2. 确定系数 a：将小数点左移得到 a = ${base}。\n步骤 3. 确定指数 n：移动小数点的位数等于 ${exp}，所以表示为 ${correct}。`
+        };
+        break;
+      }
+
+      // 13. 代数式、同类项与合并同类项的代数式加减
+      case 'math_topic13': {
         const a = randomInt(2, 4);
         const b = randomInt(1, 5);
         const c = randomInt(2, 3);
         const d = randomInt(1, 4);
         
         const coeff_x = a - c;
-        const constant = a * b + c * d; // 注意去括号变号： -c * -d = +cd
+        const constant = a * b + c * d;
         
         let correct = '';
         if (coeff_x === 1) correct = `x + ${constant}`;
@@ -348,7 +639,7 @@ export function generateMathQuestions(topicId, count = 100) {
         else if (coeff_x === 0) correct = `${constant}`;
         else correct = `${coeff_x}x + ${constant}`;
         
-        const wrong1 = `${a + c}x + ${a * b - c * d}`; // 易错：未变号
+        const wrong1 = `${a + c}x + ${a * b - c * d}`;
         const wrong2 = `${coeff_x}x - ${a * b + c * d}`;
         const wrong3 = `${a - c}x + ${a * b - c * d}`;
         
@@ -360,19 +651,67 @@ export function generateMathQuestions(topicId, count = 100) {
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
-          id: parseInt(`30300${qIndex}`),
-          category: '整式的去括号与化简',
+          id: parseInt(`31300${qIndex}`),
+          category: '合并同类项与化简',
           question: `【习题 ${qIndex}】化简整式：${a}(x + ${b}) - ${c}(x - ${d}) = ？`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 去括号展开：\n   - 第一部分：${a}(x + ${b}) = ${a}x + ${a * b}\n   - 第二部分：-${c}(x - ${d}) = -${c}x + ${c * d}（⚠️注意：负负得正，变成 +${c * d}）\n步骤 2. 合并同类项：\n   - x项：(${a}x - ${c}x) = ${coeff_x}x\n   - 常数项：${a * b} + ${c * d} = ${constant}\n综合化简结果为：${correct}。`
+          explanation: `名师分步解析：\n步骤 1. 乘法分配律展开：\n   - 第一部分：${a}(x + ${b}) = ${a}x + ${a * b}\n   - 第二部分：-${c}(x - ${d}) = -${c}x + ${c * d}（⚠️注意变号）\n步骤 2. 合并同类项：(${a}x - ${c}x) + (${a * b} + ${c * d}) = ${correct}。`
         };
         break;
       }
 
-      // 4. 因式分解
-      case 'math_topic4': {
-        // 分解 x^2 - a^2 = (x - a)(x + a)
+      // 14. 幂的指数相加相乘三大性质定理
+      case 'math_topic14': {
+        const m = randomInt(2, 5);
+        const n = randomInt(3, 6);
+        
+        const correct = `a^${m + n}`;
+        const wrong1 = `a^${m * n}`;
+        const wrong2 = `2a^${m + n}`;
+        const wrong3 = `a^${Math.abs(m - n)}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`31400${qIndex}`),
+          category: '同底数幂乘法化简',
+          question: `【习题 ${qIndex}】化简同底数幂乘法式：a^${m} · a^${n} = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 定理应用：同底数幂相乘，底数不变，指数相加。公式：a^m · a^n = a^(m+n)。\n步骤 2. 计算指数之和：${m} + ${n} = ${m + n}。\n综合结果为：${correct}。`
+        };
+        break;
+      }
+
+      // 15. 乘法公式双壁 —— 平方差与完全平方公式避坑指南
+      case 'math_topic15': {
+        const a = randomInt(2, 9);
+        const a2 = a * a;
+        const double_a = 2 * a;
+        
+        const correct = `x² + ${double_a}x + ${a2}`;
+        const wrong1 = `x² + ${a2}`;
+        const wrong2 = `x² + ${a}x + ${a2}`;
+        const wrong3 = `x² - ${double_a}x + ${a2}`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`31500${qIndex}`),
+          category: '完全平方公式展开',
+          question: `【习题 ${qIndex}】利用完全平方公式展开：(x + ${a})² = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 完全平方公式标准形式：(a + b)² = a² + 2ab + b²。\n步骤 2. 对应代入：a = x，b = ${a}。\n步骤 3. 展开求值：x² + 2·x·${a} + ${a}² = x² + ${double_a}x + ${a2}。⚠️记住中间项不能丢！`
+        };
+        break;
+      }
+
+      // 16. 因式分解第一步 —— 提公因式与公式法
+      case 'math_topic16': {
         const a = randomInt(2, 12);
         const a2 = a * a;
         
@@ -385,88 +724,75 @@ export function generateMathQuestions(topicId, count = 100) {
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
-          id: parseInt(`30400${qIndex}`),
-          category: '公式法因式分解',
+          id: parseInt(`31600${qIndex}`),
+          category: '平方差公式因式分解',
           question: `【习题 ${qIndex}】在实数范围内分解因式：x² - ${a2} = ？`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 识别公式：该多项式符合平方差公式：a² - b² = (a - b)(a + b)。\n步骤 2. 转换形式：x² - ${a2} 转化为 x² - ${a}²。\n步骤 3. 套用公式分解：得到 (x - ${a})(x + ${a})。`
+          explanation: `名师分步解析：\n步骤 1. 平方差公式逆用：a² - b² = (a - b)(a + b)。\n步骤 2. 变换算式：将 x² - ${a2} 转化为 x² - ${a}²。\n步骤 3. 分解因式：结果为 (x - ${a})(x + ${a})。`
         };
         break;
       }
 
-      // 5. 分式的运算与化简求值
-      case 'math_topic5': {
-        // 计算 a / (x-1) - a / (x+1) = 2a / (x^2 - 1)
-        const a = randomInt(2, 6);
-        const correct = `${2 * a} / (x² - 1)`;
-        const wrong1 = `0`;
-        const wrong2 = `${2 * a} / (x - 1)`;
-        const wrong3 = `${a} / (x² - 1)`;
+      // 17. 因式分解进阶法 —— 十十字相乘分解法
+      case 'math_topic17': {
+        const p = randomInt(1, 5);
+        const q = -randomInt(2, 6);
+        const sum = p + q;
+        const prod = p * q;
         
-        const opts = [correct, wrong1, wrong2, wrong3].sort(() => 0.5 - Math.random());
+        const sign_sum = sum >= 0 ? `+ ${sum}` : `- ${Math.abs(sum)}`;
+        const correct = `(x + ${p})(x - ${Math.abs(q)})`;
+        const wrong1 = `(x - ${p})(x + ${Math.abs(q)})`;
+        const wrong2 = `(x + ${p})²`;
+        const wrong3 = `(x - ${Math.abs(prod)})(x + 1)`;
+        
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
-          id: parseInt(`30500${qIndex}`),
-          category: '分式同分加减',
-          question: `【习题 ${qIndex}】化简分式：${a} / (x - 1) - ${a} / (x + 1) = ？`,
+          id: parseInt(`31700${qIndex}`),
+          category: '十字相乘法因式分解',
+          question: `【习题 ${qIndex}】分解因式：x² ${sum === 0 ? '' : sign_sum + 'x'} - ${Math.abs(prod)} = ？`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 通分找公分母：公分母为 (x - 1)(x + 1) = x² - 1。\n步骤 2. 转换分子：\n   - 第一项：${a} / (x - 1) = ${a}(x + 1) / (x² - 1) = (${a}x + ${a}) / (x² - 1)\n   - 第二项：${a} / (x + 1) = ${a}(x - 1) / (x² - 1) = (${a}x - ${a}) / (x² - 1)\n步骤 3. 分子相减：(${a}x + ${a}) - (${a}x - ${a}) = ${a}x + ${a} - ${a}x + ${a} = ${2 * a}。\n最终化简结果为：${correct}。`
+          explanation: `名师分步解析：\n步骤 1. 拆常数项：常数项 -${Math.abs(prod)} 分解为两数相乘，要求它们的和等于一次项系数 ${sum}。\n步骤 2. 寻找拆分对：我们发现 ${p} × (${q}) = ${prod}，且 ${p} + (${q}) = ${sum}。\n步骤 3. 十字交叉结合：(x + ${p})(x + (${q})) ➔ (x + ${p})(x - ${Math.abs(q)})。`
         };
         break;
       }
 
-      // 6. 二次根式的化简与计算
-      case 'math_topic6': {
-        // 根式计算：sqrt(a) * sqrt(b) = sqrt(ab)
-        const aVals = [2, 3, 5, 6];
-        const a = aVals[randomInt(0, aVals.length - 1)];
-        const b = 12 / a === parseInt(12/a) ? 7 : 8; // 保证不生成全整数
+      // 18. 一元一次方程的解法与“实际问题列方程”
+      case 'math_topic18': {
+        const x_ans = randomInt(-5, 5);
+        const a = randomInt(3, 5);
+        const c = randomInt(1, 2);
         
-        const inside = a * b;
-        // 化简 sqrt(inside)
-        // 寻找 inside 的最大平方因子
-        let factor = 1;
-        let outer = 1;
-        for (let f = 2; f * f <= inside; f++) {
-          if (inside % (f * f) === 0) {
-            factor = f * f;
-            outer = f;
-          }
-        }
-        const inner = inside / factor;
+        const d = randomInt(5, 15);
+        const b = (c - a) * x_ans + d;
         
-        const correct = outer > 1 ? `${outer}√${inner}` : `√${inside}`;
-        const wrong1 = `${inside}`;
-        const wrong2 = `${outer * 2}√${inner}`;
-        const wrong3 = `√${inside + 3}`;
+        const correct = `x = ${x_ans}`;
+        const wrong1 = `x = ${x_ans + 1}`;
+        const wrong2 = `x = ${-x_ans}`;
+        const wrong3 = `x = 0`;
         
-        const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
-        while (opts.length < 4) {
-          opts.push(`${randomInt(2, 6)}√${randomInt(2, 5)}`);
-        }
-        opts.sort(() => 0.5 - Math.random());
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
         const ansIdx = opts.indexOf(correct);
 
+        const sign_b = b >= 0 ? `+ ${b}` : `- ${Math.abs(b)}`;
+
         qObj = {
-          id: parseInt(`30600${qIndex}`),
-          category: '二次根式化简与合并',
-          question: `【习题 ${qIndex}】计算二次根式：√${a} × √${b} = ？`,
+          id: parseInt(`31800${qIndex}`),
+          category: '解一元一次方程',
+          question: `【习题 ${qIndex}】解方程：${a}x ${sign_b} = ${c === 1 ? '' : c}x + ${d}，解得 x = ？`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 利用乘法公式：√a × √b = √ab。原式 = √(${a} × ${b}) = √${inside}。\n步骤 2. 寻找最大平方数因子：${inside} 可以分解为 ${factor} × ${inner}，其中 ${factor} 是 ${outer} 的平方。\n步骤 3. 化为最简根式：√${inside} = √(${outer}² × ${inner}) = ${correct}。`
+          explanation: `名师分步解析：\n步骤 1. 天平移项（未知数移左，常数移右）：${a}x - ${c === 1 ? '' : c}x = ${d} - (${b})。\n步骤 2. 合并求值：${a - c}x = ${d - b}。\n步骤 3. 两边同除系数：x = ${d - b} ÷ ${a - c} = ${x_ans}。`
         };
         break;
       }
 
-      // 7. 一元一次方程及方程组的解法
-      case 'math_topic7': {
-        // 解方程组：
-        // x + y = s
-        // ax - by = t
-        // 设整数根为 x_ans, y_ans
+      // 19. 二元一次方程组消元与“列方程组解决问题”
+      case 'math_topic19': {
         const x_ans = randomInt(-5, 6);
         const y_ans = randomInt(-3, 8);
         const a = randomInt(2, 3);
@@ -484,59 +810,134 @@ export function generateMathQuestions(topicId, count = 100) {
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
-          id: parseInt(`30700${qIndex}`),
-          category: '二元一次方程组求解',
-          question: `【习题 ${qIndex}】解方程组：\n   ① x + y = ${s}\n   ② ${a}x - ${b === 1 ? '' : b}y = ${t}\n求得的解是：`,
+          id: parseInt(`31900${qIndex}`),
+          category: '代入或加减消元解方程组',
+          question: `【习题 ${qIndex}】解方程组：\n   ① x + y = ${s}\n   ② ${a}x - ${b === 1 ? '' : b}y = ${t}\n则方程组的解是：`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 由方程①变形：得 x = ${s} - y （代入法思路）。\n步骤 2. 将此代入方程②：得 ${a}(${s} - y) - ${b === 1 ? '' : b}y = ${t}。\n步骤 3. 展开去括号解一元方程：\n   - ${a * s} - ${a}y - ${b === 1 ? '' : b}y = ${t}\n   - -${a + b}y = ${t - a * s}\n   - 求得 y = ${y_ans}。\n步骤 4. 回代求解 x：x = ${s} - ${y_ans} = ${x_ans}。\n得到方程组的解为：${correct}。`
+          explanation: `名师分步解析：\n步骤 1. 变形消元：由方程①得 x = ${s} - y，代入方程②中：\n步骤 2. 列出关于 y 的一元一次方程：${a}(${s} - y) - ${b === 1 ? '' : b}y = ${t}。\n步骤 3. 计算求出未知数：得 y = ${y_ans}。\n步骤 4. 代回求解 x：x = ${s} - ${y_ans} = ${x_ans}。结果为 x = ${x_ans}, y = ${y_ans}。`
         };
         break;
       }
 
-      // 8. 一元二次方程的解法
-      case 'math_topic8': {
-        // x^2 - (x1+x2)x + x1*x2 = 0
-        const x1 = randomInt(-4, 3);
-        const x2 = randomInt(x1 + 1, x1 + 5); // 保证两根不同且 x2 > x1
-        const p = -(x1 + x2);
-        const q = x1 * x2;
+      // 20. 分式的通分、约分与乘除混合运算
+      case 'math_topic20': {
+        const a = randomInt(2, 9);
+        const correct = `x + ${a}`;
+        const wrong1 = `x - ${a}`;
+        const wrong2 = `1`;
+        const wrong3 = `x² - ${a * a}`;
         
-        // 算式：x^2 + px + q = 0
-        const sign_p = p >= 0 ? `+ ${p}` : `- ${Math.abs(p)}`;
-        const sign_q = q >= 0 ? `+ ${q}` : `- ${Math.abs(q)}`;
-        
-        const correct = `x₁ = ${x1}, x₂ = ${x2}`;
-        const wrong1 = `x₁ = ${-x1}, x₂ = ${-x2}`; // 易错：正负号搞反
-        const wrong2 = `x₁ = ${x1 - 1}, x₂ = ${x2 + 1}`;
-        const wrong3 = `无解`;
+        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`32000${qIndex}`),
+          category: '分式化简与约分',
+          question: `【习题 ${qIndex}】约分并化简分式：(x² - ${a * a}) / (x - ${a}) = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 分子进行因式分解（平方差公式）：x² - ${a * a} = (x - ${a})(x + ${a})。\n步骤 2. 约除公因式：分子和分母都含有 (x - ${a})，可以直接约掉。\n步骤 3. 得出化简结果：${correct}。`
+        };
+        break;
+      }
+
+      // 21. 分式化简求值 —— 深圳中考必考 8分大作突破
+      case 'math_topic21': {
+        const a = randomInt(2, 6);
+        const correct = `${2 * a} / (x² - 1)`;
+        const wrong1 = `0`;
+        const wrong2 = `${2 * a} / (x - 1)`;
+        const wrong3 = `${a} / (x² - 1)`;
         
         const opts = [correct, wrong1, wrong2, wrong3].sort(() => 0.5 - Math.random());
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
-          id: parseInt(`30800${qIndex}`),
-          category: '因式分解解一元二次方程',
-          question: `【习题 ${qIndex}】解方程：x² ${p === 0 ? '' : sign_p + 'x'} ${sign_q} = 0，方程的根是：`,
+          id: parseInt(`32100${qIndex}`),
+          category: '复杂分式通分化简',
+          question: `【习题 ${qIndex}】化简分式：${a} / (x - 1) - ${a} / (x + 1) = ？`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 因式分解（十字相乘法）：\n   - 常数项 ${q} 可分解为 ${x1} × ${x2}。\n   - 它们的和刚好等于一次项系数：${x1} + ${x2} = ${x1 + x2} (即 ${p} 的相反数)。\n   - 故方程可化为：(x - ${x1})(x - ${x2}) = 0。\n步骤 2. 求解：令任一括号为0，即 x - ${x1} = 0 或 x - ${x2} = 0。\n得 x₁ = ${x1}, x₂ = ${x2}。`
+          explanation: `名师分步解析：\n步骤 1. 寻找公分母：(x - 1)(x + 1) = x² - 1。\n步骤 2. 通分变形：${a}(x + 1) / (x² - 1) - ${a}(x - 1) / (x² - 1)。\n步骤 3. 分子结合合并：${a}x + ${a} - ${a}x + ${a} = ${2 * a}，因此结果为：${correct}。`
         };
         break;
       }
 
-      // 9. 一元一次不等式及不等式组的解法
-      case 'math_topic9': {
-        // x > a
-        // x <= b
-        // 保证 a < b 使得解集为 a < x <= b
-        const a = randomInt(-5, 2);
-        const b = randomInt(a + 1, a + 4);
+      // 22. 二次根式的最简根式化简与分母有理化
+      case 'math_topic22': {
+        const aVals = [2, 3, 5, 6];
+        const a = aVals[randomInt(0, aVals.length - 1)];
+        const b = 8;
+        const inside = a * b;
         
-        // 构建不等式 1: x + c > a + c
-        const c = randomInt(1, 5);
-        // 构建不等式 2: dx <= db
-        const d = randomInt(2, 3);
+        let factor = 1;
+        let outer = 1;
+        for (let f = 2; f * f <= inside; f++) {
+          if (inside % (f * f) === 0) {
+            factor = f * f;
+            outer = f;
+          }
+        }
+        const inner = inside / factor;
+        const correct = outer > 1 ? `${outer}√${inner}` : `√${inside}`;
+        const wrong1 = `${inside}`;
+        const wrong2 = `${outer * 2}√${inner}`;
+        const wrong3 = `√${inside + 2}`;
+        
+        const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+        while (opts.length < 4) {
+          opts.push(`${randomInt(2, 5)}√${randomInt(2, 5)}`);
+        }
+        opts.sort(() => 0.5 - Math.random());
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`32200${qIndex}`),
+          category: '二次根式化简约分',
+          question: `【习题 ${qIndex}】计算并化为最简根式：√${a} × √${b} = ？`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 根式相乘规则：√a × √b = √ab。原式 = √(${a} × ${b}) = √${inside}。\n步骤 2. 提取平方因子化简：√${inside} = √(${outer}² × ${inner}) = ${correct}。`
+        };
+        break;
+      }
+
+      // 23. 一元二次方程解法与根的判别式判定
+      case 'math_topic23': {
+        const x1 = randomInt(-3, 2);
+        const x2 = randomInt(x1 + 1, x1 + 4);
+        const p = -(x1 + x2);
+        const q = x1 * x2;
+        
+        const sign_p = p >= 0 ? `+ ${p}` : `- ${Math.abs(p)}`;
+        const sign_q = q >= 0 ? `+ ${q}` : `- ${Math.abs(q)}`;
+        
+        const correct = `x₁ = ${x1}, x₂ = ${x2}`;
+        const wrong1 = `x₁ = ${-x1}, x₂ = ${-x2}`;
+        const wrong2 = `x₁ = ${x1 - 1}, x₂ = ${x2 + 1}`;
+        const wrong3 = `无实数根`;
+        
+        const opts = [correct, wrong1, wrong2, wrong3].sort(() => 0.5 - Math.random());
+        const ansIdx = opts.indexOf(correct);
+
+        qObj = {
+          id: parseInt(`32300${qIndex}`),
+          category: '因式分解法解一元二次方程',
+          question: `【习题 ${qIndex}】解方程：x² ${p === 0 ? '' : sign_p + 'x'} ${sign_q} = 0，方程的解是：`,
+          options: opts,
+          answer: ansIdx,
+          explanation: `名师分步解析：\n步骤 1. 分解因式：常数项 ${q} 可分为 ${x1} × ${x2}，它们的和等于一次项系数 ${p}。\n步骤 2. 写为乘积式：(x - ${x1})(x - ${x2}) = 0。\n步骤 3. 求解得：x₁ = ${x1}, x₂ = ${x2}。`
+        };
+        break;
+      }
+
+      // 24. 一元一次不等式组解集及数轴空实心绘制
+      case 'math_topic24': {
+        const a = randomInt(-4, 2);
+        const b = randomInt(a + 1, a + 3);
+        const c = randomInt(1, 4);
+        const d = 2;
         
         const correct = `${a} < x ≤ ${b}`;
         const wrong1 = `x > ${a}`;
@@ -547,119 +948,62 @@ export function generateMathQuestions(topicId, count = 100) {
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
-          id: parseInt(`30900${qIndex}`),
+          id: parseInt(`32400${qIndex}`),
           category: '解一元一次不等式组',
-          question: `【习题 ${qIndex}】求不等式组的解集：\n   ① x - ${c} > ${a - c}\n   ② ${d}x ≤ ${d * b}\n解集是：`,
+          question: `【习题 ${qIndex}】求不等式组的解集：\n   ① x - ${c} > ${a - c}\n   ② ${d}x ≤ ${d * b}\n其解集是：`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 解不等式①：\n   - 两边同加 ${c}，得 x > ${a - c} + ${c}，即 x > ${a}。\n步骤 2. 解不等式②：\n   - 两边同除以 ${d}（因为 ${d} 为正数，不等号方向不变），得 x ≤ ${b}。\n步骤 3. 取两解集的交集：\n   - 在数轴上，大于 ${a}（空心点向右）与小于等于 ${b}（实心点向左）的重叠部分为：${correct}。`
+          explanation: `名师分步解析：\n步骤 1. 解①得：x > ${a}。\n步骤 2. 解②同除以 ${d} 得：x ≤ ${b}。\n步骤 3. 数轴取交集得：${correct}。`
         };
         break;
       }
 
-      // 10. 勾股定理几何计算
-      case 'math_topic10': {
-        const triples = [
-          { a: 3, b: 4, c: 5 },
-          { a: 5, b: 12, c: 13 },
-          { a: 6, b: 8, c: 10 },
-          { a: 8, b: 15, c: 17 },
-          { a: 9, b: 12, c: 15 }
-        ];
-        const triple = triples[randomInt(0, triples.length - 1)];
-        const askHypotenuse = randomInt(0, 1) === 1;
-
-        let question = '';
-        let correct = '';
-        let wrong1 = '';
-        let wrong2 = '';
-        let wrong3 = '';
-        let explanation = '';
-
-        if (askHypotenuse) {
-          question = `【习题 ${qIndex}】已知直角三角形的两条直角边分别为 a = ${triple.a}，b = ${triple.b}。求该直角三角形的斜边 c 的长度：`;
-          correct = `${triple.c}`;
-          wrong1 = `${triple.a + triple.b}`;
-          wrong2 = `${triple.b + 1}`;
-          wrong3 = `${triple.c + 2}`;
-          explanation = `名师分步解析：\n步骤 1. 套用勾股定理公式：直角三角形两直角边的平方和，等于斜边的平方。公式为：a² + b² = c²。\n步骤 2. 代入数值计算平方：${triple.a}² + ${triple.b}² = ${triple.a * triple.a} + ${triple.b * triple.b} = ${triple.c * triple.c}。\n步骤 3. 开平方求斜边：c = √(${triple.c * triple.c}) = ${triple.c}。`;
+      // 25. 勾股定理几何线段计算与中考数据统计计算
+      case 'math_topic25': {
+        const askGougu = randomInt(0, 1) === 1;
+        if (askGougu) {
+          const triple = { a: 3, b: 4, c: 5 };
+          const question = `【习题 ${qIndex}】已知直角三角形的两条直角边分别为 a = ${triple.a}，b = ${triple.b}。求该直角三角形的斜边 c 的长度：`;
+          const correct = `${triple.c}`;
+          const wrong1 = `${triple.a + triple.b}`;
+          const wrong2 = `${triple.b + 1}`;
+          const wrong3 = `${triple.c + 2}`;
+          const explanation = `名师分步解析：\n步骤 1. 利用勾股定理：a² + b² = c²。\n步骤 2. 代入计算：${triple.a}² + ${triple.b}² = ${triple.a * triple.a} + ${triple.b * triple.b} = ${triple.c * triple.c}。\n步骤 3. 求斜边 c = ${triple.c}。`;
+          
+          const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+          const ansIdx = opts.indexOf(correct);
+          qObj = {
+            id: parseInt(`32500${qIndex}`),
+            category: '勾股定理线段求解',
+            question,
+            options: opts,
+            answer: ansIdx,
+            explanation
+          };
         } else {
-          question = `【习题 ${qIndex}】已知直角三角形的一条直角边 a = ${triple.a}，斜边 c = ${triple.c}。求另一条直角边 b 的长度：`;
-          correct = `${triple.b}`;
-          wrong1 = `${triple.c - triple.a}`;
-          wrong2 = `${triple.b + 2}`;
-          wrong3 = `${triple.a + 1}`;
-          explanation = `名师分步解析：\n步骤 1. 套用勾股定理变形公式：已知斜边与直角边，求另一条直角边。公式为：b² = c² - a²。\n步骤 2. 代入数值计算平方差：${triple.c}² - ${triple.a}² = ${triple.c * triple.c} - ${triple.a * triple.a} = ${triple.b * triple.b}。\n步骤 3. 开平方求直角边：b = √(${triple.b * triple.b}) = ${triple.b}。`;
+          const selectedSet = { data: [2, 3, 3, 5, 7], mean: 4, median: 3 };
+          const dataStr = selectedSet.data.join(', ');
+          const question = `【习题 ${qIndex}】已知一组数据为：${dataStr}。求这组数据的中位数是：`;
+          const correct = `${selectedSet.median}`;
+          const wrong1 = `${selectedSet.mean}`;
+          const wrong2 = `${selectedSet.median - 1}`;
+          const wrong3 = `${selectedSet.median + 1}`;
+          const explanation = `名师分步解析：\n步骤 1. 中位数定义：一组数据按顺序排列后，最中间的那个数。\n步骤 2. 数据共 5 个，已从小到大排序，最中间（第3个位置）的数是 ${selectedSet.median}。`;
+          
+          const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+          const ansIdx = opts.indexOf(correct);
+          qObj = {
+            id: parseInt(`32501${qIndex}`),
+            category: '中位数平均数统计',
+            question,
+            options: opts,
+            answer: ansIdx,
+            explanation
+          };
         }
-
-        const opts = [correct, wrong1, wrong2, wrong3].sort(() => 0.5 - Math.random());
-        const ansIdx = opts.indexOf(correct);
-
-        qObj = {
-          id: parseInt(`31000${qIndex}`),
-          category: '勾股定理线段计算',
-          question,
-          options: opts,
-          answer: ansIdx,
-          explanation
-        };
         break;
       }
-
-      // 11. 中考数据统计计算
-      case 'math_topic11': {
-        const sets = [
-          { data: [2, 3, 3, 5, 7], mean: 4, median: 3, mode: 3, range: 5 },
-          { data: [1, 2, 2, 4, 6], mean: 3, median: 2, mode: 2, range: 5 },
-          { data: [3, 4, 4, 7, 7], mean: 5, median: 4, mode: 4, range: 4 },
-          { data: [2, 4, 4, 6, 9], mean: 5, median: 4, mode: 4, range: 7 }
-        ];
-        const selectedSet = sets[randomInt(0, sets.length - 1)];
-        const askMean = randomInt(0, 1) === 1;
-
-        let question = '';
-        let correct = '';
-        let wrong1 = '';
-        let wrong2 = '';
-        let wrong3 = '';
-        let explanation = '';
-
-        const dataStr = selectedSet.data.join(', ');
-
-        if (askMean) {
-          question = `【习题 ${qIndex}】已知一组数据为：${dataStr}。求这组数据的平均数是：`;
-          correct = `${selectedSet.mean}`;
-          const sum = selectedSet.data.reduce((x, y) => x + y, 0);
-          wrong1 = `${selectedSet.median}`;
-          wrong2 = `${selectedSet.mean + 1}`;
-          wrong3 = `${selectedSet.mean - 1}`;
-          explanation = `名师分步解析：\n步骤 1. 平均数等于这组数据中所有数值的总和，除以数据的个数。\n步骤 2. 求和计算：(${selectedSet.data.join(' + ')}) = ${sum}。\n步骤 3. 求平均值：${sum} ÷ 5 = ${selectedSet.mean}。`;
-        } else {
-          question = `【习题 ${qIndex}】已知一组已排序的数据为：${dataStr}。求这组数据的中位数是：`;
-          correct = `${selectedSet.median}`;
-          wrong1 = `${selectedSet.mean}`;
-          wrong2 = `${selectedSet.median + 1}`;
-          wrong3 = `${selectedSet.median - 1}`;
-          explanation = `名师分步解析：\n步骤 1. 中位数定义：把一组数据按大小顺序排列后，处在最中间位置的一个数就是中位数。\n步骤 2. 这组数据有 5 个数，最中间的数是第 3 个数。\n步骤 3. 第 3 个位置的数是 ${selectedSet.median}，所以中位数是 ${selectedSet.median}。`;
-        }
-
-        const opts = [correct, wrong1, wrong2, wrong3].sort(() => 0.5 - Math.random());
-        const ansIdx = opts.indexOf(correct);
-
-        qObj = {
-          id: parseInt(`31100${qIndex}`),
-          category: '数据统计平均数中位数',
-          question,
-          options: opts,
-          answer: ansIdx,
-          explanation
-        };
-      }
-
-      default:
-        break;
     }
-
     list.push(qObj);
   }
 
@@ -719,16 +1063,16 @@ function generateDynamicElementQuestions(dayKey, count) {
         explanation: `元素符号 ${el.symbol} 对应的是第 ${el.z} 号元素“${el.name}”。`
       });
     }
-    // 问法 3: 质子数 ➔ 中文
+    // 问法 3: 中文 ➔ 拼音
     {
-      const otherNames = pool.filter(x => x.name !== el.name).map(x => x.name);
-      const distrac = shuffleArray(otherNames).slice(0, 3);
-      const options = shuffleArray([el.name, ...distrac]);
+      const otherPinyins = pool.filter(x => x.pinyin !== el.pinyin).map(x => x.pinyin);
+      const distrac = shuffleArray(otherPinyins).slice(0, 3);
+      const options = shuffleArray([el.pinyin, ...distrac]);
       questions.push({
-        question: `核电荷数（核内质子数）为 ${el.z} 的元素是：`,
+        question: `化学元素“${el.name}”的正确中文拼音是：`,
         options: options,
-        answer: el.name,
-        explanation: `元素周期表中，质子数与原子序数相等。第 ${el.z} 号元素是“${el.name}”，符号为 ${el.symbol}。`
+        answer: el.pinyin,
+        explanation: `化学元素“${el.name}”（符号为 ${el.symbol}）的正确拼音读音是 ${el.pinyin}，其原子序数（核内质子数）为 ${el.z}。`
       });
     }
   });
