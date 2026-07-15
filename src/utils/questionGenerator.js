@@ -290,26 +290,39 @@ export function generateMathQuestions(topicId, count = 100) {
 
       // 2. 乘除法基本功与多重括号优先级
       case 'math_topic2': {
-        const pairs = [{a: 25, b: 4, mul: 100}, {a: 125, b: 8, mul: 1000}, {a: 5, b: 2, mul: 10}];
-        const pair = pairs[randomInt(0, pairs.length - 1)];
-        const c = randomInt(3, 19);
-        const ansVal = pair.mul * c;
+        const diff = randomInt(2, 5);
+        const d = randomInt(2, 12);
+        const c = d + diff;
+        
+        const b = randomInt(2, 4);
+        const inner = b * diff;
+        
+        const multiple = randomInt(3, 12);
+        const a = inner * multiple;
+        
+        const e = randomInt(3, 9);
+        const f = randomInt(4, 9);
+        const ansVal = multiple + e * f;
         
         const correct = `${ansVal}`;
-        const wrong1 = `${ansVal + pair.a}`;
-        const wrong2 = `${ansVal - pair.b}`;
-        const wrong3 = `${pair.a * c + pair.b}`;
+        const wrong1 = `${multiple + e + f}`;
+        const wrong2 = `${ansVal + 10}`;
+        const wrong3 = `${ansVal - 5}`;
         
-        const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
+        const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+        while (opts.length < 4) {
+          opts.push(`${ansVal + randomInt(-20, 20)}`);
+        }
+        opts.sort(() => 0.5 - Math.random());
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
           id: parseInt(`30200${qIndex}`),
-          category: '乘法结合律巧算',
-          question: `【习题 ${qIndex}】计算：${pair.a} × ${c} × ${pair.b} = ？`,
+          category: '多重括号四则混合计算',
+          question: `【习题 ${qIndex}】计算混合算式：${a} ÷ [${b} × (${c} - ${d})] + ${e} × ${f} = ？`,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 观察凑整：记住乘积为整百整千的“好朋友”对：${pair.a} × ${pair.b} = ${pair.mul}。\n步骤 2. 巧算过程：原式 = (${pair.a} × ${pair.b}) × ${c} = ${pair.mul} × ${c} = ${ansVal}。`
+          explanation: `名师分步解析：\n步骤 1. 先算小括号：(${c} - ${d}) = ${diff}。\n步骤 2. 再算中括号：[${b} × ${diff}] = ${inner}。\n步骤 3. 计算除法和乘法：\n   - 左边除法：${a} ÷ ${inner} = ${multiple}\n   - 右边乘法：${e} × ${f} = ${e * f}\n步骤 4. 最后做加法：${multiple} + ${e * f} = ${ansVal}。`
         };
         break;
       }
