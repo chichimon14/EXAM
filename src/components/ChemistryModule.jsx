@@ -36,6 +36,14 @@ export default function ChemistryModule() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // 100题练习状态
+  const [exerciseQuestions, setExerciseQuestions] = useState([]);
+  const [exerciseAnswers, setExerciseAnswers] = useState({}); // { [qId]: { isCorrect, userOpt } }
+  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
+
+  // 化学错题本状态
+  const [wrongList, setWrongList] = useState([]);
+
   // 20题测试状态
   const [testQuestions, setTestQuestions] = useState([]);
   const [testAnswers, setTestAnswers] = useState({}); // { [qId]: selectedOpt }
@@ -129,13 +137,7 @@ export default function ChemistryModule() {
     setChemSelectedRight(null);
   }, [currentTestIndex, currentExerciseIndex, activeTab, testQuestions, exerciseQuestions, testAnswers, exerciseAnswers]);
 
-  // 100题练习状态
-  const [exerciseQuestions, setExerciseQuestions] = useState([]);
-  const [exerciseAnswers, setExerciseAnswers] = useState({}); // { [qId]: { isCorrect, userOpt } }
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
 
-  // 化学错题本状态
-  const [wrongList, setWrongList] = useState([]);
 
   // --- Day 4 专属连线配对消除游戏状态 (两两配对，12卡方阵) ---
   const [gameCards, setGameCards] = useState([]);
