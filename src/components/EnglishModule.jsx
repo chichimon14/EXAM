@@ -230,6 +230,42 @@ export default function EnglishModule() {
     setMatchFlashError(false);
   }, [selectedDayId]);
 
+  // 当题目切换、Tab 切换或天数切换时，高智能同步与恢复连线状态
+  useEffect(() => {
+    const currentQ = activeTab === 'test' ? testQuestions[currentTestIndex] : exerciseQuestions[currentExerciseIndex];
+    if (!currentQ || currentQ.type !== 'match') {
+      setSelectedLeft(null);
+      setSelectedRight(null);
+      setMatchedPairs({});
+      setHasErrorThisQuestion(false);
+      setMatchFlashError(false);
+      return;
+    }
+
+    // 检查这道题是否已经答过
+    if (activeTab === 'test') {
+      const saved = testAnswers[currentQ.id];
+      if (saved && saved.matchedPairs) {
+        setMatchedPairs(saved.matchedPairs);
+      } else {
+        setMatchedPairs({});
+      }
+    } else {
+      const saved = exerciseAnswers[currentQ.id];
+      if (saved && saved.matchedPairs) {
+        setMatchedPairs(saved.matchedPairs);
+      } else {
+        setMatchedPairs({});
+      }
+    }
+    
+    // 重置临时选择的高亮状态与连线抖动状态
+    setSelectedLeft(null);
+    setSelectedRight(null);
+    setHasErrorThisQuestion(false);
+    setMatchFlashError(false);
+  }, [currentTestIndex, currentExerciseIndex, activeTab, testQuestions, exerciseQuestions, testAnswers, exerciseAnswers]);
+
   // 高品质美音真人发音 (有道公开 TTS + 原生 Web Speech 完美兜底)
   const speakText = (text) => {
     if (!text) return;
@@ -578,12 +614,12 @@ export default function EnglishModule() {
     };
   }, [selectedDayId, activeTab]);
 
-  // 更新金币分值：做对 +1，做错 -1
-  const updateGoldCoin = (isCorrect) => {
+  // 更新金币分值：支持自定义金币变动 delta
+  const updateGoldCoin = (isCorrect, weight = 1) => {
     const currentScore = dayScores[selectedDayId] || 0;
     if (currentScore > 0) return; // 重复学习不加分/扣分，分值锁定
-    const delta = isCorrect ? 1 : -1;
-    const newScore = currentScore + delta;
+    const delta = isCorrect ? weight : -weight;
+    const newScore = Number((currentScore + delta).toFixed(2)); // 防止 JS 浮点数精度问题
     
     const nextScores = { ...dayScores, [selectedDayId]: newScore };
     setDayScores(nextScores);
@@ -650,7 +686,13 @@ export default function EnglishModule() {
         });
 
         if (activeTab === 'test') {
-          const nextAnswers = { ...testAnswers, [currentQ.id]: isAllCorrect ? 'correct' : 'wrong' };
+          const nextAnswers = {
+            ...testAnswers,
+            [currentQ.id]: {
+              state: isAllCorrect ? 'correct' : 'wrong',
+              matchedPairs: newMatched
+            }
+          };
           setTestAnswers(nextAnswers);
           updateGoldCoin(isAllCorrect, 0.5); // 小测每题 0.5 分
           setTestChecked(true); // 展现结题解析
@@ -658,7 +700,11 @@ export default function EnglishModule() {
           // 练习模式
           const nextAnswers = {
             ...exerciseAnswers,
-            [currentQ.id]: { isCorrect: isAllCorrect, userOpt: 'matched' }
+            [currentQ.id]: {
+              isCorrect: isAllCorrect,
+              userOpt: 'matched',
+              matchedPairs: newMatched
+            }
           };
           setExerciseAnswers(nextAnswers);
           updateGoldCoin(isAllCorrect, 0.5); // 练习每题 0.5 分
@@ -728,7 +774,7 @@ export default function EnglishModule() {
       const weaknesses = [];
       testQuestions.forEach(q => {
         const isCorrect = q.type === 'match'
-          ? testAnswers[q.id] === 'correct'
+          ? (testAnswers[q.id] === 'correct' || testAnswers[q.id]?.state === 'correct')
           : testAnswers[q.id] === q.answer;
         if (isCorrect) {
           correctCount++;
@@ -1692,7 +1738,7 @@ export default function EnglishModule() {
                     backgroundColor: '#f8fafc',
                     borderLeft: `4px solid ${
                       testQuestions[currentTestIndex]?.type === 'match'
-                        ? (hasErrorThisQuestion ? 'hsl(var(--color-danger))' : 'hsl(var(--color-success))')
+                        ? ((testAnswers[testQuestions[currentTestIndex]?.id] === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct') ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
                         : (selectedTestOpt === testQuestions[currentTestIndex]?.answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
                     }`,
                     borderRadius: 'var(--radius-sm)',
@@ -1703,13 +1749,13 @@ export default function EnglishModule() {
                     <div style={{
                       fontWeight: 'bold',
                       color: testQuestions[currentTestIndex]?.type === 'match'
-                        ? (hasErrorThisQuestion ? 'hsl(var(--color-danger))' : 'hsl(var(--color-success))')
+                        ? ((testAnswers[testQuestions[currentTestIndex]?.id] === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct') ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
                         : (selectedTestOpt === testQuestions[currentTestIndex]?.answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'),
                       marginBottom: '4px'
                     }}>
                       {testQuestions[currentTestIndex]?.type === 'match'
-                        ? (hasErrorThisQuestion ? '❌ 配对过程中发生了错误。扣减 1 金币。请看复习解析：' : '✅ 4对单词消除全对！ +1 金币')
-                        : (selectedTestOpt === testQuestions[currentTestIndex]?.answer ? '✅ 算对啦！ +1 金币' : '❌ 算错了。 扣减 1 金币。请看解析：')}
+                        ? ((testAnswers[testQuestions[currentTestIndex]?.id] === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct') ? '✅ 4对单词消除全对！今日金币 +0.5 个' : '❌ 配对中有错误。今日金币 -0.5 个，已自动计错。请看复习解析：')
+                        : (selectedTestOpt === testQuestions[currentTestIndex]?.answer ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个，已自动计错。请看解析：')}
                     </div>
                     {testQuestions[currentTestIndex]?.explanation}
                   </div>
