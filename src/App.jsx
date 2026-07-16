@@ -4,6 +4,7 @@ import PhysicsModule from './components/PhysicsModule';
 import MathModule from './components/MathModule';
 import ChemistryModule from './components/ChemistryModule';
 import EnglishModule from './components/EnglishModule';
+import ErrorBoundary from './components/ErrorBoundary';
 import './utils/syncService';
 
 export default function App() {
@@ -110,16 +111,24 @@ export default function App() {
           <SubjectPortal onSelectSubject={(subj) => setActiveSubject(subj)} />
         )}
         {activeSubject === 'physics' && (
-          <PhysicsModule />
+          <ErrorBoundary subject="physics">
+            <PhysicsModule />
+          </ErrorBoundary>
         )}
         {activeSubject === 'math' && (
-          <MathModule />
+          <ErrorBoundary subject="math">
+            <MathModule />
+          </ErrorBoundary>
         )}
         {activeSubject === 'chemistry' && (
-          <ChemistryModule />
+          <ErrorBoundary subject="chemistry">
+            <ChemistryModule />
+          </ErrorBoundary>
         )}
         {activeSubject === 'english' && (
-          <EnglishModule />
+          <ErrorBoundary subject="english">
+            <EnglishModule />
+          </ErrorBoundary>
         )}
       </main>
 
