@@ -1555,31 +1555,15 @@ export function generateEnglishQuestions(topicId, count = 10) {
     candidateWords = currentVocabBase;
   }
 
-  // 7. 候选池扩展保护：如果候选池中不重复的单词少于 4 个，需要从 currentVocabBase 中挑选未包含的单词补齐至 4 个，以防止连线配对题内部出现重复词
+  // 7. 候选池扩展保护：如果候选池中不重复的单词少于 4 个，用本章原始词补足
   if (candidateWords.length < 4) {
     const needed = 4 - candidateWords.length;
     const additional = currentVocabBase.filter(w => !candidateWords.some(cw => cw.word === w.word));
     candidateWords = [...candidateWords, ...additional.slice(0, needed)];
   }
 
-  // 按照 75% 比例动态计算连线题数量
-  const matchCount = Math.floor(count * 0.75);
-
-  // 8. 单词匹配连线题“无放回轮询抽样池”准备
-  let matchCandidatePool = [...candidateWords];
-  matchCandidatePool = shuffleArray(matchCandidatePool);
-  let poolIndex = 0;
-
-  // 9. 语法选择题去重池准备
-  const currentDayChoiceQ = englishChoiceQuestions.find(q => q.dayNum === dayNum);
-  const otherDayChoiceQs = englishChoiceQuestions.filter(q => q.dayNum !== dayNum);
-  const shuffledOthers = shuffleArray([...otherDayChoiceQs]);
-  
-  const testChoiceQuestions = [];
-  if (currentDayChoiceQ) {
-    testChoiceQuestions.push(currentDayChoiceQ);
-  }
-  testChoiceQuestions.push(...shuffledOthers);
+  // 平分题型：一半连线，一半填空选择
+  const matchCount = Math.floor(count / 2);
 
   for (let i = 0; i < count; i++) {
     let qObj = {};
@@ -1587,17 +1571,25 @@ export function generateEnglishQuestions(topicId, count = 10) {
 
     if (i < matchCount) {
       // 匹配连线题 (Match Type)
+      // 保证抽取 4 个不重复的单词
       const matchWords = [];
+      const shuffledCandidates = shuffleArray([...candidateWords]);
       for (let j = 0; j < 4; j++) {
-        if (poolIndex >= matchCandidatePool.length) {
-          // 当前轮词已抽光，重新打乱备选池并重置游标
-          matchCandidatePool = shuffleArray([...candidateWords]);
-          poolIndex = 0;
+        if (shuffledCandidates[j]) {
+          matchWords.push(shuffledCandidates[j]);
+        } else {
+          // 降级补齐
+          const backup = currentVocabBase.find(w => !matchWords.some(mw => mw.word === w.word));
+          if (backup) {
+            matchWords.push(backup);
+          } else {
+            // 如果实在没有，就随便拿一个
+            matchWords.push(currentVocabBase[j % currentVocabBase.length]);
+          }
         }
-        matchWords.push(matchCandidatePool[poolIndex]);
-        poolIndex++;
       }
 
+      // 提取左右连线并打乱
       const leftOptions = matchWords.map(w => ({ id: w.word, text: w.word })).sort(() => 0.5 - Math.random());
       const rightOptions = matchWords.map(w => ({ id: w.word, text: w.translation })).sort(() => 0.5 - Math.random());
 
@@ -1608,7 +1600,7 @@ export function generateEnglishQuestions(topicId, count = 10) {
 
       let expText = "💡中考名师词义连线配对解析：\n";
       matchWords.forEach(w => {
-        expText += `• **${w.word}** (${w.phonetic}) ➔ 【${w.translation}】\n   *记词诀敲：${w.tip}*\n`;
+        expText += `• **${w.word}** (${w.phonetic}) ➔ 【${w.translation}】\n   *记词诀窍：${w.tip}*\n`;
       });
 
       qObj = {
@@ -1624,25 +1616,46 @@ export function generateEnglishQuestions(topicId, count = 10) {
         knowledgePoint: '词汇词义连线配对'
       };
     } else {
-      // 语法选择题 (Choice Type)
-      const choiceQIdx = i - matchCount;
-      const rawChoiceQ = testChoiceQuestions[choiceQIdx % testChoiceQuestions.length];
-      
-      const shuffledOptions = shuffleArray([...rawChoiceQ.options]);
-      const correctIndex = shuffledOptions.indexOf(rawChoiceQ.answerText);
-      
+      // 句子填空题 (Choice Type)
+      // 随机选取今日备选词中的一个单词作为填空目标
+      const targetWord = candidateWords[i % candidateWords.length];
+      const sentence = targetWord.sentence || 'It is an important word.';
+      const translation = targetWord.sentence_translation || '这是一个重要的单词。';
+
+      // 替换句子中的目标单词为下划线
+      const regex = new RegExp(`\\b${targetWord.word}\\b`, 'gi');
+      let displaySentence = sentence.replace(regex, '_______');
+      if (!displaySentence.includes('_______')) {
+        displaySentence = sentence.replace(targetWord.word, '_______');
+      }
+
+      // 生成干扰项 (Distractors) - 从本章节的其它词中随机选 3 个
+      const otherWords = currentVocabBase.filter(w => w.word !== targetWord.word);
+      const shuffledOthers = shuffleArray(otherWords);
+      const distractors = [];
+      for (let k = 0; k < 3; k++) {
+        if (shuffledOthers[k]) {
+          distractors.push(shuffledOthers[k].word);
+        } else {
+          distractors.push(`other_word_${k}`);
+        }
+      }
+
+      // 打乱选项
+      const opts = shuffleArray([targetWord.word, ...distractors]);
+      const ansIdx = opts.indexOf(targetWord.word);
+
       qObj = {
-        id: rawChoiceQ.id + i,
+        id: 60000 + i,
         type: 'choice',
-        question: `【语法选择题 ${qIdx}】${rawChoiceQ.question}`,
-        options: shuffledOptions,
-        answer: correctIndex !== -1 ? correctIndex : 0,
-        explanation: rawChoiceQ.explanation,
-        knowledgePoint: rawChoiceQ.knowledgePoint
+        question: `【句子填空选择 ${qIdx}】请从选项中选择合适的单词填入句子括号中使其完整：\n\n"${displaySentence}"\n\n(中文释义：${translation})`,
+        options: opts,
+        answer: ansIdx,
+        explanation: `💡名师考点解析：\n正确答案是 **${targetWord.word}**。\n\n• **含义**：${targetWord.translation}\n• **音标**：${targetWord.phonetic}\n• **例句应用**：${sentence}\n• **例句翻译**：${translation}\n\n*助记口诀：${targetWord.tip}*`,
+        knowledgePoint: '单词词义语境填空'
       };
     }
     list.push(qObj);
   }
   return list;
 }
-
