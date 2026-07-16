@@ -131,7 +131,7 @@ export default function MathModule() {
       }
 
       // 所有小测（20题题卡）每道题做对做错均增减 0.5 金币
-      updateGoldCoin(isCorrect, 0.5);
+      updateGoldCoin(isCorrect, 1.0);
 
       if (isCorrect) {
         correctCount++;
@@ -182,7 +182,7 @@ export default function MathModule() {
     setExerciseAnswers(nextAnswers);
 
     // 金币结算 (+0.5 / -0.5)
-    updateGoldCoin(isCorrect, 0.5);
+    updateGoldCoin(isCorrect, 1.0);
 
     // 做错自动收录到数学错题本
     if (!isCorrect) {
@@ -981,7 +981,7 @@ export default function MathModule() {
                         color: (testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))',
                         marginBottom: '4px'
                       }}>
-                        {(testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个。'}
+                        {(testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个。'}
                       </div>
                       {testQuestions[currentTestIndex]?.explanation}
                     </div>

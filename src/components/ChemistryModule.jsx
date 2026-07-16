@@ -536,7 +536,7 @@ export default function ChemistryModule() {
       }
 
       // 积分权重统一为 0.5 金币
-      updateGoldCoin(isCorrect, 0.5);
+      updateGoldCoin(isCorrect, 1.0);
 
       if (isCorrect) {
         correctCount++;
@@ -1579,8 +1579,8 @@ export default function ChemistryModule() {
                         marginBottom: '4px'
                       }}>
                         {testQuestions[currentTestIndex]?.type === 'match'
-                          ? ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id] === 'correct') ? '✅ 元素消除全对！今日金币 +0.5 个' : '❌ 配对中有错误。今日金币 -0.5 个。')
-                          : ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个。')}
+                          ? ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id] === 'correct') ? '✅ 元素消除全对！今日金币 +1 个' : '❌ 配对中有错误。今日金币 -1 个。')
+                          : ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个。')}
                       </div>
                       {testQuestions[currentTestIndex]?.explanation}
                     </div>

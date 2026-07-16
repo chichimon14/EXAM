@@ -781,7 +781,7 @@ export default function EnglishModule() {
       }
 
       // 增减分值：做对加 0.5 分，做错扣 0.5 分 (锁分控制：如果当天已经有过积分，则不加减分)
-      updateGoldCoin(isCorrect, 0.5);
+      updateGoldCoin(isCorrect, 1.0);
 
       if (isCorrect) {
         correctCount++;
@@ -845,7 +845,7 @@ export default function EnglishModule() {
     };
     setExerciseAnswers(nextAnswers);
 
-    updateGoldCoin(isCorrect, 0.5);
+    updateGoldCoin(isCorrect, 1.0);
 
     if (!isCorrect) {
       const alreadyIn = wrongList.some(w => w.id === currentQ.id);
@@ -1839,8 +1839,8 @@ export default function EnglishModule() {
                         marginBottom: '4px'
                       }}>
                         {testQuestions[currentTestIndex]?.type === 'match'
-                          ? ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id] === 'correct') ? '✅ 连线消除全对！今日金币 +0.5 个' : '❌ 配对中有错误。今日金币 -0.5 个。')
-                          : ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个。')}
+                          ? ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id] === 'correct') ? '✅ 连线消除全对！今日金币 +1 个' : '❌ 配对中有错误。今日金币 -1 个。')
+                          : ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个。')}
                       </div>
                       {testQuestions[currentTestIndex]?.explanation}
                     </div>

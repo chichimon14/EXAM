@@ -155,7 +155,7 @@ export default function PhysicsModule() {
       nextSubmissions[q.id] = isCorrect;
 
       // 物理小测（20题小测卡）每道题增减均为 0.5 金币
-      updateGoldCoin(isCorrect, 0.5);
+      updateGoldCoin(isCorrect, 1.0);
 
       if (isCorrect) {
         correctCount++;
@@ -230,7 +230,7 @@ export default function PhysicsModule() {
     setExerciseAnswers(nextAnswers);
 
     // 金币扣减与累加 (+0.5 / -0.5)
-    updateGoldCoin(isCorrect, 0.5);
+    updateGoldCoin(isCorrect, 1.0);
 
     // 如果做错了，自动收录物理错题本
     if (!isCorrect) {
@@ -1630,7 +1630,7 @@ export default function PhysicsModule() {
                             color: (userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.state === 'correct' || userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.userOpt === currentChapterQuestions[currentQuizIndex]?.answer || userAnswers[currentChapterQuestions[currentQuizIndex]?.id] === currentChapterQuestions[currentQuizIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))',
                             marginBottom: '4px'
                           }}>
-                            {(userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.state === 'correct' || userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.userOpt === currentChapterQuestions[currentQuizIndex]?.answer || userAnswers[currentChapterQuestions[currentQuizIndex]?.id] === currentChapterQuestions[currentQuizIndex]?.answer) ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个。'}
+                            {(userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.state === 'correct' || userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.userOpt === currentChapterQuestions[currentQuizIndex]?.answer || userAnswers[currentChapterQuestions[currentQuizIndex]?.id] === currentChapterQuestions[currentQuizIndex]?.answer) ? '✅ 算对啦！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个。'}
                           </div>
                           💡 <b>名师点拨：</b>{currentChapterQuestions[currentQuizIndex]?.explanation}
                         </div>
