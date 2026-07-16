@@ -14,45 +14,11 @@ const GAME_SEEDS = [
   { id: 'Ca', symbol: 'Ca', pinyin: '钙 (gài)' }
 ];
 
-// 26 个中考高频与前20号元素数据库 (移至顶层全局作用域，消灭 TDZ 未声明前使用崩溃异常)
-const ALL_PERIODIC_ELEMENTS = [
-  { z: 1, symbol: 'H', name: '氢', pinyin: 'qīng', day: 'day1', group: 1 },
-  { z: 2, symbol: 'He', name: '氦', pinyin: 'hài', day: 'day1', group: 1 },
-  { z: 3, symbol: 'Li', name: '锂', pinyin: 'lǐ', day: 'day1', group: 1 },
-  { z: 4, symbol: 'Be', name: '铍', pinyin: 'pí', day: 'day1', group: 1 },
-  { z: 5, symbol: 'B', name: '硼', pinyin: 'péng', day: 'day1', group: 1 },
-  { z: 6, symbol: 'C', name: '碳', pinyin: 'tàn', day: 'day1', group: 2 },
-  { z: 7, symbol: 'N', name: '氮', pinyin: 'dàn', day: 'day1', group: 2 },
-  { z: 8, symbol: 'O', name: '氧', pinyin: 'yǎng', day: 'day1', group: 2 },
-  { z: 9, symbol: 'F', name: '氟', pinyin: 'fú', day: 'day1', group: 2 },
-  { z: 10, symbol: 'Ne', name: '氖', pinyin: 'nǎi', day: 'day1', group: 2 },
-  { z: 11, symbol: 'Na', name: '钠', pinyin: 'nà', day: 'day2', group: 3 },
-  { z: 12, symbol: 'Mg', name: '镁', pinyin: 'měi', day: 'day2', group: 3 },
-  { z: 13, symbol: 'Al', name: '铝', pinyin: 'lǚ', day: 'day2', group: 3 },
-  { z: 14, symbol: 'Si', name: '硅', pinyin: 'guī', day: 'day2', group: 3 },
-  { z: 15, symbol: 'P', name: '磷', pinyin: 'lín', day: 'day2', group: 3 },
-  { z: 16, symbol: 'S', name: '硫', pinyin: 'liú', day: 'day2', group: 4 },
-  { z: 17, symbol: 'Cl', name: '氯', pinyin: 'lǜ', day: 'day2', group: 4 },
-  { z: 18, symbol: 'Ar', name: '氩', pinyin: 'yà', day: 'day2', group: 4 },
-  { z: 19, symbol: 'K', name: '钾', pinyin: 'jiǎ', day: 'day2', group: 4 },
-  { z: 20, symbol: 'Ca', name: '钙', pinyin: 'gài', day: 'day2', group: 4 },
-  { z: 26, symbol: 'Fe', name: '铁', pinyin: 'tiě', day: 'day3', group: 5 },
-  { z: 29, symbol: 'Cu', name: '铜', pinyin: 'tóng', day: 'day3', group: 5 },
-  { z: 30, symbol: 'Zn', name: '锌', pinyin: 'xīn', day: 'day3', group: 5 },
-  { z: 47, symbol: 'Ag', name: '银', pinyin: 'yín', day: 'day3', group: 5 },
-  { z: 56, symbol: 'Ba', name: '钡', pinyin: 'bèi', day: 'day3', group: 5 },
-  { z: 25, symbol: 'Mn', name: '锰', pinyin: 'měng', day: 'day3', group: 5 },
-  { z: 79, symbol: 'Au', name: '金', pinyin: 'jīn', day: 'day4', group: 6 },
-  { z: 22, symbol: 'Ti', name: '钛', pinyin: 'tài', day: 'day4', group: 6 },
-  { z: 53, symbol: 'I', name: '碘', pinyin: 'diǎn', day: 'day4', group: 6 },
-  { z: 50, symbol: 'Sn', name: '锡', pinyin: 'xī', day: 'day4', group: 6 },
-  { z: 80, symbol: 'Hg', name: '汞', pinyin: 'gǒng', day: 'day4', group: 6 }
-];
-
 export default function ChemistryModule() {
   const [activeTab, setActiveTab] = useState('study'); // study | test | exercise | wrongbook
   const [selectedDayId, setSelectedDayId] = useState('day1');
 
+  // 25天每日金币积分状态 { [dayId]: score }
   const [dayScores, setDayScores] = useState({});
   const [showBillModal, setShowBillModal] = useState(false);
 
@@ -62,7 +28,7 @@ export default function ChemistryModule() {
   useEffect(() => {
     const handleResize = () => {
       const isPortrait = window.innerHeight > window.innerWidth;
-      const isTabletWidth = window.innerWidth <= 900; // ipad竖屏最宽为 834px，900px 能完美精准涵盖
+      const isTabletWidth = window.innerWidth <= 1024; // ipad 竖屏宽度自适应
       setIsPortraitTablet(isPortrait && isTabletWidth);
     };
     handleResize();
@@ -196,14 +162,7 @@ export default function ChemistryModule() {
   // 初始化加载错题与25天历史积分
   useEffect(() => {
     const savedWrongs = localStorage.getItem('chemistry-wrongs');
-    if (savedWrongs) {
-      try {
-        setWrongList(JSON.parse(savedWrongs));
-      } catch (e) {
-        console.error('Failed to parse chemistry-wrongs:', e);
-        setWrongList([]);
-      }
-    }
+    if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
 
     const scores = {};
     for (let i = 1; i <= 25; i++) {
@@ -713,6 +672,41 @@ export default function ChemistryModule() {
       localStorage.setItem(`chemistry-score-${dayId}`, '0');
     }
   };
+
+  // 26 个中考高频与前20号元素数据库
+  const ALL_PERIODIC_ELEMENTS = [
+    { z: 1, symbol: 'H', name: '氢', pinyin: 'qīng', day: 'day1', group: 1 },
+    { z: 2, symbol: 'He', name: '氦', pinyin: 'hài', day: 'day1', group: 1 },
+    { z: 3, symbol: 'Li', name: '锂', pinyin: 'lǐ', day: 'day1', group: 1 },
+    { z: 4, symbol: 'Be', name: '铍', pinyin: 'pí', day: 'day1', group: 1 },
+    { z: 5, symbol: 'B', name: '硼', pinyin: 'péng', day: 'day1', group: 1 },
+    { z: 6, symbol: 'C', name: '碳', pinyin: 'tàn', day: 'day1', group: 2 },
+    { z: 7, symbol: 'N', name: '氮', pinyin: 'dàn', day: 'day1', group: 2 },
+    { z: 8, symbol: 'O', name: '氧', pinyin: 'yǎng', day: 'day1', group: 2 },
+    { z: 9, symbol: 'F', name: '氟', pinyin: 'fú', day: 'day1', group: 2 },
+    { z: 10, symbol: 'Ne', name: '氖', pinyin: 'nǎi', day: 'day1', group: 2 },
+    { z: 11, symbol: 'Na', name: '钠', pinyin: 'nà', day: 'day2', group: 3 },
+    { z: 12, symbol: 'Mg', name: '镁', pinyin: 'měi', day: 'day2', group: 3 },
+    { z: 13, symbol: 'Al', name: '铝', pinyin: 'lǚ', day: 'day2', group: 3 },
+    { z: 14, symbol: 'Si', name: '硅', pinyin: 'guī', day: 'day2', group: 3 },
+    { z: 15, symbol: 'P', name: '磷', pinyin: 'lín', day: 'day2', group: 3 },
+    { z: 16, symbol: 'S', name: '硫', pinyin: 'liú', day: 'day2', group: 4 },
+    { z: 17, symbol: 'Cl', name: '氯', pinyin: 'lǜ', day: 'day2', group: 4 },
+    { z: 18, symbol: 'Ar', name: '氩', pinyin: 'yà', day: 'day2', group: 4 },
+    { z: 19, symbol: 'K', name: '钾', pinyin: 'jiǎ', day: 'day2', group: 4 },
+    { z: 20, symbol: 'Ca', name: '钙', pinyin: 'gài', day: 'day2', group: 4 },
+    { z: 26, symbol: 'Fe', name: '铁', pinyin: 'tiě', day: 'day3', group: 5 },
+    { z: 29, symbol: 'Cu', name: '铜', pinyin: 'tóng', day: 'day3', group: 5 },
+    { z: 30, symbol: 'Zn', name: '锌', pinyin: 'xīn', day: 'day3', group: 5 },
+    { z: 47, symbol: 'Ag', name: '银', pinyin: 'yín', day: 'day3', group: 5 },
+    { z: 56, symbol: 'Ba', name: '钡', pinyin: 'bèi', day: 'day3', group: 5 },
+    { z: 25, symbol: 'Mn', name: '锰', pinyin: 'měng', day: 'day3', group: 5 },
+    { z: 79, symbol: 'Au', name: '金', pinyin: 'jīn', day: 'day4', group: 6 },
+    { z: 22, symbol: 'Ti', name: '钛', pinyin: 'tài', day: 'day4', group: 6 },
+    { z: 53, symbol: 'I', name: '碘', pinyin: 'diǎn', day: 'day4', group: 6 },
+    { z: 50, symbol: 'Sn', name: '锡', pinyin: 'xī', day: 'day4', group: 6 },
+    { z: 80, symbol: 'Hg', name: '汞', pinyin: 'gǒng', day: 'day4', group: 6 }
+  ];
 
   // 渲染化学实验/原子微观原理图 (含 Day 8 氧气、Day 14 水电解、Day 15 引流过滤、Day 12 钠电子轨道)
   const renderChemistryIllustrations = (dayId) => {
@@ -1332,9 +1326,8 @@ export default function ChemistryModule() {
             ) : testScore === null ? (
               /* 答题中 (20题化学小测双栏自适应卡片) */
               <div style={{ display: 'grid', gridTemplateColumns: isPortraitTablet ? '1fr' : '1.25fr 1fr', gap: '20px', flex: 1 }}>
-                {testQuestions.length > 0 && testQuestions[currentTestIndex] ? (
-                  <>
-                    {/* 左栏：核心答题面板 */}
+                
+                {/* 左栏：核心答题面板 */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
@@ -1712,10 +1705,7 @@ export default function ChemistryModule() {
                     )}
                   </div>
                 </div>
-                  </>
-                ) : (
-                  <div style={{ gridColumn: 'span 2', textAlign: 'center', padding: '40px', color: '#a0aec0', width: '100%' }}>正在生成今日化学小测题库...</div>
-                )}
+
               </div>
             ) : (
               /* 成绩报告 */
