@@ -32,7 +32,14 @@ export default function MathModule() {
   // 初始化加载错题与25天历史金币积分
   useEffect(() => {
     const savedWrongs = localStorage.getItem('math-wrongs');
-    if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
+    if (savedWrongs) {
+      try {
+        setWrongList(JSON.parse(savedWrongs));
+      } catch (e) {
+        console.error('Failed to parse math-wrongs:', e);
+        setWrongList([]);
+      }
+    }
 
     // 加载25天金币荣誉分值
     const scores = {};

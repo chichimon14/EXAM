@@ -80,13 +80,34 @@ export default function EnglishModule() {
   // 初始化加载错题与30天历史积分、斩词与生词库
   useEffect(() => {
     const savedWrongs = localStorage.getItem('english-wrongs');
-    if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
+    if (savedWrongs) {
+      try {
+        setWrongList(JSON.parse(savedWrongs));
+      } catch (e) {
+        console.error('Failed to parse english-wrongs:', e);
+        setWrongList([]);
+      }
+    }
 
     const mastered = localStorage.getItem('english-mastered-words');
-    if (mastered) setMasteredWords(JSON.parse(mastered));
+    if (mastered) {
+      try {
+        setMasteredWords(JSON.parse(mastered));
+      } catch (e) {
+        console.error('Failed to parse english-mastered-words:', e);
+        setMasteredWords([]);
+      }
+    }
 
     const unfamiliar = localStorage.getItem('english-unfamiliar-words');
-    if (unfamiliar) setUnfamiliarWords(JSON.parse(unfamiliar));
+    if (unfamiliar) {
+      try {
+        setUnfamiliarWords(JSON.parse(unfamiliar));
+      } catch (e) {
+        console.error('Failed to parse english-unfamiliar-words:', e);
+        setUnfamiliarWords([]);
+      }
+    }
 
     const scores = {};
     for (let i = 1; i <= 31; i++) {
@@ -597,11 +618,7 @@ export default function EnglishModule() {
         
         await playEnglishAudio(item.word);
         if (!isAutoReadingRef.current) break;
-        await new Promise(r => setTimeout(r, 150)); // 英中衔接微顿（150ms），合为“英文+中文”发音单元
-        
-        await playChineseSpeech(item.translation);
-        if (!isAutoReadingRef.current) break;
-        await new Promise(r => setTimeout(r, 450)); // 一遍朗读后的适度切换微顿（450ms）
+        await new Promise(r => setTimeout(r, 700)); // 每次英文朗读后留有700ms间隔供学生跟读
       }
     }
     stopAutoReading();

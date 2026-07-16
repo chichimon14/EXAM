@@ -161,7 +161,14 @@ export default function ChemistryModule() {
   // 初始化加载错题与25天历史积分
   useEffect(() => {
     const savedWrongs = localStorage.getItem('chemistry-wrongs');
-    if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
+    if (savedWrongs) {
+      try {
+        setWrongList(JSON.parse(savedWrongs));
+      } catch (e) {
+        console.error('Failed to parse chemistry-wrongs:', e);
+        setWrongList([]);
+      }
+    }
 
     const scores = {};
     for (let i = 1; i <= 25; i++) {

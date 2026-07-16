@@ -80,13 +80,34 @@ export default function PhysicsModule() {
   // 初始化加载
   useEffect(() => {
     const savedAnswers = localStorage.getItem('physics-answers');
-    if (savedAnswers) setUserAnswers(JSON.parse(savedAnswers));
+    if (savedAnswers) {
+      try {
+        setUserAnswers(JSON.parse(savedAnswers));
+      } catch (e) {
+        console.error('Failed to parse physics-answers:', e);
+        setUserAnswers({});
+      }
+    }
 
     const savedSubmissions = localStorage.getItem('physics-submissions');
-    if (savedSubmissions) setSubmittedAnswers(JSON.parse(savedSubmissions));
+    if (savedSubmissions) {
+      try {
+        setSubmittedAnswers(JSON.parse(savedSubmissions));
+      } catch (e) {
+        console.error('Failed to parse physics-submissions:', e);
+        setSubmittedAnswers({});
+      }
+    }
 
     const savedWrongs = localStorage.getItem('physics-wrongs');
-    if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
+    if (savedWrongs) {
+      try {
+        setWrongList(JSON.parse(savedWrongs));
+      } catch (e) {
+        console.error('Failed to parse physics-wrongs:', e);
+        setWrongList([]);
+      }
+    }
 
     // 加载25天金币荣誉分值
     const scores = {};
