@@ -704,13 +704,11 @@ export default function EnglishModule() {
           const nextAnswers = {
             ...testAnswers,
             [currentQ.id]: {
-              state: isAllCorrect ? 'correct' : 'wrong',
+              userOpt: 'matched',
               matchedPairs: newMatched
             }
           };
           setTestAnswers(nextAnswers);
-          updateGoldCoin(isAllCorrect, 0.5); // 小测每题 0.5 分
-          setTestChecked(true); // 展现结题解析
         } else {
           // 练习模式
           const nextAnswers = {
@@ -747,69 +745,92 @@ export default function EnglishModule() {
     }
   };
 
-  // 10题测试单步提交
-  const handleTestSubmit = () => {
-    if (selectedTestOpt === null) return;
-    const currentQ = testQuestions[currentTestIndex];
-    const isCorrect = selectedTestOpt === currentQ.answer;
+  // 英语小测统一交卷结算逻辑
+  const handleTestSubmitAll = () => {
+    let correctCount = 0;
+    const weaknesses = [];
+    const nextAnswers = { ...testAnswers };
 
-    const nextAnswers = { ...testAnswers, [currentQ.id]: selectedTestOpt };
-    setTestAnswers(nextAnswers);
-
-    updateGoldCoin(isCorrect, 0.5);
-
-    if (!isCorrect) {
-      const alreadyIn = wrongList.some(w => w.id === currentQ.id);
-      if (!alreadyIn) {
-        const wrongQ = { ...currentQ, userAnswer: selectedTestOpt, chapterId: selectedDayId };
-        const nextWrongs = [...wrongList, wrongQ];
-        setWrongList(nextWrongs);
-        localStorage.setItem('english-wrongs', JSON.stringify(nextWrongs));
-      }
-    }
-    setTestChecked(true);
-  };
-
-  // 10题测试下一题
-  const handleNextTest = () => {
-    setSelectedTestOpt(null);
-    setTestChecked(false);
-    
-    // 重置下一题的连线匹配状态
-    setSelectedLeft(null);
-    setSelectedRight(null);
-    setMatchedPairs({});
-    setHasErrorThisQuestion(false);
-    setMatchFlashError(false);
-    
-    if (currentTestIndex < testQuestions.length - 1) {
-      setCurrentTestIndex(currentTestIndex + 1);
-    } else {
-      let correctCount = 0;
-      const weaknesses = [];
-      testQuestions.forEach(q => {
-        const isCorrect = q.type === 'match'
-          ? (testAnswers[q.id] === 'correct' || testAnswers[q.id]?.state === 'correct')
-          : testAnswers[q.id] === q.answer;
-        if (isCorrect) {
-          correctCount++;
-        } else {
-          weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
+    testQuestions.forEach(q => {
+      const saved = nextAnswers[q.id];
+      let isCorrect = false;
+      
+      if (q.type === 'match') {
+        if (saved && saved.matchedPairs) {
+          isCorrect = true;
+          Object.keys(q.correctPairs).forEach(engKey => {
+            if (saved.matchedPairs[engKey] !== q.correctPairs[engKey]) {
+              isCorrect = false;
+            }
+          });
         }
-      });
-      const finalScore = Math.round((correctCount / testQuestions.length) * 100);
-      setTestScore(finalScore);
+      } else {
+        isCorrect = saved === q.answer || (saved && saved.userOpt === q.answer);
+      }
 
-      const dayNum = selectedDayId.replace('day', '');
-      addStudyLog(
-        'english',
-        'quiz_complete',
-        `完成英语 Day ${dayNum} 测验测试`,
-        correctCount,
-        testQuestions.length,
-        weaknesses
-      );
-    }
+      // 标记该题的对错状态
+      if (saved) {
+        nextAnswers[q.id] = {
+          ...saved,
+          state: isCorrect ? 'correct' : 'wrong'
+        };
+      } else {
+        nextAnswers[q.id] = {
+          state: 'wrong'
+        };
+      }
+
+      // 增减分值：做对加 0.5 分，做错扣 0.5 分 (锁分控制：如果当天已经有过积分，则不加减分)
+      updateGoldCoin(isCorrect, 0.5);
+
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
+        
+        // 自动加入错题本
+        const alreadyIn = wrongList.some(w => w.id === q.id);
+        if (!alreadyIn) {
+          let wrongQ;
+          if (q.type === 'match') {
+            wrongQ = {
+              id: q.id,
+              question: `词汇连线题：${Object.keys(q.correctPairs).join('，')}`,
+              options: Object.entries(q.correctPairs).map(([k, v]) => `${k} ➔ ${v}`),
+              answer: '4对单词全部正确消除配对',
+              userAnswer: '小测交卷中有连线错误',
+              explanation: q.explanation,
+              chapterId: selectedDayId
+            };
+          } else {
+            wrongQ = {
+              ...q,
+              userAnswer: saved?.userOpt !== undefined ? saved.userOpt : saved,
+              chapterId: selectedDayId
+            };
+          }
+          wrongList.push(wrongQ);
+        }
+      }
+    });
+
+    setTestAnswers(nextAnswers);
+    setWrongList([...wrongList]);
+    localStorage.setItem('english-wrongs', JSON.stringify(wrongList));
+
+    const finalScore = Math.round((correctCount / testQuestions.length) * 100);
+    setTestScore(finalScore);
+    setTestChecked(true); // 此时展现解析
+
+    const dayNum = selectedDayId.replace('day', '');
+    addStudyLog(
+      'english',
+      'quiz_complete',
+      `完成英语 Day ${dayNum} 20题测试`,
+      correctCount,
+      testQuestions.length,
+      weaknesses
+    );
   };
 
   // 100题练习单步点击
@@ -1539,306 +1560,398 @@ export default function EnglishModule() {
                 </button>
               </div>
             ) : testScore === null ? (
-              /* 答题中 */
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
-                  <span>当前进度：<b>{currentTestIndex + 1}</b> / {testQuestions.length} 题</span>
-                  <span>今日小测中...</span>
-                </div>
-
-                <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${((currentTestIndex + 1) / testQuestions.length) * 100}%`, height: '100%', backgroundColor: '#a855f7', transition: 'width 0.3s ease' }}></div>
-                </div>
-
-                <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid #edf2f7', fontSize: '0.98rem', fontWeight: 'bold' }}>
-                  Q{currentTestIndex + 1}: {testQuestions[currentTestIndex]?.question}
-                </div>
-
-                {/* 分流渲染：连线题 (type === 'match') vs 选择题 (type === 'choice') */}
-                {testQuestions[currentTestIndex]?.type === 'match' ? (
-                  /* 连线匹配题 UI */
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '10px 0' }}>
-                    <div
-                      id="match-container"
-                      style={{
-                        position: 'relative',
-                        display: 'grid',
-                        gridTemplateColumns: '1.5fr 1fr 1.5fr',
-                        gap: isPortraitTablet ? '10px' : '20px',
-                        padding: '16px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px dashed #e2e8f0',
-                        // 如果配对失败报错，触发抖动效果
-                        animation: matchFlashError ? 'shake 0.4s ease' : 'none'
-                      }}
-                    >
-                      {/* 左侧英文单词列表 */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#a855f7', textAlign: 'center', marginBottom: '4px' }}>🇬🇧 英文单词/短语</div>
-                        {testQuestions[currentTestIndex]?.leftOptions.map((opt) => {
-                          const isMatched = !!matchedPairs[opt.id];
-                          const isSelected = selectedLeft === opt.id;
-                          const hasSubmitted = testChecked;
-                          
-                          let btnBg = '#fff';
-                          let btnBorder = '1px solid #e2e8f0';
-                          let btnColor = 'hsl(var(--text-primary))';
-                          let opacity = 1;
-
-                          if (isSelected) {
-                            btnBg = 'rgba(168,85,247,0.12)';
-                            btnBorder = '2px solid #a855f7';
-                            btnColor = '#a855f7';
-                          } else if (isMatched) {
-                            if (hasSubmitted) {
-                              const correctTranslation = testQuestions[currentTestIndex]?.correctPairs[opt.id];
-                              const userTranslation = matchedPairs[opt.id];
-                              const isPairCorrect = userTranslation === correctTranslation;
-                              
-                              btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
-                              btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
-                              btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
-                              opacity = 0.6;
-                            } else {
-                              btnBg = 'rgba(168,85,247,0.03)';
-                              btnBorder = '1px solid rgba(168,85,247,0.25)';
-                              btnColor = 'hsl(var(--text-primary))';
-                            }
-                          }
-
-                          return (
-                            <button
-                              key={opt.id}
-                              id={`btn-left-${opt.id}`}
-                              className="btn"
-                              style={{
-                                padding: isPortraitTablet ? '8px 10px' : '12px 16px',
-                                fontSize: isPortraitTablet ? '0.78rem' : '0.9rem',
-                                fontWeight: 'bold',
-                                borderRadius: '10px',
-                                backgroundColor: btnBg,
-                                border: btnBorder,
-                                color: btnColor,
-                                opacity: opacity,
-                                cursor: hasSubmitted ? 'default' : 'pointer',
-                                transition: 'all 0.2s ease',
-                                boxShadow: isSelected ? '0 0 12px rgba(168,85,247,0.3)' : 'none',
-                                justifyContent: 'center'
-                              }}
-                              disabled={hasSubmitted}
-                              onClick={() => handleMatchClick('left', opt.id)}
-                            >
-                              {opt.text}
-                              {hasSubmitted && isMatched && (
-                                matchedPairs[opt.id] === testQuestions[currentTestIndex]?.correctPairs[opt.id] ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* 中间留白，为连线腾出足够空间 */}
-                      <div></div>
-
-                      {/* 右侧中文翻译列表 */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#0ea5e9', textAlign: 'center', marginBottom: '4px' }}>🇨🇳 中文翻译解释</div>
-                        {testQuestions[currentTestIndex]?.rightOptions.map((opt) => {
-                          const isMatched = Object.values(matchedPairs).includes(opt.text);
-                          const isSelected = selectedRight === opt.text;
-                          const hasSubmitted = testChecked;
-
-                          let btnBg = '#fff';
-                          let btnBorder = '1px solid #e2e8f0';
-                          let btnColor = 'hsl(var(--text-primary))';
-                          let opacity = 1;
-
-                          if (isSelected) {
-                            btnBg = 'rgba(14,165,233,0.12)';
-                            btnBorder = '2px solid #0ea5e9';
-                            btnColor = '#0ea5e9';
-                          } else if (isMatched) {
-                            if (hasSubmitted) {
-                              const linkedEng = Object.keys(matchedPairs).find(key => matchedPairs[key] === opt.text);
-                              const isPairCorrect = linkedEng && testQuestions[currentTestIndex]?.correctPairs[linkedEng] === opt.text;
-
-                              btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
-                              btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
-                              btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
-                              opacity = 0.6;
-                            } else {
-                              btnBg = 'rgba(14,165,233,0.03)';
-                              btnBorder = '1px solid rgba(14,165,233,0.25)';
-                              btnColor = 'hsl(var(--text-primary))';
-                            }
-                          }
-
-                          return (
-                            <button
-                              key={opt.text}
-                              id={`btn-right-${encodeURIComponent(opt.text)}`}
-                              className="btn"
-                              style={{
-                                padding: isPortraitTablet ? '8px 10px' : '12px 16px',
-                                fontSize: isPortraitTablet ? '0.72rem' : '0.82rem',
-                                borderRadius: '10px',
-                                backgroundColor: btnBg,
-                                border: btnBorder,
-                                color: btnColor,
-                                opacity: opacity,
-                                cursor: hasSubmitted ? 'default' : 'pointer',
-                                transition: 'all 0.2s ease',
-                                boxShadow: isSelected ? '0 0 12px rgba(14,165,233,0.3)' : 'none',
-                                justifyContent: 'center',
-                                display: 'block',
-                                width: '100%',
-                                textOverflow: 'ellipsis',
-                                overflow: 'hidden',
-                                whiteSpace: 'nowrap'
-                              }}
-                              disabled={hasSubmitted}
-                              onClick={() => handleMatchClick('right', opt.text)}
-                            >
-                              {opt.text}
-                              {hasSubmitted && isMatched && (() => {
-                                const linkedEng = Object.keys(matchedPairs).find(key => matchedPairs[key] === opt.text);
-                                const isPairCorrect = linkedEng && testQuestions[currentTestIndex]?.correctPairs[linkedEng] === opt.text;
-                                return isPairCorrect ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>;
-                              })()}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* 绝对定位的 SVG 画线层 */}
-                      <svg style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        pointerEvents: 'none',
-                        zIndex: 5
-                      }}>
-                        {matchLines.map((line) => {
-                          const hasSubmitted = testChecked;
-                          let strokeColor = '#a855f7'; // 答题中：紫色连线
-                          if (hasSubmitted) {
-                            strokeColor = line.isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'; // 提交后：红绿连线
-                          }
-                          return (
-                            <line
-                              key={line.id}
-                              x1={line.x1}
-                              y1={line.y1}
-                              x2={line.x2}
-                              y2={line.y2}
-                              stroke={strokeColor}
-                              strokeWidth="3.5"
-                              strokeLinecap="round"
-                              style={{ transition: 'stroke 0.3s ease' }}
-                            />
-                          );
-                        })}
-                      </svg>
+              /* 答题中 (20题小测双栏自适应卡片) */
+              <div style={{ display: 'grid', gridTemplateColumns: isPortraitTablet ? '1fr' : '1.25fr 1fr', gap: '20px', flex: 1 }}>
+                
+                {/* 左栏：核心答题面板 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
+                      <span>当前第 <b>{currentTestIndex + 1}</b> / {testQuestions.length} 题</span>
+                      <span>今日测验中...</span>
                     </div>
 
-                    {/* CSS Shake Keyframe 动态注入 */}
-                    <style>{`
-                      @keyframes shake {
-                        0%, 100% { transform: translateX(0); }
-                        20%, 60% { transform: translateX(-6px); }
-                        40%, 80% { transform: translateX(6px); }
-                      }
-                    `}</style>
+                    <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${((currentTestIndex + 1) / testQuestions.length) * 100}%`, height: '100%', backgroundColor: '#a855f7', transition: 'width 0.3s ease' }}></div>
+                    </div>
+
+                    <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid #edf2f7', fontSize: '0.98rem', fontWeight: 'bold' }}>
+                      Q{currentTestIndex + 1}: {testQuestions[currentTestIndex]?.question}
+                    </div>
+
+                    {/* 分流渲染：连线题 (type === 'match') vs 选择题 (type === 'choice') */}
+                    {testQuestions[currentTestIndex]?.type === 'match' ? (
+                      /* 连线匹配题 UI */
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '10px 0' }}>
+                        <div
+                          id="match-container"
+                          style={{
+                            position: 'relative',
+                            display: 'grid',
+                            gridTemplateColumns: '1.5fr 1fr 1.5fr',
+                            gap: isPortraitTablet ? '10px' : '20px',
+                            padding: '16px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px dashed #e2e8f0',
+                            animation: matchFlashError ? 'shake 0.4s ease' : 'none'
+                          }}
+                        >
+                          {/* 左侧英文单词列表 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#a855f7', textAlign: 'center', marginBottom: '4px' }}>🇬🇧 英文单词/短语</div>
+                            {testQuestions[currentTestIndex]?.leftOptions.map((opt) => {
+                              const isMatched = !!matchedPairs[opt.id];
+                              const isSelected = selectedLeft === opt.id;
+                              const hasSubmitted = testChecked;
+                              
+                              let btnBg = '#fff';
+                              let btnBorder = '1px solid #e2e8f0';
+                              let btnColor = 'hsl(var(--text-primary))';
+                              let opacity = 1;
+
+                              if (isSelected) {
+                                btnBg = 'rgba(168,85,247,0.12)';
+                                btnBorder = '2px solid #a855f7';
+                                btnColor = '#a855f7';
+                              } else if (isMatched) {
+                                if (hasSubmitted) {
+                                  const correctTranslation = testQuestions[currentTestIndex]?.correctPairs[opt.id];
+                                  const userTranslation = matchedPairs[opt.id];
+                                  const isPairCorrect = userTranslation === correctTranslation;
+                                  
+                                  btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                                  btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                                  btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                                  opacity = 0.6;
+                                } else {
+                                  btnBg = 'rgba(168,85,247,0.03)';
+                                  btnBorder = '1px solid rgba(168,85,247,0.25)';
+                                  btnColor = 'hsl(var(--text-primary))';
+                                }
+                              }
+
+                              return (
+                                <button
+                                  key={opt.id}
+                                  id={`btn-left-${opt.id}`}
+                                  className="btn"
+                                  style={{
+                                    padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                                    fontSize: isPortraitTablet ? '0.78rem' : '0.9rem',
+                                    fontWeight: 'bold',
+                                    borderRadius: '10px',
+                                    backgroundColor: btnBg,
+                                    border: btnBorder,
+                                    color: btnColor,
+                                    opacity: opacity,
+                                    cursor: hasSubmitted ? 'default' : 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: isSelected ? '0 0 12px rgba(168,85,247,0.3)' : 'none',
+                                    justifyContent: 'center'
+                                  }}
+                                  disabled={hasSubmitted}
+                                  onClick={() => handleMatchClick('left', opt.id)}
+                                >
+                                  {opt.text}
+                                  {hasSubmitted && isMatched && (
+                                    matchedPairs[opt.id] === testQuestions[currentTestIndex]?.correctPairs[opt.id] ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* 中间留白 */}
+                          <div></div>
+
+                          {/* 右侧中文翻译列表 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#0ea5e9', textAlign: 'center', marginBottom: '4px' }}>🇨🇳 中文翻译解释</div>
+                            {testQuestions[currentTestIndex]?.rightOptions.map((opt) => {
+                              const isMatched = Object.values(matchedPairs).includes(opt.text);
+                              const isSelected = selectedRight === opt.text;
+                              const hasSubmitted = testChecked;
+
+                              let btnBg = '#fff';
+                              let btnBorder = '1px solid #e2e8f0';
+                              let btnColor = 'hsl(var(--text-primary))';
+                              let opacity = 1;
+
+                              if (isSelected) {
+                                btnBg = 'rgba(14,165,233,0.12)';
+                                btnBorder = '2px solid #0ea5e9';
+                                btnColor = '#0ea5e9';
+                              } else if (isMatched) {
+                                if (hasSubmitted) {
+                                  const linkedEng = Object.keys(matchedPairs).find(key => matchedPairs[key] === opt.text);
+                                  const isPairCorrect = linkedEng && testQuestions[currentTestIndex]?.correctPairs[linkedEng] === opt.text;
+
+                                  btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                                  btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                                  btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                                  opacity = 0.6;
+                                } else {
+                                  btnBg = 'rgba(14,165,233,0.03)';
+                                  btnBorder = '1px solid rgba(14,165,233,0.25)';
+                                  btnColor = 'hsl(var(--text-primary))';
+                                }
+                              }
+
+                              return (
+                                <button
+                                  key={opt.text}
+                                  id={`btn-right-${encodeURIComponent(opt.text)}`}
+                                  className="btn"
+                                  style={{
+                                    padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                                    fontSize: isPortraitTablet ? '0.72rem' : '0.82rem',
+                                    borderRadius: '10px',
+                                    backgroundColor: btnBg,
+                                    border: btnBorder,
+                                    color: btnColor,
+                                    opacity: opacity,
+                                    cursor: hasSubmitted ? 'default' : 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: isSelected ? '0 0 12px rgba(14,165,233,0.3)' : 'none',
+                                    justifyContent: 'center',
+                                    display: 'block',
+                                    width: '100%',
+                                    textOverflow: 'ellipsis',
+                                    overflow: 'hidden',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                  disabled={hasSubmitted}
+                                  onClick={() => handleMatchClick('right', opt.text)}
+                                >
+                                  {opt.text}
+                                  {hasSubmitted && isMatched && (() => {
+                                    const linkedEng = Object.keys(matchedPairs).find(key => matchedPairs[key] === opt.text);
+                                    const isPairCorrect = linkedEng && testQuestions[currentTestIndex]?.correctPairs[linkedEng] === opt.text;
+                                    return isPairCorrect ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>;
+                                  })()}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* SVG 划线 */}
+                          <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 5 }}>
+                            {matchLines.map((line) => {
+                              const hasSubmitted = testChecked;
+                              let strokeColor = '#a855f7';
+                              if (hasSubmitted) {
+                                strokeColor = line.isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                              }
+                              return (
+                                <line
+                                  key={line.id}
+                                  x1={line.x1}
+                                  y1={line.y1}
+                                  x2={line.x2}
+                                  y2={line.y2}
+                                  stroke={strokeColor}
+                                  strokeWidth="3.5"
+                                  strokeLinecap="round"
+                                  style={{ transition: 'stroke 0.3s ease' }}
+                                />
+                              );
+                            })}
+                          </svg>
+                        </div>
+                        <style>{`
+                          @keyframes shake {
+                            0%, 100% { transform: translateX(0); }
+                            20%, 60% { transform: translateX(-6px); }
+                            40%, 80% { transform: translateX(6px); }
+                          }
+                        `}</style>
+                      </div>
+                    ) : (
+                      /* 传统的单选题 UI */
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {testQuestions[currentTestIndex]?.options.map((opt, oIdx) => {
+                          const qId = testQuestions[currentTestIndex].id;
+                          const ansState = testAnswers[qId];
+                          const isAns = testChecked;
+
+                          let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
+                          
+                          if (ansState !== undefined && ansState !== null) {
+                            const isUserSelected = ansState.userOpt === oIdx || ansState === oIdx;
+                            if (isAns) {
+                              const isCorrectOpt = oIdx === testQuestions[currentTestIndex].answer;
+                              if (isCorrectOpt) {
+                                btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
+                              } else if (isUserSelected) {
+                                btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                              }
+                            } else {
+                              if (isUserSelected) {
+                                btnStyle = { border: '1px solid #a855f7', backgroundColor: 'rgba(168,85,247,0.08)', color: '#a855f7' };
+                              }
+                            }
+                          }
+
+                          return (
+                            <button
+                              key={oIdx}
+                              className="btn btn-secondary"
+                              style={{ justifyContent: 'flex-start', textAlign: 'left', padding: '10px 16px', fontSize: '0.85rem', ...btnStyle }}
+                              disabled={isAns}
+                              onClick={() => {
+                                const nextAnswers = {
+                                  ...testAnswers,
+                                  [qId]: { userOpt: oIdx }
+                                };
+                                setTestAnswers(nextAnswers);
+                              }}
+                            >
+                              <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  /* 传统的单选题 UI */
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {testQuestions[currentTestIndex]?.options.map((opt, oIdx) => {
-                      let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
-                      if (selectedTestOpt === oIdx) {
-                        btnStyle = { border: '1px solid #a855f7', backgroundColor: 'rgba(168,85,247,0.08)', color: '#a855f7' };
-                      }
-                      if (testChecked) {
-                        const isCorrectOpt = oIdx === testQuestions[currentTestIndex].answer;
-                        if (isCorrectOpt) {
-                          btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
-                        } else if (selectedTestOpt === oIdx) {
-                          btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+
+                  {/* 解析 */}
+                  {testChecked && (
+                    <div className="fade-in" style={{
+                      padding: '12px',
+                      backgroundColor: '#f8fafc',
+                      borderLeft: `4px solid ${
+                        testQuestions[currentTestIndex]?.type === 'match'
+                          ? ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id] === 'correct') ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
+                          : ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
+                      }`,
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '0.78rem',
+                      lineHeight: '1.6',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      <div style={{
+                        fontWeight: 'bold',
+                        color: testQuestions[currentTestIndex]?.type === 'match'
+                          ? ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id] === 'correct') ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
+                          : ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'),
+                        marginBottom: '4px'
+                      }}>
+                        {testQuestions[currentTestIndex]?.type === 'match'
+                          ? ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id] === 'correct') ? '✅ 连线消除全对！今日金币 +0.5 个' : '❌ 配对中有错误。今日金币 -0.5 个。')
+                          : ((testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个。')}
+                      </div>
+                      {testQuestions[currentTestIndex]?.explanation}
+                    </div>
+                  )}
+
+                  {/* 底部控制 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px', marginTop: '10px' }}>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={currentTestIndex === 0}
+                      onClick={() => setCurrentTestIndex(prev => prev - 1)}
+                    >
+                      上一题
+                    </button>
+
+                    {!testChecked && (
+                      <button
+                        className="btn btn-primary"
+                        style={{ backgroundColor: '#a855f7', borderColor: '#a855f7', fontWeight: 'bold' }}
+                        onClick={handleTestSubmitAll}
+                      >
+                        交卷并结算小测
+                      </button>
+                    )}
+
+                    <button
+                      className="btn btn-primary"
+                      style={{ backgroundColor: '#a855f7', borderColor: '#a855f7' }}
+                      disabled={currentTestIndex === testQuestions.length - 1}
+                      onClick={() => setCurrentTestIndex(prev => prev + 1)}
+                    >
+                      下一题
+                    </button>
+                  </div>
+                </div>
+
+                {/* 右栏：20题小测网格大答题卡 */}
+                <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', height: 'fit-content' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '10px' }}>
+                    <span>🎯 20题英语测验卡</span>
+                    {testChecked && <span style={{ color: '#a855f7' }}>得分：{testScore}分</span>}
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+                    {Array.from({ length: 20 }).map((_, idx) => {
+                      const q = testQuestions[idx];
+                      let bgColor = 'rgba(0,0,0,0.04)';
+                      let textColor = 'hsl(var(--text-secondary))';
+                      let borderStyle = 'none';
+
+                      const ans = q ? testAnswers[q.id] : null;
+                      if (ans !== undefined && ans !== null) {
+                        if (testChecked) {
+                          const isCorrect = ans.state === 'correct' || ans === 'correct' || ans.userOpt === q.answer || ans === q.answer;
+                          bgColor = isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                          textColor = '#ffffff';
+                        } else {
+                          bgColor = 'rgba(168, 85, 247, 0.12)';
+                          textColor = '#7e22ce';
                         }
+                      }
+                      
+                      if (idx === currentTestIndex) {
+                        borderStyle = '2px solid #a855f7';
                       }
 
                       return (
                         <button
-                          key={oIdx}
-                          className="btn btn-secondary"
+                          key={idx}
                           style={{
-                            justifyContent: 'flex-start',
-                            textAlign: 'left',
-                            padding: '10px 16px',
-                            fontSize: '0.85rem',
-                            ...btnStyle
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: bgColor,
+                            color: textColor,
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                            border: borderStyle,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
                           }}
-                          disabled={testChecked}
-                          onClick={() => setSelectedTestOpt(oIdx)}
+                          onClick={() => setCurrentTestIndex(idx)}
                         >
-                          <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
-                          {opt}
+                          {idx + 1}
                         </button>
                       );
                     })}
                   </div>
-                )}
 
-                {/* 答题判定解析的渲染 */}
-                {testChecked && (
-                  <div className="fade-in" style={{
-                    padding: '12px',
-                    backgroundColor: '#f8fafc',
-                    borderLeft: `4px solid ${
-                      testQuestions[currentTestIndex]?.type === 'match'
-                        ? ((testAnswers[testQuestions[currentTestIndex]?.id] === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct') ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
-                        : (selectedTestOpt === testQuestions[currentTestIndex]?.answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
-                    }`,
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.78rem',
-                    lineHeight: '1.6',
-                    whiteSpace: 'pre-wrap'
-                  }}>
-                    <div style={{
-                      fontWeight: 'bold',
-                      color: testQuestions[currentTestIndex]?.type === 'match'
-                        ? ((testAnswers[testQuestions[currentTestIndex]?.id] === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct') ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))')
-                        : (selectedTestOpt === testQuestions[currentTestIndex]?.answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'),
-                      marginBottom: '4px'
-                    }}>
-                      {testQuestions[currentTestIndex]?.type === 'match'
-                        ? ((testAnswers[testQuestions[currentTestIndex]?.id] === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct') ? '✅ 4对单词消除全对！今日金币 +0.5 个' : '❌ 配对中有错误。今日金币 -0.5 个，已自动计错。请看复习解析：')
-                        : (selectedTestOpt === testQuestions[currentTestIndex]?.answer ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个，已自动计错。请看解析：')}
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.04)' }}></span>未答
                     </div>
-                    {testQuestions[currentTestIndex]?.explanation}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'rgba(168, 85, 247, 0.12)' }}></span>已答
+                    </div>
+                    {testChecked && (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-success))' }}></span>对
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-danger))' }}></span>错
+                        </div>
+                      </>
+                    )}
                   </div>
-                )}
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-                  {!testChecked ? (
-                    testQuestions[currentTestIndex]?.type === 'match' ? (
-                      <span style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', fontStyle: 'italic' }}>
-                        💡 技巧提示：依次点击左侧英文与右侧中文即可配对消除
-                      </span>
-                    ) : (
-                      <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.82rem', fontWeight: 'bold', backgroundColor: '#a855f7', borderColor: '#a855f7' }} disabled={selectedTestOpt === null} onClick={handleTestSubmit}>
-                        提交答案
-                      </button>
-                    )
-                  ) : (
-                    <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.82rem', fontWeight: 'bold', backgroundColor: '#a855f7', borderColor: '#a855f7' }} onClick={handleNextTest}>
-                      {currentTestIndex < 19 ? '下一题' : '完成测验并结算'}
-                    </button>
-                  )}
                 </div>
+
               </div>
             ) : (
               /* 成绩报告 */

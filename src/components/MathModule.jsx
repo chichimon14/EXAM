@@ -108,62 +108,65 @@ export default function MathModule() {
     localStorage.setItem(`math-score-${selectedDayId}`, newScore.toString());
   };
 
-  // 20题测试单步提交
-  const handleTestSubmit = () => {
-    if (selectedTestOpt === null) return;
-    const currentQ = testQuestions[currentTestIndex];
-    const isCorrect = selectedTestOpt === currentQ.answer;
+  // 数学小测统一交卷结算逻辑
+  const handleTestSubmitAll = () => {
+    let correctCount = 0;
+    const weaknesses = [];
+    const nextAnswers = { ...testAnswers };
 
-    const nextAnswers = { ...testAnswers, [currentQ.id]: selectedTestOpt };
-    setTestAnswers(nextAnswers);
+    testQuestions.forEach(q => {
+      const saved = nextAnswers[q.id];
+      const isCorrect = saved === q.answer || (saved && saved.userOpt === q.answer);
 
-    // 金币结算 (+1 / -1)
-    updateGoldCoin(isCorrect);
-
-    // 做错自动收录到数学错题本
-    if (!isCorrect) {
-      const alreadyIn = wrongList.some(w => w.id === currentQ.id);
-      if (!alreadyIn) {
-        const wrongQ = { ...currentQ, userAnswer: selectedTestOpt };
-        const nextWrongs = [...wrongList, wrongQ];
-        setWrongList(nextWrongs);
-        localStorage.setItem('math-wrongs', JSON.stringify(nextWrongs));
+      // 标记该题对错状态
+      if (saved) {
+        nextAnswers[q.id] = {
+          ...saved,
+          state: isCorrect ? 'correct' : 'wrong'
+        };
+      } else {
+        nextAnswers[q.id] = {
+          state: 'wrong'
+        };
       }
-    }
-    setTestChecked(true);
-  };
 
-  // 20题测试下一题
-  const handleNextTest = () => {
-    setSelectedTestOpt(null);
-    setTestChecked(false);
-    
-    if (currentTestIndex < testQuestions.length - 1) {
-      setCurrentTestIndex(currentTestIndex + 1);
-    } else {
-      // 答完最后一题结算得分
-      let correctCount = 0;
-      const weaknesses = [];
-      testQuestions.forEach(q => {
-        if (testAnswers[q.id] === q.answer) {
-          correctCount++;
-        } else {
-          weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
+      // 所有小测（20题题卡）每道题做对做错均增减 0.5 金币
+      updateGoldCoin(isCorrect, 0.5);
+
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
+        
+        // 自动加入错题本
+        const alreadyIn = wrongList.some(w => w.id === q.id);
+        if (!alreadyIn) {
+          const wrongQ = {
+            ...q,
+            userAnswer: saved?.userOpt !== undefined ? saved.userOpt : saved
+          };
+          wrongList.push(wrongQ);
         }
-      });
-      const finalScore = Math.round((correctCount / testQuestions.length) * 100);
-      setTestScore(finalScore);
+      }
+    });
 
-      const dayNum = selectedDayId.replace('day', '');
-      addStudyLog(
-        'math',
-        'quiz_complete',
-        `完成数学 Day ${dayNum} 计算测试 (20道题)`,
-        correctCount,
-        testQuestions.length,
-        weaknesses
-      );
-    }
+    setTestAnswers(nextAnswers);
+    setWrongList([...wrongList]);
+    localStorage.setItem('math-wrongs', JSON.stringify(wrongList));
+
+    const finalScore = Math.round((correctCount / testQuestions.length) * 100);
+    setTestScore(finalScore);
+    setTestChecked(true);
+
+    const dayNum = selectedDayId.replace('day', '');
+    addStudyLog(
+      'math',
+      'quiz_complete',
+      `完成数学 Day ${dayNum} 20题测试`,
+      correctCount,
+      testQuestions.length,
+      weaknesses
+    );
   };
 
   // 100题练习单步点击
@@ -894,85 +897,202 @@ export default function MathModule() {
                 </button>
               </div>
             ) : testScore === null ? (
-              /* 答题中 */
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
-                  <span>当前进度：<b>{currentTestIndex + 1}</b> / 20 题</span>
-                  <span>今日金币：<b>{todayGoldCoin >= 0 ? `+${todayGoldCoin}` : todayGoldCoin}</b> 个</span>
-                </div>
-
-                <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${((currentTestIndex + 1) / 20) * 100}%`, height: '100%', backgroundColor: 'hsl(var(--color-work))', transition: 'width 0.3s ease' }}></div>
-                </div>
-
-                <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid #edf2f7', fontSize: '0.98rem', fontWeight: 'bold' }}>
-                  Q{currentTestIndex + 1}: {testQuestions[currentTestIndex]?.question}
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {testQuestions[currentTestIndex]?.options.map((opt, oIdx) => {
-                    let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
-                    if (selectedTestOpt === oIdx) {
-                      btnStyle = { border: '1px solid hsl(var(--color-work))', backgroundColor: 'hsla(var(--color-work)/0.08)', color: 'hsl(var(--color-work))' };
-                    }
-                    if (testChecked) {
-                      const isCorrectOpt = oIdx === testQuestions[currentTestIndex].answer;
-                      if (isCorrectOpt) {
-                        btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
-                      } else if (selectedTestOpt === oIdx) {
-                        btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
-                      }
-                    }
-
-                    return (
-                      <button
-                        key={oIdx}
-                        className="btn btn-secondary"
-                        style={{
-                          justifyContent: 'flex-start',
-                          textAlign: 'left',
-                          padding: '10px 16px',
-                          fontSize: '0.85rem',
-                          ...btnStyle
-                        }}
-                        disabled={testChecked}
-                        onClick={() => setSelectedTestOpt(oIdx)}
-                      >
-                        <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {testChecked && (
-                  <div className="fade-in" style={{
-                    padding: '12px',
-                    backgroundColor: '#f8fafc',
-                    borderLeft: `4px solid ${selectedTestOpt === testQuestions[currentTestIndex].answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'}`,
-                    borderRadius: 'var(--radius-sm)',
-                    fontSize: '0.78rem',
-                    lineHeight: '1.6',
-                    whiteSpace: 'pre-wrap'
-                  }}>
-                    <div style={{ fontWeight: 'bold', color: selectedTestOpt === testQuestions[currentTestIndex].answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                      {selectedTestOpt === testQuestions[currentTestIndex].answer ? '✅ 算对了！ +1 金币' : '❌ 算错了。 扣减 1 金币。请看以下分步推演：'}
+              /* 答题中 (20题数学小测双栏自适应卡片) */
+              <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', flex: 1 }}>
+                
+                {/* 左栏：核心答题面板 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
+                      <span>当前第 <b>{currentTestIndex + 1}</b> / {testQuestions.length} 题</span>
+                      <span>今日小测中...</span>
                     </div>
-                    {testQuestions[currentTestIndex].explanation}
-                  </div>
-                )}
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
-                  {!testChecked ? (
-                    <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.82rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }} disabled={selectedTestOpt === null} onClick={handleTestSubmit}>
-                      提交答案
-                    </button>
-                  ) : (
-                    <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.82rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }} onClick={handleNextTest}>
-                      {currentTestIndex < 19 ? '下一题' : '完成测验并结算'}
-                    </button>
+                    <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${((currentTestIndex + 1) / testQuestions.length) * 100}%`, height: '100%', backgroundColor: 'hsl(var(--color-work))', transition: 'width 0.3s ease' }}></div>
+                    </div>
+
+                    <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid #edf2f7', fontSize: '0.98rem', fontWeight: 'bold' }}>
+                      Q{currentTestIndex + 1}: {testQuestions[currentTestIndex]?.question}
+                    </div>
+
+                    {/* 选项 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {testQuestions[currentTestIndex]?.options.map((opt, oIdx) => {
+                        const qId = testQuestions[currentTestIndex].id;
+                        const ansState = testAnswers[qId];
+                        const isAns = testChecked;
+
+                        let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
+                        
+                        if (ansState !== undefined && ansState !== null) {
+                          const isUserSelected = ansState.userOpt === oIdx || ansState === oIdx;
+                          if (isAns) {
+                            const isCorrectOpt = oIdx === testQuestions[currentTestIndex].answer;
+                            if (isCorrectOpt) {
+                              btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
+                            } else if (isUserSelected) {
+                              btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                            }
+                          } else {
+                            if (isUserSelected) {
+                              btnStyle = { border: '1px solid hsl(var(--color-work))', backgroundColor: 'hsla(var(--color-work)/0.08)', color: 'hsl(var(--color-work))' };
+                            }
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={oIdx}
+                            className="btn btn-secondary"
+                            style={{ justifyContent: 'flex-start', textAlign: 'left', padding: '10px 16px', fontSize: '0.85rem', ...btnStyle }}
+                            disabled={isAns}
+                            onClick={() => {
+                              const nextAnswers = {
+                                ...testAnswers,
+                                [qId]: { userOpt: oIdx }
+                              };
+                              setTestAnswers(nextAnswers);
+                            }}
+                          >
+                            <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 解析 */}
+                  {testChecked && (
+                    <div className="fade-in" style={{
+                      padding: '12px',
+                      backgroundColor: '#f8fafc',
+                      borderLeft: `4px solid ${
+                        (testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'
+                      }`,
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '0.78rem',
+                      lineHeight: '1.6',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      <div style={{
+                        fontWeight: 'bold',
+                        color: (testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))',
+                        marginBottom: '4px'
+                      }}>
+                        {(testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个。'}
+                      </div>
+                      {testQuestions[currentTestIndex]?.explanation}
+                    </div>
                   )}
+
+                  {/* 底部控制 */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px', marginTop: '10px' }}>
+                    <button
+                      className="btn btn-secondary"
+                      disabled={currentTestIndex === 0}
+                      onClick={() => setCurrentTestIndex(prev => prev - 1)}
+                    >
+                      上一题
+                    </button>
+
+                    {!testChecked && (
+                      <button
+                        className="btn btn-primary"
+                        style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))', fontWeight: 'bold' }}
+                        onClick={handleTestSubmitAll}
+                      >
+                        交卷并结算小测
+                      </button>
+                    )}
+
+                    <button
+                      className="btn btn-primary"
+                      style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }}
+                      disabled={currentTestIndex === testQuestions.length - 1}
+                      onClick={() => setCurrentTestIndex(prev => prev + 1)}
+                    >
+                      下一题
+                    </button>
+                  </div>
                 </div>
+
+                {/* 右栏：20题数学小测进度卡 */}
+                <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', height: 'fit-content' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '10px' }}>
+                    <span>🎯 20题数学测验卡</span>
+                    {testChecked && <span style={{ color: 'hsl(var(--color-work))' }}>得分：{testScore}分</span>}
+                  </h4>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+                    {Array.from({ length: 20 }).map((_, idx) => {
+                      const q = testQuestions[idx];
+                      let bgColor = 'rgba(0,0,0,0.04)';
+                      let textColor = 'hsl(var(--text-secondary))';
+                      let borderStyle = 'none';
+
+                      const ans = q ? testAnswers[q.id] : null;
+                      if (ans !== undefined && ans !== null) {
+                        if (testChecked) {
+                          const isCorrect = ans.state === 'correct' || ans === 'correct' || ans.userOpt === q.answer || ans === q.answer;
+                          bgColor = isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                          textColor = '#ffffff';
+                        } else {
+                          bgColor = 'hsla(var(--color-work)/0.12)';
+                          textColor = 'hsl(var(--color-work))';
+                        }
+                      }
+                      
+                      if (idx === currentTestIndex) {
+                        borderStyle = '2px solid hsl(var(--color-work))';
+                      }
+
+                      return (
+                        <button
+                          key={idx}
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: bgColor,
+                            color: textColor,
+                            fontSize: '0.75rem',
+                            fontWeight: 'bold',
+                            border: borderStyle,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          onClick={() => setCurrentTestIndex(idx)}
+                        >
+                          {idx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px', fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.04)' }}></span>未答
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsla(var(--color-work)/0.12)' }}></span>已答
+                    </div>
+                    {testChecked && (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-success))' }}></span>对
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-danger))' }}></span>错
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+
               </div>
             ) : (
               /* 成绩报告 */

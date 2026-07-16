@@ -130,66 +130,69 @@ export default function PhysicsModule() {
     }
   }, [activeTab]);
 
-  // 20题测试单步提交
-  const handleQuizSubmit = () => {
-    if (selectedQuizOption === null) return;
-    const currentQ = currentChapterQuestions[currentQuizIndex];
-    const isCorrect = selectedQuizOption === currentQ.answer;
+  // 物理小测统一交卷结算逻辑
+  const handleQuizSubmitAll = () => {
+    let correctCount = 0;
+    const weaknesses = [];
+    const nextAnswers = { ...userAnswers };
+    const nextSubmissions = { ...submittedAnswers };
 
-    const nextAnswers = { ...userAnswers, [currentQ.id]: selectedQuizOption };
-    const nextSubmissions = { ...submittedAnswers, [currentQ.id]: isCorrect };
+    currentChapterQuestions.forEach(q => {
+      const saved = nextAnswers[q.id];
+      const isCorrect = saved === q.answer || (saved && saved.userOpt === q.answer);
+
+      // 标记该题对错状态
+      if (saved) {
+        nextAnswers[q.id] = {
+          ...saved,
+          state: isCorrect ? 'correct' : 'wrong'
+        };
+      } else {
+        nextAnswers[q.id] = {
+          state: 'wrong'
+        };
+      }
+      nextSubmissions[q.id] = isCorrect;
+
+      // 物理小测（20题小测卡）每道题增减均为 0.5 金币
+      updateGoldCoin(isCorrect, 0.5);
+
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
+        
+        // 自动加入错题本
+        const alreadyIn = wrongList.some(w => w.id === q.id);
+        if (!alreadyIn) {
+          const wrongQ = {
+            ...q,
+            userAnswer: saved?.userOpt !== undefined ? saved.userOpt : saved
+          };
+          wrongList.push(wrongQ);
+        }
+      }
+    });
 
     setUserAnswers(nextAnswers);
     setSubmittedAnswers(nextSubmissions);
-
-    // 金币扣减与累加
-    updateGoldCoin(isCorrect);
-    
+    setWrongList([...wrongList]);
     localStorage.setItem('physics-answers', JSON.stringify(nextAnswers));
     localStorage.setItem('physics-submissions', JSON.stringify(nextSubmissions));
+    localStorage.setItem('physics-wrongs', JSON.stringify(wrongList));
 
-    if (!isCorrect) {
-      const alreadyIn = wrongList.some(w => w.id === currentQ.id);
-      if (!alreadyIn) {
-        const wrongQ = { ...currentQ, userAnswer: selectedQuizOption };
-        const nextWrongs = [...wrongList, wrongQ];
-        setWrongList(nextWrongs);
-        localStorage.setItem('physics-wrongs', JSON.stringify(nextWrongs));
-      }
-    }
+    setQuizScore(correctCount);
     setQuizChecked(true);
-  };
 
-  // 20题测试下一题
-  const handleNextQuiz = () => {
-    setSelectedQuizOption(null);
-    setQuizChecked(false);
-    
-    if (currentQuizIndex < currentChapterQuestions.length - 1) {
-      setCurrentQuizIndex(currentQuizIndex + 1);
-    } else {
-      let correctCount = 0;
-      const weaknesses = [];
-      currentChapterQuestions.forEach(q => {
-        const isUserCorrect = submittedAnswers[q.id] === true || (q.id === currentChapterQuestions[currentChapterQuestions.length - 1].id && selectedQuizOption === q.answer);
-        if (isUserCorrect) {
-          correctCount++;
-        } else {
-          weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
-        }
-      });
-      setQuizScore(correctCount);
-
-      const dayNum = selectedChapterId.replace('day', '');
-      addStudyLog(
-        'physics',
-        'quiz_complete',
-        `完成物理 Day ${dayNum} 测试`,
-        correctCount,
-        currentChapterQuestions.length,
-        weaknesses
-      );
-    }
+    const dayNum = selectedChapterId.replace('day', '');
+    addStudyLog(
+      'physics',
+      'quiz_complete',
+      `完成物理 Day ${dayNum} 20题测试`,
+      correctCount,
+      currentChapterQuestions.length,
+      weaknesses
+    );
   };
 
   // 重新开始测试本章
@@ -1543,91 +1546,203 @@ export default function PhysicsModule() {
                 </div>
 
                 {quizScore === null ? (
-                  /* 答题中 */
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'hsl(var(--text-secondary))' }}>
-                      <span>当前进度：<b>{currentQuizIndex + 1}</b> / {currentChapterQuestions.length} 题</span>
-                      <span>正确率要求：100% 基础过关</span>
-                    </div>
-
-                    {/* 进度条 */}
-                    <div style={{ width: '100%', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${((currentQuizIndex + 1) / currentChapterQuestions.length) * 100}%`, height: '100%', backgroundColor: 'hsl(var(--color-mech))', transition: 'width 0.3s ease' }}></div>
-                    </div>
-
-                    <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: 'var(--radius-md)', border: '1px solid #edf2f7' }}>
-                      <strong style={{ fontSize: '1.05rem', lineHeight: '1.6', color: 'hsl(var(--text-primary))' }}>
-                        Q{currentQuizIndex + 1}: {currentChapterQuestions[currentQuizIndex]?.question}
-                      </strong>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {currentChapterQuestions[currentQuizIndex]?.options.map((opt, oIdx) => {
-                        let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
-                        
-                        if (selectedQuizOption === oIdx) {
-                          btnStyle = { border: '1px solid hsl(var(--color-mech))', backgroundColor: 'hsla(var(--color-mech) / 0.08)', color: 'hsl(var(--color-mech))' };
-                        }
-                        if (quizChecked) {
-                          const isCorrect = oIdx === currentChapterQuestions[currentQuizIndex].answer;
-                          if (isCorrect) {
-                            btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success) / 0.08)', color: 'hsl(var(--color-success))' };
-                          } else if (selectedQuizOption === oIdx) {
-                            btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger) / 0.08)', color: 'hsl(var(--color-danger))' };
-                          }
-                        }
-
-                        return (
-                          <button
-                            key={oIdx}
-                            className="btn btn-secondary"
-                            style={{
-                              justifyContent: 'flex-start',
-                              textAlign: 'left',
-                              padding: '12px 18px',
-                              lineHeight: '1.4',
-                              fontSize: '0.9rem',
-                              ...btnStyle
-                            }}
-                            disabled={quizChecked}
-                            onClick={() => setSelectedQuizOption(oIdx)}
-                          >
-                            <span style={{ fontWeight: 'bold', marginRight: '8px' }}>{String.fromCharCode(65 + oIdx)}.</span>
-                            {opt}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {quizChecked && (
-                      <div style={{
-                        padding: '16px',
-                        backgroundColor: selectedQuizOption === currentChapterQuestions[currentQuizIndex].answer ? 'rgba(16, 185, 129, 0.04)' : 'rgba(229, 62, 62, 0.04)',
-                        border: `1px solid ${selectedQuizOption === currentChapterQuestions[currentQuizIndex].answer ? 'rgba(16, 185, 129, 0.12)' : 'rgba(229, 62, 62, 0.12)'}`,
-                        borderRadius: 'var(--radius-md)'
-                      }}>
-                        <div style={{ fontWeight: 'bold', color: selectedQuizOption === currentChapterQuestions[currentQuizIndex].answer ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', fontSize: '0.9rem', marginBottom: '4px' }}>
-                          {selectedQuizOption === currentChapterQuestions[currentQuizIndex].answer ? '✅ 答对了！基础扎实！' : '❌ 答错了，需要加深记忆。'}
+                  /* 答题中 (20题物理小测双栏自适应卡片) */
+                  <div style={{ display: 'grid', gridTemplateColumns: isPortraitTablet ? '1fr' : '1.25fr 1fr', gap: '20px', flex: 1 }}>
+                    
+                    {/* 左栏：核心答题面板 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
+                          <span>当前第 <b>{currentQuizIndex + 1}</b> / {currentChapterQuestions.length} 题</span>
+                          <span>今日小测中...</span>
                         </div>
-                        <p style={{ margin: 0, fontSize: '0.82rem', lineHeight: '1.6', color: 'hsl(var(--text-primary))' }}>
-                          💡 <b>名师点拨：</b>{currentChapterQuestions[currentQuizIndex]?.explanation}
-                        </p>
-                      </div>
-                    )}
 
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-                      {!quizChecked ? (
-                        <button className="btn btn-primary" style={{ padding: '10px 24px', fontWeight: 'bold' }} disabled={selectedQuizOption === null} onClick={handleQuizSubmit}>
-                          提交本题
-                        </button>
-                      ) : (
-                        <button className="btn btn-primary" style={{ padding: '10px 24px', fontWeight: 'bold' }} onClick={handleNextQuiz}>
-                          {currentQuizIndex < currentChapterQuestions.length - 1 ? '下一题' : '查看测试成绩'}
-                        </button>
+                        <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${((currentQuizIndex + 1) / currentChapterQuestions.length) * 100}%`, height: '100%', backgroundColor: 'hsl(var(--color-mech))', transition: 'width 0.3s ease' }}></div>
+                        </div>
+
+                        <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: 'var(--radius-md)', border: '1px solid #edf2f7', fontSize: '0.98rem', fontWeight: 'bold' }}>
+                          Q{currentQuizIndex + 1}: {currentChapterQuestions[currentQuizIndex]?.question}
+                        </div>
+
+                        {/* 选项 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {currentChapterQuestions[currentQuizIndex]?.options.map((opt, oIdx) => {
+                            const qId = currentChapterQuestions[currentQuizIndex].id;
+                            const ansState = userAnswers[qId];
+                            const isAns = quizChecked;
+
+                            let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
+                            
+                            if (ansState !== undefined && ansState !== null) {
+                              const isUserSelected = ansState.userOpt === oIdx || ansState === oIdx;
+                              if (isAns) {
+                                const isCorrectOpt = oIdx === currentChapterQuestions[currentQuizIndex].answer;
+                                if (isCorrectOpt) {
+                                  btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
+                                } else if (isUserSelected) {
+                                  btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                                }
+                              } else {
+                                if (isUserSelected) {
+                                  btnStyle = { border: '1px solid hsl(var(--color-mech))', backgroundColor: 'hsla(var(--color-mech)/0.08)', color: 'hsl(var(--color-mech))' };
+                                }
+                              }
+                            }
+
+                            return (
+                              <button
+                                key={oIdx}
+                                className="btn btn-secondary"
+                                style={{ justifyContent: 'flex-start', textAlign: 'left', padding: '10px 16px', fontSize: '0.85rem', ...btnStyle }}
+                                disabled={isAns}
+                                onClick={() => {
+                                  const nextAnswers = {
+                                    ...userAnswers,
+                                    [qId]: { userOpt: oIdx }
+                                  };
+                                  setUserAnswers(nextAnswers);
+                                }}
+                              >
+                                <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* 解析 */}
+                      {quizChecked && (
+                        <div className="fade-in" style={{
+                          padding: '12px',
+                          backgroundColor: '#f8fafc',
+                          borderLeft: `4px solid ${
+                            (userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.state === 'correct' || userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.userOpt === currentChapterQuestions[currentQuizIndex]?.answer || userAnswers[currentChapterQuestions[currentQuizIndex]?.id] === currentChapterQuestions[currentQuizIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'
+                          }`,
+                          borderRadius: 'var(--radius-sm)',
+                          fontSize: '0.78rem',
+                          lineHeight: '1.6',
+                          whiteSpace: 'pre-wrap'
+                        }}>
+                          <div style={{
+                            fontWeight: 'bold',
+                            color: (userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.state === 'correct' || userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.userOpt === currentChapterQuestions[currentQuizIndex]?.answer || userAnswers[currentChapterQuestions[currentQuizIndex]?.id] === currentChapterQuestions[currentQuizIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))',
+                            marginBottom: '4px'
+                          }}>
+                            {(userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.state === 'correct' || userAnswers[currentChapterQuestions[currentQuizIndex]?.id]?.userOpt === currentChapterQuestions[currentQuizIndex]?.answer || userAnswers[currentChapterQuestions[currentQuizIndex]?.id] === currentChapterQuestions[currentQuizIndex]?.answer) ? '✅ 算对啦！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个。'}
+                          </div>
+                          💡 <b>名师点拨：</b>{currentChapterQuestions[currentQuizIndex]?.explanation}
+                        </div>
                       )}
+
+                      {/* 底部控制 */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px', marginTop: '10px' }}>
+                        <button
+                          className="btn btn-secondary"
+                          disabled={currentQuizIndex === 0}
+                          onClick={() => setCurrentQuizIndex(prev => prev - 1)}
+                        >
+                          上一题
+                        </button>
+
+                        {!quizChecked && (
+                          <button
+                            className="btn btn-primary"
+                            style={{ backgroundColor: 'hsl(var(--color-mech))', borderColor: 'hsl(var(--color-mech))', fontWeight: 'bold' }}
+                            onClick={handleQuizSubmitAll}
+                          >
+                            交卷并结算小测
+                          </button>
+                        )}
+
+                        <button
+                          className="btn btn-primary"
+                          style={{ backgroundColor: 'hsl(var(--color-mech))', borderColor: 'hsl(var(--color-mech))' }}
+                          disabled={currentQuizIndex === currentChapterQuestions.length - 1}
+                          onClick={() => setCurrentQuizIndex(prev => prev + 1)}
+                        >
+                          下一题
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
+
+                    {/* 右栏：20题物理小测进度卡 */}
+                    <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', height: 'fit-content' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '10px' }}>
+                        <span>🎯 20题物理测验卡</span>
+                        {quizChecked && <span style={{ color: 'hsl(var(--color-mech))' }}>得分：{quizScore}分</span>}
+                      </h4>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px' }}>
+                        {Array.from({ length: 20 }).map((_, idx) => {
+                          const q = currentChapterQuestions[idx];
+                          let bgColor = 'rgba(0,0,0,0.04)';
+                          let textColor = 'hsl(var(--text-secondary))';
+                          let borderStyle = 'none';
+
+                          const ans = q ? userAnswers[q.id] : null;
+                          if (ans !== undefined && ans !== null) {
+                            if (quizChecked) {
+                              const isCorrect = ans.state === 'correct' || ans === 'correct' || ans.userOpt === q.answer || ans === q.answer;
+                              bgColor = isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                              textColor = '#ffffff';
+                            } else {
+                              bgColor = 'hsla(var(--color-mech)/0.12)';
+                              textColor = 'hsl(var(--color-mech))';
+                            }
+                          }
+                          
+                          if (idx === currentQuizIndex) {
+                            borderStyle = '2px solid hsl(var(--color-mech))';
+                          }
+
+                          return (
+                            <button
+                              key={idx}
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                backgroundColor: bgColor,
+                                color: textColor,
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                border: borderStyle,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}
+                              onClick={() => setCurrentQuizIndex(idx)}
+                            >
+                              {idx + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '12px', fontSize: '0.7rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.04)' }}></span>未答
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsla(var(--color-mech)/0.12)' }}></span>已答
+                        </div>
+                        {quizChecked && (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-success))' }}></span>对
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-danger))' }}></span>错
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                  </div>                ) : (
                   /* 答题成绩报告 */
                   <div style={{ textAlign: 'center', padding: '30px 0', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
                     <div style={{
