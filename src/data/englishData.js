@@ -8,7 +8,7 @@ export const englishBlocks = [
   { id: 'eng_block2', name: '第二周：核心时态口诀与动词不规则变化 (Day 8 - Day 14)', days: ['day8', 'day9', 'day10', 'day11', 'day12', 'day13', 'day14'] },
   { id: 'eng_block3', name: '第三周：从句语法与核心词性大通关 (Day 15 - Day 21)', days: ['day15', 'day16', 'day17', 'day18', 'day19', 'day20', 'day21'] },
   { id: 'eng_block4', name: '第四周：动词词组深造与必考特殊句型 (Day 22 - Day 28)', days: ['day22', 'day23', 'day24', 'day25', 'day26', 'day27', 'day28'] },
-  { id: 'eng_block5', name: '第五周：总复习与中考大冲刺 (Day 29 - Day 30)', days: ['day29', 'day30'] }
+  { id: 'eng_block5', name: '第五周：总复习与自选扩展特训 (Day 29 - Day 31)', days: ['day29', 'day30', 'day31'] }
 ];
 
 export const englishDays = {
@@ -597,6 +597,18 @@ export const englishDays = {
               '2. 主语 He 用 was， read 变为 reading ➔ 填 was reading。',
       tip: '拼读规律是记忆单词最好的拐杖。只要会读，就能拼对！考场上放松心态，祝你取得优异成绩！'
     }
+  },
+  day31: {
+    id: 'day31',
+    blockId: 'eng_block5',
+    topicId: 'eng_topic_day31',
+    name: 'Day 31：自选课外词汇 (Unit 2 Great ideas)',
+    summary: '★【今日目标】线下英文补习班 Unit 2 必备词汇学习。掌握 firm, ignorance, satisfied 等 22 个核心词汇与短语。',
+    example: {
+      question: 'Translate: get something across, be satisfied with, lightning rod',
+      answer: '把某事讲清楚； 对……感到满足； 避雷针',
+      tip: '名师指点：这是从您的课本照片中精准提取的 22 个必备高频词汇。多背多默，考试必定拿高分！'
+    }
   }
 };
 
@@ -853,3 +865,40 @@ for (let i = 0; i < needed; i++) {
     sentence_translation: `把这单词学好是非常重要的。`
   });
 }
+
+// 3. 追加自选扩展单元 (Day 31: Unit 2 Great ideas) 的 22 个必备单词与短语
+const customWords = [
+  { word: 'firm', phonetic: '[fɜːm]', translation: 'adj. 牢固的；坚硬的', tip: 'a firm belief 坚定的信念。' },
+  { word: 'ignorance', phonetic: '[ˈɪɡnərəns]', translation: 'n. 无知', tip: 'ignore (忽视) ➔ ignorance (无知)。' },
+  { word: 'application', phonetic: '[ˌæplɪˈkeɪʃn]', translation: 'n. 应用', tip: 'apply (应用，动词) ➔ application (应用，名词)。' },
+  { word: 'fancy', phonetic: '[ˈfænsi]', translation: 'adj. 精致的；绚丽的', tip: 'fancy dress 绚丽的服装。' },
+  { word: 'satisfied', phonetic: '[ˈsætɪsfaɪd]', translation: 'adj. 满意的；满足的', tip: 'satisfy (满足，动词) ➔ satisfied (满意的，形容词)。' },
+  { word: 'prince', phonetic: '[prɪns]', translation: 'n. 王子', tip: 'princess (公主) ； prince (王子)。' },
+  { word: 'displace', phonetic: '[dɪsˈpleɪs]', translation: 'v. 排出；挤出；取代；替代', tip: 'place (放置，地方) ➔ displace (移开，取代)。' },
+  { word: 'fool', phonetic: '[fuːl]', translation: 'v. 欺骗；愚弄', tip: 'foolish (愚蠢的，形容词)。' },
+  { word: 'prison', phonetic: '[ˈprɪzn]', translation: 'n. 监狱；牢狱', tip: 'prisoner (囚犯)。' },
+  { word: 'wire', phonetic: '[ˈwaɪə(r)]', translation: 'n. 金属丝；电线', tip: 'a copper wire 铜线。' },
+  { word: 'prove', phonetic: '[pruːv]', translation: 'v. 证明；证实', tip: 'proof (证明，名词)。' },
+  { word: 'hardly', phonetic: '[ˈhɑːdli]', translation: 'adv. 几乎不；几乎没有', tip: 'hardly ever 几乎从不。注意 hardly 不是 hard 的副词形式。' },
+  { word: 'balanced', phonetic: '[ˈbælənst]', translation: 'adj. 保持（或显示）平衡的', tip: 'balance (平衡) ➔ balanced (平衡的)。' },
+  { word: 'reject', phonetic: '[rɪˈdʒekt]', translation: 'v. 拒绝接受；不予考虑', tip: 'rejection (拒绝，名词)。' },
+  { word: 'thus', phonetic: '[ðʌs]', translation: 'adv. 因此；如此', tip: '等同于 therefore, as a result。' },
+  { word: 'be satisfied with', phonetic: '', translation: 'phrase. 对……感到满足', tip: 'be satisfied with sth. 对某事满意。' },
+  { word: 'fill... with', phonetic: '', translation: 'phrase. 充满；装满', tip: 'be filled with... 充满了...。' },
+  { word: 'run over', phonetic: '', translation: 'phrase. 溢出', tip: 'The water is running over. 水要溢出来了。' },
+  { word: 'go straight to', phonetic: '', translation: 'phrase. 直奔', tip: 'go straight to the point 直奔主题。' },
+  { word: 'lightning rod', phonetic: '', translation: 'phrase. 避雷针', tip: 'lightning (闪电) + rod (杆/棒) = 避雷针。' },
+  { word: 'as a whole', phonetic: '', translation: 'phrase. 作为一个整体；总体上', tip: 'consider the project as a whole 总体上考虑这个项目。' },
+  { word: 'get something across', phonetic: '', translation: 'phrase. 把某事讲清楚', tip: 'get the meaning across 把意思传达清楚。' }
+];
+
+customWords.forEach(item => {
+  englishVocabList.push({
+    word: item.word,
+    phonetic: item.phonetic,
+    translation: item.translation,
+    tip: item.tip,
+    sentence: `You need to master "${item.word}" from Unit 2.`,
+    sentence_translation: `你需要熟练掌握第二单元的单词 "${item.word}"。`
+  });
+});

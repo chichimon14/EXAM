@@ -28,7 +28,7 @@ export default function SubjectPortal({ onSelectSubject }) {
     const loadAllScores = () => {
       const calcScore = (subj) => {
         let total = 0;
-        const maxDays = subj === 'english' ? 30 : 25;
+        const maxDays = subj === 'english' ? 31 : 25;
         const startDay = subj === 'chemistry' ? 0 : 1;
         for (let i = startDay; i <= maxDays; i++) {
           const val = localStorage.getItem(`${subj}-score-day${i}`);
@@ -1022,7 +1022,7 @@ const getMockDoudouProgress = () => {
                   // 1. 各科累计得分
                   const calcSubjScore = (subj) => {
                     let total = 0;
-                    const maxDays = subj === 'english' ? 30 : 25;
+                    const maxDays = subj === 'english' ? 31 : 25;
                     const startDay = subj === 'chemistry' ? 0 : 1;
                     for (let i = startDay; i <= maxDays; i++) {
                       const val = doudouProgress[`${subj}-score-day${i}`];

@@ -73,7 +73,7 @@ export default function EnglishModule() {
     if (unfamiliar) setUnfamiliarWords(JSON.parse(unfamiliar));
 
     const scores = {};
-    for (let i = 1; i <= 30; i++) {
+    for (let i = 1; i <= 31; i++) {
       const dayKey = `day${i}`;
       const val = localStorage.getItem(`english-score-${dayKey}`);
       if (val !== null) {
@@ -788,7 +788,7 @@ export default function EnglishModule() {
           </div>
           <div>
             <h2 style={{ fontSize: '0.92rem', border: 'none', padding: 0, margin: 0, letterSpacing: '0.5px' }}>中考英语冲刺营</h2>
-            <span style={{ fontSize: '0.68rem', opacity: 0.6 }}>30天自适应词汇特训</span>
+            <span style={{ fontSize: '0.68rem', opacity: 0.6 }}>30+天自学与课外扩展特训</span>
           </div>
         </div>
 
@@ -1907,7 +1907,7 @@ export default function EnglishModule() {
             </div>
 
             <p style={{ margin: 0, fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', lineHeight: '1.5' }}>
-              提示：每天金币分值等于<b>【做对题目数 &times; 1 + 做错题目数 &times; -1】</b>。家长可在此随时核对 30 天的打卡成绩。
+              提示：每天金币分值等于<b>【做对题目数 &times; 1 + 做错题目数 &times; -1】</b>。家长可在此随时核对 31 天的打卡成绩。
             </p>
 
             <div style={{
@@ -1916,7 +1916,7 @@ export default function EnglishModule() {
               gap: '8px',
               padding: '6px'
             }}>
-              {Array.from({ length: 30 }).map((_, idx) => {
+              {Array.from({ length: 31 }).map((_, idx) => {
                 const dayId = `day${idx + 1}`;
                 const score = dayScores[dayId] !== undefined ? dayScores[dayId] : 0;
                 const isSelected = selectedDayId === dayId;
