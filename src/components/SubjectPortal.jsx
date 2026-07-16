@@ -61,7 +61,7 @@ export default function SubjectPortal({ onSelectSubject }) {
     };
   }, []);
 
-  const totalScore = scores.math + scores.physics + scores.chemistry + scores.english;
+  const totalScore = 120 + scores.math + scores.physics + scores.chemistry + scores.english;
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -1039,7 +1039,7 @@ const getMockDoudouProgress = () => {
                     chemistry: calcSubjScore('chemistry'),
                     english: calcSubjScore('english')
                   };
-                  const totalDoudouScore = doudouScores.math + doudouScores.physics + doudouScores.chemistry + doudouScores.english;
+                  const totalDoudouScore = 120 + doudouScores.math + doudouScores.physics + doudouScores.chemistry + doudouScores.english;
 
                   // 2. 错题本解析
                   const parseWrongs = (subj) => {

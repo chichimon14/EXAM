@@ -15,7 +15,12 @@ export const ACCOUNTS = {
 
 // 检查是否已登录并返回当前用户
 export const getCurrentUser = () => {
-  return localStorage.getItem('exam-current-user') || '';
+  const user = localStorage.getItem('exam-current-user');
+  if (!user) {
+    localStorage.setItem('exam-current-user', 'doudou');
+    return 'doudou';
+  }
+  return user;
 };
 
 // 执行登录
