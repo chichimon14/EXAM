@@ -162,7 +162,14 @@ export default function ChemistryModule() {
   // 初始化加载错题与25天历史积分
   useEffect(() => {
     const savedWrongs = localStorage.getItem('chemistry-wrongs');
-    if (savedWrongs) setWrongList(JSON.parse(savedWrongs));
+    if (savedWrongs) {
+      try {
+        setWrongList(JSON.parse(savedWrongs));
+      } catch (e) {
+        console.error('Failed to parse chemistry-wrongs:', e);
+        setWrongList([]);
+      }
+    }
 
     const scores = {};
     for (let i = 1; i <= 25; i++) {
@@ -1326,8 +1333,9 @@ export default function ChemistryModule() {
             ) : testScore === null ? (
               /* 答题中 (20题化学小测双栏自适应卡片) */
               <div style={{ display: 'grid', gridTemplateColumns: isPortraitTablet ? '1fr' : '1.25fr 1fr', gap: '20px', flex: 1 }}>
-                
-                {/* 左栏：核心答题面板 */}
+                {testQuestions.length > 0 && testQuestions[currentTestIndex] ? (
+                  <>
+                    {/* 左栏：核心答题面板 */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
@@ -1705,7 +1713,10 @@ export default function ChemistryModule() {
                     )}
                   </div>
                 </div>
-
+                  </>
+                ) : (
+                  <div style={{ gridColumn: 'span 2', textAlign: 'center', padding: '40px', color: '#a0aec0', width: '100%' }}>正在生成今日化学小测题库...</div>
+                )}
               </div>
             ) : (
               /* 成绩报告 */
