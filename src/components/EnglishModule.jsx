@@ -35,6 +35,21 @@ export default function EnglishModule() {
   const [hasErrorThisQuestion, setHasErrorThisQuestion] = useState(false); // 当前连线题是否发生过配对错误
   const [matchFlashError, setMatchFlashError] = useState(false); // 用于触发闪红震动效的状态
 
+  // iPad 竖屏与移动端高灵敏自适应响应式状态
+  const [isPortraitTablet, setIsPortraitTablet] = useState(false);
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const isTabletWidth = window.innerWidth <= 900; // ipad竖屏最宽为 834px，900px 能完美精准涵盖
+      setIsPortraitTablet(isPortrait && isTabletWidth);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // 100题练习状态
   const [exerciseQuestions, setExerciseQuestions] = useState([]);
   const [exerciseAnswers, setExerciseAnswers] = useState({}); // { [qId]: { isCorrect, userOpt } }
@@ -886,9 +901,27 @@ export default function EnglishModule() {
   const currentDayWords = getDayWords(selectedDayId);
 
   return (
-    <div className="app-container fade-in" style={{ display: 'flex', alignItems: 'stretch', gap: '20px', height: 'calc(100vh - 120px)' }}>
+    <div className="app-container fade-in" style={{
+      display: 'flex',
+      flexDirection: isPortraitTablet ? 'column' : 'row',
+      alignItems: 'stretch',
+      gap: isPortraitTablet ? '12px' : '20px',
+      height: isPortraitTablet ? 'auto' : 'calc(100vh - 120px)'
+    }}>
       {/* 🌲 左侧二级与三级手风琴大纲树状目录 */}
-      <div className="sidebar" style={{ minWidth: '280px', maxWidth: '280px', display: 'flex', flexDirection: 'column', padding: '16px', gap: '12px', overflowY: 'auto' }}>
+      <div className="sidebar" style={{
+        minWidth: isPortraitTablet ? '100%' : '280px',
+        maxWidth: isPortraitTablet ? '100%' : '280px',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: isPortraitTablet ? '12px' : '16px',
+        gap: '12px',
+        overflowY: isPortraitTablet ? 'visible' : 'auto',
+        backgroundColor: '#ffffff',
+        borderBottom: isPortraitTablet ? '1px solid rgba(0,0,0,0.06)' : 'none',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: isPortraitTablet ? '0 2px 8px rgba(0,0,0,0.03)' : 'none'
+      }}>
         
         {/* 学科名片 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
@@ -913,9 +946,33 @@ export default function EnglishModule() {
           </div>
         </div>
 
-        {/* 二级与三级学习目录树 (自然流动，紧密衔接) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px', paddingRight: '4px' }}>
-          <div style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>学习进度大纲</div>
+        {/* iPad/手机竖屏自适应天数选择快捷条 */}
+        {isPortraitTablet && (
+          <button
+            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+            className="btn btn-secondary scale-up"
+            style={{
+              width: '100%',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              fontSize: '0.8rem',
+              fontWeight: 'bold',
+              backgroundColor: 'rgba(168, 85, 247, 0.05)',
+              border: '1.5px solid rgba(168, 85, 247, 0.2)',
+              color: '#7e22ce',
+              borderRadius: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            <span>📅 当前进度：<b>Day {selectedDayId.replace('day', '')}</b> ({currentDayData?.name.split('：')[1]})</span>
+            <span>{showMobileSidebar ? '收起天数大纲 🔼' : '切换其他天数 🔽'}</span>
+          </button>
+        )}
+
+        {/* 二级与三级学习目录树 (在竖屏下可折叠收起) */}
+        {(!isPortraitTablet || showMobileSidebar) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px', paddingRight: '4px' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 'bold', opacity: 0.4, textTransform: 'uppercase', letterSpacing: '0.5px' }}>学习进度大纲</div>
           
           {englishBlocks.map((block) => {
             const isExpanded = expandedBlockId === block.id;
@@ -1014,6 +1071,9 @@ export default function EnglishModule() {
                             if (activeTab === 'wrongbook') {
                               setActiveTab('study');
                             }
+                            if (isPortraitTablet) {
+                              setShowMobileSidebar(false);
+                            }
                           }}
                         >
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', maxWidth: '80%' }}>
@@ -1038,6 +1098,7 @@ export default function EnglishModule() {
             );
           })}
         </div>
+        )}
 
         {/* 全局学科工具挪到下方固定 (错题本与账单) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid rgba(0,0,0,0.06)', paddingTop: '10px', marginTop: '2px' }}>
@@ -1503,7 +1564,7 @@ export default function EnglishModule() {
                         position: 'relative',
                         display: 'grid',
                         gridTemplateColumns: '1.5fr 1fr 1.5fr',
-                        gap: '20px',
+                        gap: isPortraitTablet ? '10px' : '20px',
                         padding: '16px',
                         backgroundColor: 'rgba(255, 255, 255, 0.4)',
                         borderRadius: 'var(--radius-md)',
@@ -1552,8 +1613,8 @@ export default function EnglishModule() {
                               id={`btn-left-${opt.id}`}
                               className="btn"
                               style={{
-                                padding: '12px 16px',
-                                fontSize: '0.9rem',
+                                padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                                fontSize: isPortraitTablet ? '0.78rem' : '0.9rem',
                                 fontWeight: 'bold',
                                 borderRadius: '10px',
                                 backgroundColor: btnBg,
@@ -1619,8 +1680,8 @@ export default function EnglishModule() {
                               id={`btn-right-${encodeURIComponent(opt.text)}`}
                               className="btn"
                               style={{
-                                padding: '12px 16px',
-                                fontSize: '0.82rem',
+                                padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                                fontSize: isPortraitTablet ? '0.72rem' : '0.82rem',
                                 borderRadius: '10px',
                                 backgroundColor: btnBg,
                                 border: btnBorder,
@@ -1902,7 +1963,7 @@ export default function EnglishModule() {
                               position: 'relative',
                               display: 'grid',
                               gridTemplateColumns: '1.5fr 1fr 1.5fr',
-                              gap: '20px',
+                              gap: isPortraitTablet ? '10px' : '20px',
                               padding: '16px',
                               backgroundColor: 'rgba(255, 255, 255, 0.4)',
                               borderRadius: 'var(--radius-md)',
@@ -1951,8 +2012,8 @@ export default function EnglishModule() {
                                     id={`btn-left-${opt.id}`}
                                     className="btn"
                                     style={{
-                                      padding: '12px 16px',
-                                      fontSize: '0.9rem',
+                                      padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                                      fontSize: isPortraitTablet ? '0.78rem' : '0.9rem',
                                       fontWeight: 'bold',
                                       borderRadius: '10px',
                                       backgroundColor: btnBg,
@@ -2020,8 +2081,8 @@ export default function EnglishModule() {
                                     id={`btn-right-${encodeURIComponent(opt.text)}`}
                                     className="btn"
                                     style={{
-                                      padding: '12px 16px',
-                                      fontSize: '0.82rem',
+                                      padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                                      fontSize: isPortraitTablet ? '0.72rem' : '0.82rem',
                                       borderRadius: '10px',
                                       backgroundColor: btnBg,
                                       border: btnBorder,
