@@ -46,10 +46,23 @@ export default function PhysicsModule() {
   const [activeStateChange, setActiveStateChange] = useState(null);
   const [pendulumPos, setPendulumPos] = useState('mid');
 
-  // 物理金币账单与大纲折叠管理
   const [dayScores, setDayScores] = useState({});
   const [showBillModal, setShowBillModal] = useState(false);
   const [expandedBlockId, setExpandedBlockId] = useState(null);
+
+  // iPad 竖屏与移动端高灵敏自适应响应式状态
+  const [isPortraitTablet, setIsPortraitTablet] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const isTabletWidth = window.innerWidth <= 900; // ipad竖屏最宽为 834px，900px 能完美精准涵盖
+      setIsPortraitTablet(isPortrait && isTabletWidth);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 自动展开当前选中 Day 所属的物理单元
   useEffect(() => {

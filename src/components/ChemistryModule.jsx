@@ -18,9 +18,22 @@ export default function ChemistryModule() {
   const [activeTab, setActiveTab] = useState('study'); // study | test | exercise | wrongbook
   const [selectedDayId, setSelectedDayId] = useState('day1');
 
-  // 25天每日金币积分状态 { [dayId]: score }
   const [dayScores, setDayScores] = useState({});
   const [showBillModal, setShowBillModal] = useState(false);
+
+  // iPad 竖屏与移动端高灵敏自适应响应式状态
+  const [isPortraitTablet, setIsPortraitTablet] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isPortrait = window.innerHeight > window.innerWidth;
+      const isTabletWidth = window.innerWidth <= 900; // ipad竖屏最宽为 834px，900px 能完美精准涵盖
+      setIsPortraitTablet(isPortrait && isTabletWidth);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 20题测试状态
   const [testQuestions, setTestQuestions] = useState([]);
