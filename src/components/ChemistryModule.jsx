@@ -31,6 +31,90 @@ export default function ChemistryModule() {
   const [testScore, setTestScore] = useState(null);
   const [testSubmitted, setTestSubmitted] = useState(false);
 
+  // 连线匹配题的专属交互状态 (化学自适应)
+  const [chemSelectedLeft, setChemSelectedLeft] = useState(null); // 左侧被选中符号的 id
+  const [chemSelectedRight, setChemSelectedRight] = useState(null); // 右侧被选中中文的 text
+  const [chemMatchedPairs, setChemMatchedPairs] = useState({}); // { [symbol]: cnName }
+  const [chemMatchLines, setChemMatchLines] = useState([]); // [{ id, x1, y1, x2, y2, isCorrect }]
+
+  // 连线坐标动态计算 Effect (化学连线题专用)
+  useEffect(() => {
+    const updateLines = () => {
+      const container = document.getElementById('chem-match-container');
+      if (!container) return;
+      const containerRect = container.getBoundingClientRect();
+      const currentQ = activeTab === 'test' ? testQuestions[currentTestIndex] : exerciseQuestions[currentExerciseIndex];
+      if (!currentQ) return;
+
+      const newLines = [];
+      Object.keys(chemMatchedPairs).forEach(symbol => {
+        const cnTrans = chemMatchedPairs[symbol];
+        
+        const leftBtn = document.getElementById(`chem-btn-left-${symbol}`);
+        const rightBtn = document.getElementById(`chem-btn-right-${encodeURIComponent(cnTrans)}`);
+
+        if (leftBtn && rightBtn) {
+          const leftRect = leftBtn.getBoundingClientRect();
+          const rightRect = rightBtn.getBoundingClientRect();
+
+          const x1 = leftRect.right - containerRect.left;
+          const y1 = leftRect.top - containerRect.top + leftRect.height / 2;
+
+          const x2 = rightRect.left - containerRect.left;
+          const y2 = rightRect.top - containerRect.top + rightRect.height / 2;
+
+          const correctTranslation = currentQ.correctPairs[symbol];
+          const isCorrect = cnTrans === correctTranslation;
+
+          newLines.push({
+            id: symbol,
+            x1, y1, x2, y2,
+            isCorrect
+          });
+        }
+      });
+      setChemMatchLines(newLines);
+    };
+
+    const timer = setTimeout(updateLines, 50);
+    window.addEventListener('resize', updateLines);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateLines);
+    };
+  }, [chemMatchedPairs, activeTab, currentTestIndex, currentExerciseIndex, testChecked, exerciseQuestions, testQuestions]);
+
+  // 当题目切换、Tab 切换或天数切换时，同步与恢复化学连线状态
+  useEffect(() => {
+    const currentQ = activeTab === 'test' ? testQuestions[currentTestIndex] : exerciseQuestions[currentExerciseIndex];
+    if (!currentQ || currentQ.type !== 'match') {
+      setChemSelectedLeft(null);
+      setChemSelectedRight(null);
+      setChemMatchedPairs({});
+      return;
+    }
+
+    if (activeTab === 'test') {
+      const saved = testAnswers[currentQ.id];
+      if (saved && saved.matchedPairs) {
+        setChemMatchedPairs(saved.matchedPairs);
+      } else {
+        setChemMatchedPairs({});
+      }
+    } else {
+      const saved = exerciseAnswers[currentQ.id];
+      if (saved && saved.matchedPairs) {
+        setChemMatchedPairs(saved.matchedPairs);
+      } else {
+        setChemMatchedPairs({});
+      }
+    }
+
+    setChemSelectedLeft(null);
+    setChemSelectedRight(null);
+  }, [currentTestIndex, currentExerciseIndex, activeTab, testQuestions, exerciseQuestions, testAnswers, exerciseAnswers]);
+
   // 100题练习状态
   const [exerciseQuestions, setExerciseQuestions] = useState([]);
   const [exerciseAnswers, setExerciseAnswers] = useState({}); // { [qId]: { isCorrect, userOpt } }
@@ -114,16 +198,116 @@ export default function ChemistryModule() {
     }
   }, [selectedDayId, activeTab]);
 
-  // 更新金币积分：做对 +1，做错 -1
-  const updateGoldCoin = (isCorrect) => {
+  // 更新金币积分：做对加分，做错扣分 (支持自定义权重)
+  const updateGoldCoin = (isCorrect, weight = 1) => {
     const currentScore = dayScores[selectedDayId] || 0;
     if (currentScore > 0) return; // 重复学习不加分/扣分，分值锁定
-    const delta = isCorrect ? 1 : -1;
-    const newScore = currentScore + delta;
+    const delta = isCorrect ? weight : -weight;
+    const newScore = Number((currentScore + delta).toFixed(2));
     
     const nextScores = { ...dayScores, [selectedDayId]: newScore };
     setDayScores(nextScores);
     localStorage.setItem(`chemistry-score-${selectedDayId}`, newScore.toString());
+  };
+
+  // 处理化学符号与中文匹配连线点击事件
+  const handleChemMatchClick = (side, textId) => {
+    const currentQ = activeTab === 'test' ? testQuestions[currentTestIndex] : exerciseQuestions[currentExerciseIndex];
+    if (!currentQ || (activeTab === 'test' ? testChecked : !!exerciseAnswers[currentQ.id])) return;
+
+    let nextLeft = chemSelectedLeft;
+    let nextRight = chemSelectedRight;
+    let newMatched = { ...chemMatchedPairs };
+
+    if (side === 'left') {
+      if (newMatched[textId]) {
+        delete newMatched[textId];
+        setChemMatchedPairs(newMatched);
+      }
+      if (chemSelectedLeft === textId) {
+        setChemSelectedLeft(null);
+        return;
+      }
+      setChemSelectedLeft(textId);
+      nextLeft = textId;
+    } else {
+      const linkedEngKey = Object.keys(newMatched).find(key => newMatched[key] === textId);
+      if (linkedEngKey) {
+        delete newMatched[linkedEngKey];
+        setChemMatchedPairs(newMatched);
+      }
+      if (chemSelectedRight === textId) {
+        setChemSelectedRight(null);
+        return;
+      }
+      setChemSelectedRight(textId);
+      nextRight = textId;
+    }
+
+    if (nextLeft && nextRight) {
+      newMatched = { ...newMatched, [nextLeft]: nextRight };
+      setChemMatchedPairs(newMatched);
+      setChemSelectedLeft(null);
+      setChemSelectedRight(null);
+
+      // 检查是否 4 对全部连满
+      if (Object.keys(newMatched).length === 4) {
+        let isAllCorrect = true;
+        Object.keys(newMatched).forEach(symKey => {
+          const userCn = newMatched[symKey];
+          const correctCn = currentQ.correctPairs[symKey];
+          if (userCn !== correctCn) {
+            isAllCorrect = false;
+          }
+        });
+
+        // 化学第一大单元百题测试（练习）每道题的权重为 0.5 分，小测分值也是 0.5 分
+        const isBlockTest = activeTab === 'exercise' || (activeTab === 'test' && selectedDayId.startsWith('chem_block'));
+        const weight = isBlockTest ? 0.5 : 1.0; 
+
+        if (activeTab === 'test') {
+          const nextAnswers = {
+            ...testAnswers,
+            [currentQ.id]: {
+              state: isAllCorrect ? 'correct' : 'wrong',
+              matchedPairs: newMatched
+            }
+          };
+          setTestAnswers(nextAnswers);
+          updateGoldCoin(isAllCorrect, weight); 
+          setTestChecked(true); 
+        } else {
+          const nextAnswers = {
+            ...exerciseAnswers,
+            [currentQ.id]: {
+              isCorrect: isAllCorrect,
+              userOpt: 'matched',
+              matchedPairs: newMatched
+            }
+          };
+          setExerciseAnswers(nextAnswers);
+          updateGoldCoin(isAllCorrect, 0.5); // 百题测试每道题 0.5 分
+        }
+
+        if (!isAllCorrect) {
+          const alreadyIn = wrongList.some(w => w.id === currentQ.id);
+          if (!alreadyIn) {
+            const wrongQ = {
+              id: currentQ.id,
+              question: `元素符号与中文连线配对：${Object.keys(currentQ.correctPairs).join('，')}`,
+              options: Object.entries(currentQ.correctPairs).map(([k, v]) => `${k} ➔ ${v}`),
+              answer: '4对元素全对消除配对',
+              userAnswer: '配对中有错误',
+              explanation: currentQ.explanation,
+              chapterId: selectedDayId
+            };
+            const nextWrongs = [...wrongList, wrongQ];
+            setWrongList(nextWrongs);
+            localStorage.setItem('chemistry-wrongs', JSON.stringify(nextWrongs));
+          }
+        }
+      }
+    }
   };
 
   // --- Day 4 两两连线匹配消除游戏核心逻辑 ---
@@ -1110,41 +1294,227 @@ export default function ChemistryModule() {
                   Q{currentTestIndex + 1}: {testQuestions[currentTestIndex]?.question}
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {testQuestions[currentTestIndex]?.options.map((opt, oIdx) => {
-                    let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
-                    if (selectedTestOpt === oIdx) {
-                      btnStyle = { border: '1px solid hsl(var(--color-optics))', backgroundColor: 'hsla(var(--color-optics)/0.08)', color: 'hsl(var(--color-optics))' };
-                    }
-                    if (testChecked) {
-                      const isCorrectOpt = oIdx === testQuestions[currentTestIndex].answer;
-                      if (isCorrectOpt) {
-                        btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
-                      } else if (selectedTestOpt === oIdx) {
-                        btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
-                      }
-                    }
+                {testQuestions[currentTestIndex]?.type === 'match' ? (
+                  <div
+                    id="chem-match-container"
+                    style={{
+                      position: 'relative',
+                      display: 'grid',
+                      gridTemplateColumns: '1.5fr 1fr 1.5fr',
+                      gap: isPortraitTablet ? '10px' : '20px',
+                      padding: '16px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px dashed #e2e8f0'
+                    }}
+                  >
+                    {/* 左侧元素符号列表 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#a855f7', textAlign: 'center', marginBottom: '4px' }}>🧪 元素符号</div>
+                      {testQuestions[currentTestIndex]?.leftOptions.map((opt) => {
+                        const isMatched = !!chemMatchedPairs[opt.id];
+                        const isSelected = chemSelectedLeft === opt.id;
+                        const hasSubmitted = testChecked;
+                        
+                        let btnBg = '#fff';
+                        let btnBorder = '1px solid #e2e8f0';
+                        let btnColor = 'hsl(var(--text-primary))';
+                        let opacity = 1;
 
-                    return (
-                      <button
-                        key={oIdx}
-                        className="btn btn-secondary"
-                        style={{
-                          justifyContent: 'flex-start',
-                          textAlign: 'left',
-                          padding: '10px 16px',
-                          fontSize: '0.85rem',
-                          ...btnStyle
-                        }}
-                        disabled={testChecked}
-                        onClick={() => setSelectedTestOpt(oIdx)}
-                      >
-                        <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
+                        if (isSelected) {
+                          btnBg = 'rgba(168,85,247,0.12)';
+                          btnBorder = '2px solid #a855f7';
+                          btnColor = '#a855f7';
+                        } else if (isMatched) {
+                          if (hasSubmitted) {
+                            const correctTranslation = testQuestions[currentTestIndex]?.correctPairs[opt.id];
+                            const userTranslation = chemMatchedPairs[opt.id];
+                            const isPairCorrect = userTranslation === correctTranslation;
+                            
+                            btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                            btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                            btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                            opacity = 0.6;
+                          } else {
+                            btnBg = 'rgba(168,85,247,0.03)';
+                            btnBorder = '1px solid rgba(168,85,247,0.25)';
+                            btnColor = 'hsl(var(--text-primary))';
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={opt.id}
+                            id={`chem-btn-left-${opt.id}`}
+                            className="btn"
+                            style={{
+                              padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                              fontSize: isPortraitTablet ? '0.78rem' : '0.9rem',
+                              fontWeight: 'bold',
+                              borderRadius: '10px',
+                              backgroundColor: btnBg,
+                              border: btnBorder,
+                              color: btnColor,
+                              opacity: opacity,
+                              cursor: hasSubmitted ? 'default' : 'pointer',
+                              transition: 'all 0.2s ease',
+                              boxShadow: isSelected ? '0 0 12px rgba(168,85,247,0.3)' : 'none',
+                              justifyContent: 'center'
+                            }}
+                            disabled={hasSubmitted}
+                            onClick={() => handleChemMatchClick('left', opt.id)}
+                          >
+                            {opt.text}
+                            {hasSubmitted && isMatched && (
+                              chemMatchedPairs[opt.id] === testQuestions[currentTestIndex]?.correctPairs[opt.id] ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* 中间留白，为连线腾出足够空间 */}
+                    <div></div>
+
+                    {/* 右侧中文名称列表 */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#0ea5e9', textAlign: 'center', marginBottom: '4px' }}>🇨🇳 中文名称</div>
+                      {testQuestions[currentTestIndex]?.rightOptions.map((opt) => {
+                        const isMatched = Object.values(chemMatchedPairs).includes(opt.text);
+                        const isSelected = chemSelectedRight === opt.text;
+                        const hasSubmitted = testChecked;
+
+                        let btnBg = '#fff';
+                        let btnBorder = '1px solid #e2e8f0';
+                        let btnColor = 'hsl(var(--text-primary))';
+                        let opacity = 1;
+
+                        if (isSelected) {
+                          btnBg = 'rgba(14,165,233,0.12)';
+                          btnBorder = '2px solid #0ea5e9';
+                          btnColor = '#0ea5e9';
+                        } else if (isMatched) {
+                          if (hasSubmitted) {
+                            const linkedEng = Object.keys(chemMatchedPairs).find(key => chemMatchedPairs[key] === opt.text);
+                            const isPairCorrect = linkedEng && testQuestions[currentTestIndex]?.correctPairs[linkedEng] === opt.text;
+
+                            btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                            btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                            btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                            opacity = 0.6;
+                          } else {
+                            btnBg = 'rgba(14,165,233,0.03)';
+                            btnBorder = '1px solid rgba(14,165,233,0.25)';
+                            btnColor = 'hsl(var(--text-primary))';
+                          }
+                        }
+
+                        return (
+                          <button
+                            key={opt.text}
+                            id={`chem-btn-right-${encodeURIComponent(opt.text)}`}
+                            className="btn"
+                            style={{
+                              padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                              fontSize: isPortraitTablet ? '0.72rem' : '0.82rem',
+                              borderRadius: '10px',
+                              backgroundColor: btnBg,
+                              border: btnBorder,
+                              color: btnColor,
+                              opacity: opacity,
+                              cursor: hasSubmitted ? 'default' : 'pointer',
+                              transition: 'all 0.2s ease',
+                              boxShadow: isSelected ? '0 0 12px rgba(14,165,233,0.3)' : 'none',
+                              justifyContent: 'center',
+                              display: 'block',
+                              width: '100%',
+                              textOverflow: 'ellipsis',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap'
+                            }}
+                            disabled={hasSubmitted}
+                            onClick={() => handleChemMatchClick('right', opt.text)}
+                          >
+                            {opt.text}
+                            {hasSubmitted && isMatched && (() => {
+                              const linkedEng = Object.keys(chemMatchedPairs).find(key => chemMatchedPairs[key] === opt.text);
+                              const isPairCorrect = linkedEng && testQuestions[currentTestIndex]?.correctPairs[linkedEng] === opt.text;
+                              return isPairCorrect ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>;
+                            })()}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* 绝对定位的 SVG 画线层 */}
+                    <svg style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      pointerEvents: 'none',
+                      zIndex: 5
+                    }}>
+                      {chemMatchLines.map((line) => {
+                        const hasSubmitted = testChecked;
+                        let strokeColor = '#a855f7';
+                        if (hasSubmitted) {
+                          strokeColor = line.isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                        }
+                        return (
+                          <line
+                            key={line.id}
+                            x1={line.x1}
+                            y1={line.y1}
+                            x2={line.x2}
+                            y2={line.y2}
+                            stroke={strokeColor}
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                            style={{ transition: 'stroke 0.3s ease' }}
+                          />
+                        );
+                      })}
+                    </svg>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {testQuestions[currentTestIndex]?.options.map((opt, oIdx) => {
+                      let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
+                      if (selectedTestOpt === oIdx) {
+                        btnStyle = { border: '1px solid hsl(var(--color-optics))', backgroundColor: 'hsla(var(--color-optics)/0.08)', color: 'hsl(var(--color-optics))' };
+                      }
+                      if (testChecked) {
+                        const isCorrectOpt = oIdx === testQuestions[currentTestIndex].answer;
+                        if (isCorrectOpt) {
+                          btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
+                        } else if (selectedTestOpt === oIdx) {
+                          btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={oIdx}
+                          className="btn btn-secondary"
+                          style={{
+                            justifyContent: 'flex-start',
+                            textAlign: 'left',
+                            padding: '10px 16px',
+                            fontSize: '0.85rem',
+                            ...btnStyle
+                          }}
+                          disabled={testChecked}
+                          onClick={() => setSelectedTestOpt(oIdx)}
+                        >
+                          <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
+                          {opt}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {testChecked && (
                   <div className="fade-in" style={{
@@ -1165,12 +1535,18 @@ export default function ChemistryModule() {
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
                   {!testChecked ? (
-                    <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.82rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-optics))', borderColor: 'hsl(var(--color-optics))' }} disabled={selectedTestOpt === null} onClick={handleTestSubmit}>
-                      提交答案
-                    </button>
+                    testQuestions[currentTestIndex]?.type === 'match' ? (
+                      <span style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))', fontStyle: 'italic' }}>
+                        💡 技巧提示：依次点击左侧元素符号与右侧中文名称即可配对消除
+                      </span>
+                    ) : (
+                      <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.82rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-optics))', borderColor: 'hsl(var(--color-optics))' }} disabled={selectedTestOpt === null} onClick={handleTestSubmit}>
+                        提交答案
+                      </button>
+                    )
                   ) : (
                     <button className="btn btn-primary" style={{ padding: '8px 20px', fontSize: '0.82rem', fontWeight: 'bold', backgroundColor: 'hsl(var(--color-optics))', borderColor: 'hsl(var(--color-optics))' }} onClick={handleNextTest}>
-                      {currentTestIndex < 19 ? '下一题' : '完成测验并结算'}
+                      {currentTestIndex < testQuestions.length - 1 ? '下一题' : '完成测验并结算'}
                     </button>
                   )}
                 </div>
@@ -1292,37 +1668,225 @@ export default function ChemistryModule() {
                         {exerciseQuestions[currentExerciseIndex].question}
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {exerciseQuestions[currentExerciseIndex].options.map((opt, oIdx) => {
-                          const qId = exerciseQuestions[currentExerciseIndex].id;
-                          const ansState = exerciseAnswers[qId];
-                          const isAns = !!ansState;
+                      {exerciseQuestions[currentExerciseIndex]?.type === 'match' ? (
+                        <div
+                          id="chem-match-container"
+                          style={{
+                            position: 'relative',
+                            display: 'grid',
+                            gridTemplateColumns: '1.5fr 1fr 1.5fr',
+                            gap: isPortraitTablet ? '10px' : '20px',
+                            padding: '16px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px dashed #e2e8f0'
+                          }}
+                        >
+                          {/* 左侧元素符号列表 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#a855f7', textAlign: 'center', marginBottom: '4px' }}>🧪 元素符号</div>
+                            {exerciseQuestions[currentExerciseIndex]?.leftOptions.map((opt) => {
+                              const isMatched = !!chemMatchedPairs[opt.id];
+                              const isSelected = chemSelectedLeft === opt.id;
+                              const hasSubmitted = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
+                              
+                              let btnBg = '#fff';
+                              let btnBorder = '1px solid #e2e8f0';
+                              let btnColor = 'hsl(var(--text-primary))';
+                              let opacity = 1;
 
-                          let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
-                          if (isAns) {
-                            const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
-                            const isUserSelected = oIdx === ansState.userOpt;
-                            if (isCorrectOpt) {
-                              btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
-                            } else if (isUserSelected) {
-                              btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                              if (isSelected) {
+                                btnBg = 'rgba(168,85,247,0.12)';
+                                btnBorder = '2px solid #a855f7';
+                                btnColor = '#a855f7';
+                              } else if (isMatched) {
+                                if (hasSubmitted) {
+                                  const currentQ = exerciseQuestions[currentExerciseIndex];
+                                  const correctTranslation = currentQ?.correctPairs[opt.id];
+                                  const userTranslation = chemMatchedPairs[opt.id];
+                                  const isPairCorrect = userTranslation === correctTranslation;
+                                  
+                                  btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                                  btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                                  btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                                  opacity = 0.6;
+                                } else {
+                                  btnBg = 'rgba(168,85,247,0.03)';
+                                  btnBorder = '1px solid rgba(168,85,247,0.25)';
+                                  btnColor = 'hsl(var(--text-primary))';
+                                }
+                              }
+
+                              return (
+                                <button
+                                  key={opt.id}
+                                  id={`chem-btn-left-${opt.id}`}
+                                  className="btn"
+                                  style={{
+                                    padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                                    fontSize: isPortraitTablet ? '0.78rem' : '0.9rem',
+                                    fontWeight: 'bold',
+                                    borderRadius: '10px',
+                                    backgroundColor: btnBg,
+                                    border: btnBorder,
+                                    color: btnColor,
+                                    opacity: opacity,
+                                    cursor: hasSubmitted ? 'default' : 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: isSelected ? '0 0 12px rgba(168,85,247,0.3)' : 'none',
+                                    justifyContent: 'center'
+                                  }}
+                                  disabled={hasSubmitted}
+                                  onClick={() => handleChemMatchClick('left', opt.id)}
+                                >
+                                  {opt.text}
+                                  {hasSubmitted && isMatched && (() => {
+                                    const currentQ = exerciseQuestions[currentExerciseIndex];
+                                    const isPairCorrect = chemMatchedPairs[opt.id] === currentQ?.correctPairs[opt.id];
+                                    return isPairCorrect ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>;
+                                  })()}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* 中间留白，为连线腾出足够空间 */}
+                          <div></div>
+
+                          {/* 右侧元素中文名称列表 */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#0ea5e9', textAlign: 'center', marginBottom: '4px' }}>🇨🇳 中文名称</div>
+                            {exerciseQuestions[currentExerciseIndex]?.rightOptions.map((opt) => {
+                              const isMatched = Object.values(chemMatchedPairs).includes(opt.text);
+                              const isSelected = chemSelectedRight === opt.text;
+                              const hasSubmitted = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
+
+                              let btnBg = '#fff';
+                              let btnBorder = '1px solid #e2e8f0';
+                              let btnColor = 'hsl(var(--text-primary))';
+                              let opacity = 1;
+
+                              if (isSelected) {
+                                btnBg = 'rgba(14,165,233,0.12)';
+                                btnBorder = '2px solid #0ea5e9';
+                                btnColor = '#0ea5e9';
+                              } else if (isMatched) {
+                                if (hasSubmitted) {
+                                  const currentQ = exerciseQuestions[currentExerciseIndex];
+                                  const linkedEng = Object.keys(chemMatchedPairs).find(key => chemMatchedPairs[key] === opt.text);
+                                  const isPairCorrect = linkedEng && currentQ?.correctPairs[linkedEng] === opt.text;
+
+                                  btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                                  btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                                  btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                                  opacity = 0.6;
+                                } else {
+                                  btnBg = 'rgba(14,165,233,0.03)';
+                                  btnBorder = '1px solid rgba(14,165,233,0.25)';
+                                  btnColor = 'hsl(var(--text-primary))';
+                                }
+                              }
+
+                              return (
+                                <button
+                                  key={opt.text}
+                                  id={`chem-btn-right-${encodeURIComponent(opt.text)}`}
+                                  className="btn"
+                                  style={{
+                                    padding: isPortraitTablet ? '8px 10px' : '12px 16px',
+                                    fontSize: isPortraitTablet ? '0.72rem' : '0.82rem',
+                                    borderRadius: '10px',
+                                    backgroundColor: btnBg,
+                                    border: btnBorder,
+                                    color: btnColor,
+                                    opacity: opacity,
+                                    cursor: hasSubmitted ? 'default' : 'pointer',
+                                    transition: 'all 0.2s ease',
+                                    boxShadow: isSelected ? '0 0 12px rgba(14,165,233,0.3)' : 'none',
+                                    justifyContent: 'center',
+                                    display: 'block',
+                                    width: '100%'
+                                  }}
+                                  disabled={hasSubmitted}
+                                  onClick={() => handleChemMatchClick('right', opt.text)}
+                                >
+                                  {opt.text}
+                                  {hasSubmitted && isMatched && (() => {
+                                    const currentQ = exerciseQuestions[currentExerciseIndex];
+                                    const linkedEng = Object.keys(chemMatchedPairs).find(key => chemMatchedPairs[key] === opt.text);
+                                    const isPairCorrect = linkedEng && currentQ?.correctPairs[linkedEng] === opt.text;
+                                    return isPairCorrect ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>;
+                                  })()}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* 绝对定位的 SVG 画线层 */}
+                          <svg style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: '100%',
+                            pointerEvents: 'none',
+                            zIndex: 5
+                          }}>
+                            {chemMatchLines.map((line) => {
+                              const hasSubmitted = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
+                              let strokeColor = '#a855f7';
+                              if (hasSubmitted) {
+                                strokeColor = line.isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                              }
+                              return (
+                                <line
+                                  key={line.id}
+                                  x1={line.x1}
+                                  y1={line.y1}
+                                  x2={line.x2}
+                                  y2={line.y2}
+                                  stroke={strokeColor}
+                                  strokeWidth="3.5"
+                                  strokeLinecap="round"
+                                  style={{ transition: 'stroke 0.3s ease' }}
+                                />
+                              );
+                            })}
+                          </svg>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {exerciseQuestions[currentExerciseIndex].options.map((opt, oIdx) => {
+                            const qId = exerciseQuestions[currentExerciseIndex].id;
+                            const ansState = exerciseAnswers[qId];
+                            const isAns = !!ansState;
+
+                            let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
+                            if (isAns) {
+                              const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
+                              const isUserSelected = oIdx === ansState.userOpt;
+                              if (isCorrectOpt) {
+                                btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
+                              } else if (isUserSelected) {
+                                btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                              }
                             }
-                          }
 
-                          return (
-                            <button
-                              key={oIdx}
-                              className="btn btn-secondary"
-                              style={{ justifyContent: 'flex-start', textAlign: 'left', padding: '10px 14px', fontSize: '0.82rem', ...btnStyle }}
-                              disabled={isAns}
-                              onClick={() => handleExerciseOptionClick(oIdx)}
-                            >
-                              <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
-                              {opt}
-                            </button>
-                          );
-                        })}
-                      </div>
+                            return (
+                              <button
+                                key={oIdx}
+                                className="btn btn-secondary"
+                                style={{ justifyContent: 'flex-start', textAlign: 'left', padding: '10px 14px', fontSize: '0.82rem', ...btnStyle }}
+                                disabled={isAns}
+                                onClick={() => handleExerciseOptionClick(oIdx)}
+                              >
+                                <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id] && (
                         <div className="fade-in" style={{
@@ -1335,7 +1899,7 @@ export default function ChemistryModule() {
                           whiteSpace: 'pre-wrap'
                         }}>
                           <div style={{ fontWeight: 'bold', color: exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个，已自动计错。'}
+                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个，已自动计错。'}
                           </div>
                           {exerciseQuestions[currentExerciseIndex].explanation}
                         </div>

@@ -1035,6 +1035,13 @@ function shuffleArray(arr) {
 
 // 格式化题目为前端组件期望的结构
 function formatQuestion(q, index, prefix = '化学题') {
+  if (q.type === 'match') {
+    return {
+      ...q,
+      id: `chem_q_${prefix}_${index}_${Math.random().toString(36).substr(2, 5)}`,
+      question: `【${prefix} ${index + 1}】${q.question}`
+    };
+  }
   const shuffledOptions = shuffleArray(q.options);
   const ansIndex = shuffledOptions.indexOf(q.answer);
   return {
@@ -1047,7 +1054,7 @@ function formatQuestion(q, index, prefix = '化学题') {
 }
 
 // 动态元素题生成器
-function generateDynamicElementQuestions(dayKey, count) {
+function generateDynamicElementQuestions(dayKey, count, excludePinyin = false) {
   const pool = elementPools[dayKey];
   if (!pool) return [];
   const questions = [];
@@ -1077,7 +1084,7 @@ function generateDynamicElementQuestions(dayKey, count) {
       });
     }
     // 问法 3: 中文 ➔ 拼音
-    {
+    if (!excludePinyin) {
       const otherPinyins = pool.filter(x => x.pinyin !== el.pinyin).map(x => x.pinyin);
       const distrac = shuffleArray(otherPinyins).slice(0, 3);
       const options = shuffleArray([el.pinyin, ...distrac]);
@@ -1090,6 +1097,49 @@ function generateDynamicElementQuestions(dayKey, count) {
     }
   });
   return shuffleArray(questions).slice(0, count);
+}
+
+// 化学元素符号与中文连线匹配题生成器 (前4课共30个元素)
+function generateChemicalMatchQuestions(count) {
+  const allChemElements = [];
+  ['day1', 'day2', 'day3', 'day4'].forEach(dayKey => {
+    const pool = elementPools[dayKey];
+    if (pool) {
+      allChemElements.push(...pool);
+    }
+  });
+
+  if (allChemElements.length < 4) return [];
+
+  const questions = [];
+  for (let i = 0; i < count; i++) {
+    const shuffledElements = shuffleArray(allChemElements);
+    const chosen = shuffledElements.slice(0, 4);
+
+    const leftOptions = chosen.map(el => ({ id: el.symbol, text: el.symbol }));
+    const rightOptions = chosen.map(el => ({ text: el.name }));
+
+    const correctPairs = {};
+    chosen.forEach(el => {
+      correctPairs[el.symbol] = el.name;
+    });
+
+    let expText = "💡化学元素符号与中文名称连线配对解析：\n";
+    chosen.forEach(el => {
+      expText += `• **${el.symbol}** ➔ 【${el.name}】（第 ${el.z} 号元素，读音：${el.pinyin}）\n`;
+    });
+
+    questions.push({
+      type: 'match',
+      question: `请将以下 4 组元素符号与中文名称两两正确配对：`,
+      leftOptions: shuffleArray(leftOptions),
+      rightOptions: shuffleArray(rightOptions),
+      correctPairs,
+      explanation: expText,
+      knowledgePoint: '元素符号与中文连线'
+    });
+  }
+  return questions;
 }
 
 export function generateChemistryQuestions(topicId, count = 20) {
@@ -1137,13 +1187,22 @@ export function generateChemistryQuestions(topicId, count = 20) {
     const days = blockDays[topicId] || [];
     days.forEach(dayKey => {
       if (['day1', 'day2', 'day3', 'day4'].includes(dayKey)) {
-        // 动态元素题，生成最大数量以供抽取
-        allRawQuestions = allRawQuestions.concat(generateDynamicElementQuestions(dayKey, 30));
+        if (topicId === 'chem_block1') {
+          // 化学第一大单元百题测试排除拼音选择题，生成 20 题动态元素符号选择题
+          allRawQuestions = allRawQuestions.concat(generateDynamicElementQuestions(dayKey, 20, true));
+        } else {
+          allRawQuestions = allRawQuestions.concat(generateDynamicElementQuestions(dayKey, 30));
+        }
       } else {
         // 静态题库
         allRawQuestions = allRawQuestions.concat(staticQuestions[dayKey] || []);
       }
     });
+
+    if (topicId === 'chem_block1') {
+      // 批量加入 40 道元素连线题，完美替代拼音题！
+      allRawQuestions = allRawQuestions.concat(generateChemicalMatchQuestions(40));
+    }
 
     // 滚动复习兜底：如果本单元总题量不足 count，就从前面学过的其他天数中抽取未重复的题目补充进来
     if (allRawQuestions.length < count) {
@@ -1156,7 +1215,11 @@ export function generateChemistryQuestions(topicId, count = 20) {
       });
       ['day1', 'day2', 'day3', 'day4'].forEach(dayKey => {
         if (!days.includes(dayKey)) {
-          fallbackPool = fallbackPool.concat(generateDynamicElementQuestions(dayKey, 30));
+          if (topicId === 'chem_block1') {
+            fallbackPool = fallbackPool.concat(generateDynamicElementQuestions(dayKey, 20, true));
+          } else {
+            fallbackPool = fallbackPool.concat(generateDynamicElementQuestions(dayKey, 30));
+          }
         }
       });
       const shuffledFallback = shuffleArray(fallbackPool);
