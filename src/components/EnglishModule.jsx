@@ -134,10 +134,10 @@ export default function EnglishModule() {
     localStorage.setItem('english-unfamiliar-words', JSON.stringify(nextUnfamiliar));
   };
 
-  // 开启10题测试
+  // 开启20题测试
   const handleStartTest = () => {
     const dayData = englishDays[selectedDayId] || englishDays['day1'];
-    const generated = generateEnglishQuestions(dayData.topicId, 10);
+    const generated = generateEnglishQuestions(dayData.topicId, 20);
     setTestQuestions(generated);
     setTestAnswers({});
     setCurrentTestIndex(0);
@@ -153,11 +153,11 @@ export default function EnglishModule() {
     setMatchFlashError(false);
   };
 
-  // 100题练习自动载入
+  // 200题练习自动载入
   useEffect(() => {
     if (activeTab === 'exercise') {
       const dayData = englishDays[selectedDayId] || englishDays['day1'];
-      const generated = generateEnglishQuestions(dayData.topicId, 100);
+      const generated = generateEnglishQuestions(dayData.topicId, 200);
       setExerciseQuestions(generated);
       setExerciseAnswers({});
       setCurrentExerciseIndex(0);
@@ -571,11 +571,20 @@ export default function EnglishModule() {
         // 检查是否 4 对全部正确连线消除完毕了！
         if (Object.keys(newMatched).length === 4) {
           const isCorrect = !hasErrorThisQuestion;
-          const nextAnswers = { ...testAnswers, [currentQ.id]: isCorrect ? 'correct' : 'wrong' };
-          setTestAnswers(nextAnswers);
-
-          // 金币结算 (+1 / -1)
-          updateGoldCoin(isCorrect);
+          if (activeTab === 'test') {
+            const nextAnswers = { ...testAnswers, [currentQ.id]: isCorrect ? 'correct' : 'wrong' };
+            setTestAnswers(nextAnswers);
+            updateGoldCoin(isCorrect, 0.5); // 小测每题 0.5 分
+            setTestChecked(true); // 展现结题解析
+          } else {
+            // 练习模式
+            const nextAnswers = {
+              ...exerciseAnswers,
+              [currentQ.id]: { isCorrect, userOpt: 'matched' }
+            };
+            setExerciseAnswers(nextAnswers);
+            updateGoldCoin(isCorrect, 0.5); // 练习每题 0.5 分
+          }
 
           // 连错了一次或多次，记录到英语错题本
           if (!isCorrect) {
@@ -595,8 +604,6 @@ export default function EnglishModule() {
               localStorage.setItem('english-wrongs', JSON.stringify(nextWrongs));
             }
           }
-
-          setTestChecked(true); // 展现结题解析
         }
       } else {
         // 配对失败！触发红闪震动效并计错
@@ -620,7 +627,7 @@ export default function EnglishModule() {
     const nextAnswers = { ...testAnswers, [currentQ.id]: selectedTestOpt };
     setTestAnswers(nextAnswers);
 
-    updateGoldCoin(isCorrect);
+    updateGoldCoin(isCorrect, 0.5);
 
     if (!isCorrect) {
       const alreadyIn = wrongList.some(w => w.id === currentQ.id);
@@ -688,7 +695,7 @@ export default function EnglishModule() {
     };
     setExerciseAnswers(nextAnswers);
 
-    updateGoldCoin(isCorrect);
+    updateGoldCoin(isCorrect, 0.5);
 
     if (!isCorrect) {
       const alreadyIn = wrongList.some(w => w.id === currentQ.id);
@@ -1014,7 +1021,7 @@ export default function EnglishModule() {
                   borderColor: activeTab === 'test' ? '#a855f7' : ''
                 }}
               >
-                ✍️ 10题过关小测
+                ✍️ 20题单词连线测验
               </button>
               <button
                 className={`btn ${activeTab === 'exercise' ? 'btn-primary' : 'btn-secondary'}`}
@@ -1027,7 +1034,7 @@ export default function EnglishModule() {
                   borderColor: activeTab === 'exercise' ? '#a855f7' : ''
                 }}
               >
-                📝 100题每日狂练
+                📝 200题每周合并特训
               </button>
             </div>
             
@@ -1349,7 +1356,7 @@ export default function EnglishModule() {
                     🇬🇧 开启：Day {selectedDayId.replace('day', '')} 英语小测
                   </h3>
                   <p style={{ fontSize: '0.82rem', color: 'hsl(var(--text-secondary))', maxWidth: '440px', margin: '0 auto', lineHeight: '1.6' }}>
-                    测验包含 10 道当天词汇连线与语法单选。做对一道<b>+1金币</b>，做错一道<b>-1金币</b>，防止分心小测后结算。
+                    测验包含 20 道当天词汇连线配对题。做对一道<b>+0.5金币</b>，做错一道<b>-0.5金币</b>，防止分心小测后结算。
                   </p>
                 </div>
                 <button className="btn btn-primary" style={{ padding: '10px 24px', fontSize: '0.88rem', fontWeight: 'bold', backgroundColor: '#a855f7', borderColor: '#a855f7' }} onClick={handleStartTest}>
@@ -1657,7 +1664,7 @@ export default function EnglishModule() {
                   maxWidth: '440px',
                   textAlign: 'left'
                 }}>
-                  💡 <b>提分秘籍提示：</b> 恭喜你完成了今天的过关测试！别忘了，每天还有 <b>100 道专项英语题库</b> 供你狂练。挑战它们不仅能帮你稳固薄弱环节，还能<b>获得更多金币</b>哦！
+                  💡 <b>提分秘籍提示：</b> 恭喜你完成了今天的过关测试！别忘了，本周还有 <b>200 道合并特训题库（连线与句子填空）</b> 供你狂练。挑战它们不仅能帮你稳固薄弱环节，还能<b>获得更多金币</b>哦！
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                     <button
                       className="btn btn-primary"
@@ -1702,7 +1709,7 @@ export default function EnglishModule() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span className="badge" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)', color: '#7e22ce', fontWeight: 'bold' }}>
-                          Day {selectedDayId.replace('day', '')} 特训 · 第 {currentExerciseIndex + 1} / 100 题
+                          Day {selectedDayId.replace('day', '')} 本周合并特训 · 第 {currentExerciseIndex + 1} / 200 题
                         </span>
                         <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
                           累计金币：{todayGoldCoin >= 0 ? `+${todayGoldCoin}` : todayGoldCoin}
@@ -1713,37 +1720,162 @@ export default function EnglishModule() {
                         {exerciseQuestions[currentExerciseIndex].question}
                       </div>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {exerciseQuestions[currentExerciseIndex].options.map((opt, oIdx) => {
-                          const qId = exerciseQuestions[currentExerciseIndex].id;
-                          const ansState = exerciseAnswers[qId];
-                          const isAns = !!ansState;
+                      {/* 分流渲染：连线题 (type === 'match') vs 选择题 (type === 'choice') */}
+                      {exerciseQuestions[currentExerciseIndex]?.type === 'match' ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '10px 0' }}>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '24px',
+                            padding: '16px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                            borderRadius: 'var(--radius-md)',
+                            border: '1px dashed #e2e8f0',
+                            animation: matchFlashError ? 'shake 0.4s ease' : 'none'
+                          }}>
+                            {/* 左侧英文单词列表 */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#a855f7', textAlign: 'center', marginBottom: '4px' }}>🇬🇧 英文单词/短语</div>
+                              {exerciseQuestions[currentExerciseIndex]?.leftOptions.map((opt) => {
+                                const isMatched = matchedPairs[opt.id];
+                                const isSelected = selectedLeft === opt.id;
+                                
+                                let btnBg = '#fff';
+                                let btnBorder = '1px solid #e2e8f0';
+                                let btnColor = 'hsl(var(--text-primary))';
+                                let opacity = 1;
 
-                          let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
-                          if (isAns) {
-                            const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
-                            const isUserSelected = oIdx === ansState.userOpt;
-                            if (isCorrectOpt) {
-                              btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
-                            } else if (isUserSelected) {
-                              btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                                if (isMatched) {
+                                  btnBg = 'hsla(var(--color-success)/0.08)';
+                                  btnBorder = '1px solid hsl(var(--color-success))';
+                                  btnColor = 'hsl(var(--color-success))';
+                                  opacity = 0.5;
+                                } else if (isSelected) {
+                                  btnBg = 'rgba(168,85,247,0.12)';
+                                  btnBorder = '2px solid #a855f7';
+                                  btnColor = '#a855f7';
+                                }
+
+                                const hasExerciseAns = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
+
+                                return (
+                                  <button
+                                    key={opt.id}
+                                    className="btn"
+                                    style={{
+                                      padding: '12px 16px',
+                                      fontSize: '0.9rem',
+                                      fontWeight: 'bold',
+                                      borderRadius: '10px',
+                                      backgroundColor: btnBg,
+                                      border: btnBorder,
+                                      color: btnColor,
+                                      opacity: opacity,
+                                      cursor: isMatched ? 'default' : 'pointer',
+                                      transition: 'all 0.2s ease',
+                                      justifyContent: 'center'
+                                    }}
+                                    disabled={isMatched || hasExerciseAns}
+                                    onClick={() => handleMatchClick('left', opt.id)}
+                                  >
+                                    {opt.text}
+                                    {isMatched && <span style={{ marginLeft: '6px' }}>✅</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* 右侧中文翻译列表 */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#0ea5e9', textAlign: 'center', marginBottom: '4px' }}>🇨🇳 中文翻译解释</div>
+                              {exerciseQuestions[currentExerciseIndex]?.rightOptions.map((opt) => {
+                                const currentQ = exerciseQuestions[currentExerciseIndex];
+                                const correspondingEng = Object.keys(currentQ.correctPairs).find(
+                                  key => currentQ.correctPairs[key] === opt.text
+                                );
+                                const isMatched = correspondingEng && matchedPairs[correspondingEng];
+                                const isSelected = selectedRight === opt.text;
+
+                                let btnBg = '#fff';
+                                let btnBorder = '1px solid #e2e8f0';
+                                let btnColor = 'hsl(var(--text-primary))';
+                                let opacity = 1;
+
+                                if (isMatched) {
+                                  btnBg = 'hsla(var(--color-success)/0.08)';
+                                  btnBorder = '1px solid hsl(var(--color-success))';
+                                  btnColor = 'hsl(var(--color-success))';
+                                  opacity = 0.5;
+                                } else if (isSelected) {
+                                  btnBg = 'rgba(14,165,233,0.12)';
+                                  btnBorder = '2px solid #0ea5e9';
+                                  btnColor = '#0ea5e9';
+                                }
+
+                                const hasExerciseAns = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
+
+                                return (
+                                  <button
+                                    key={opt.text}
+                                    className="btn"
+                                    style={{
+                                      padding: '12px 16px',
+                                      fontSize: '0.82rem',
+                                      borderRadius: '10px',
+                                      backgroundColor: btnBg,
+                                      border: btnBorder,
+                                      color: btnColor,
+                                      opacity: opacity,
+                                      cursor: isMatched ? 'default' : 'pointer',
+                                      transition: 'all 0.2s ease',
+                                      justifyContent: 'center',
+                                      display: 'block',
+                                      width: '100%'
+                                    }}
+                                    disabled={isMatched || hasExerciseAns}
+                                    onClick={() => handleMatchClick('right', opt.text)}
+                                  >
+                                    {opt.text}
+                                    {isMatched && <span style={{ marginLeft: '6px' }}>✅</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {exerciseQuestions[currentExerciseIndex].options.map((opt, oIdx) => {
+                            const qId = exerciseQuestions[currentExerciseIndex].id;
+                            const ansState = exerciseAnswers[qId];
+                            const isAns = !!ansState;
+
+                            let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
+                            if (isAns) {
+                              const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
+                              const isUserSelected = oIdx === ansState.userOpt;
+                              if (isCorrectOpt) {
+                                btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
+                              } else if (isUserSelected) {
+                                btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                              }
                             }
-                          }
 
-                          return (
-                            <button
-                              key={oIdx}
-                              className="btn btn-secondary"
-                              style={{ justifyContent: 'flex-start', textAlign: 'left', padding: '10px 14px', fontSize: '0.82rem', ...btnStyle }}
-                              disabled={isAns}
-                              onClick={() => handleExerciseOptionClick(oIdx)}
-                            >
-                              <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
-                              {opt}
-                            </button>
-                          );
-                        })}
-                      </div>
+                            return (
+                              <button
+                                key={oIdx}
+                                className="btn btn-secondary"
+                                style={{ justifyContent: 'flex-start', textAlign: 'left', padding: '10px 14px', fontSize: '0.82rem', ...btnStyle }}
+                                disabled={isAns}
+                                onClick={() => handleExerciseOptionClick(oIdx)}
+                              >
+                                <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
+                                {opt}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
 
                       {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id] && (
                         <div className="fade-in" style={{
@@ -1756,7 +1888,7 @@ export default function EnglishModule() {
                           whiteSpace: 'pre-wrap'
                         }}>
                           <div style={{ fontWeight: 'bold', color: exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个，已自动计错。'}
+                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 答对了！今日金币 +0.5 个' : '❌ 答错了。今日金币 -0.5 个，已自动计错。'}
                           </div>
                           {exerciseQuestions[currentExerciseIndex].explanation}
                         </div>
@@ -1767,31 +1899,45 @@ export default function EnglishModule() {
                       <button
                         className="btn btn-secondary"
                         disabled={currentExerciseIndex === 0}
-                        onClick={() => setCurrentExerciseIndex(prev => prev - 1)}
+                        onClick={() => {
+                          setSelectedLeft(null);
+                          setSelectedRight(null);
+                          setMatchedPairs({});
+                          setHasErrorThisQuestion(false);
+                          setMatchFlashError(false);
+                          setCurrentExerciseIndex(prev => prev - 1);
+                        }}
                       >
                         上一题
                       </button>
                       <button
                         className="btn btn-primary"
                         style={{ backgroundColor: '#a855f7', borderColor: '#a855f7' }}
-                        disabled={currentExerciseIndex === 99}
-                        onClick={() => setCurrentExerciseIndex(prev => prev + 1)}
+                        disabled={currentExerciseIndex === 199}
+                        onClick={() => {
+                          setSelectedLeft(null);
+                          setSelectedRight(null);
+                          setMatchedPairs({});
+                          setHasErrorThisQuestion(false);
+                          setMatchFlashError(false);
+                          setCurrentExerciseIndex(prev => prev + 1);
+                        }}
                       >
                         下一题
                       </button>
                     </div>
                   </>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>正在生成今日 100 题英语特训库...</div>
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>正在生成本周 200 题英语特训库...</div>
                 )}
               </div>
 
-              {/* 右栏：100题进度网格 */}
+              {/* 右栏：200题进度网格 */}
               <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>🎯 100题英语特训卡</span>
+                  <span>🎯 200题英语特训卡</span>
                   <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                    已完成：{Object.keys(exerciseAnswers).length} / 100
+                    已完成：{Object.keys(exerciseAnswers).length} / 200
                   </span>
                 </h4>
 
@@ -1804,7 +1950,7 @@ export default function EnglishModule() {
                   gap: '6px',
                   padding: '4px'
                 }}>
-                  {Array.from({ length: 100 }).map((_, idx) => {
+                  {Array.from({ length: 200 }).map((_, idx) => {
                     const q = exerciseQuestions[idx];
                     let bgColor = 'rgba(0,0,0,0.04)';
                     let textColor = 'hsl(var(--text-secondary))';
@@ -1835,7 +1981,14 @@ export default function EnglishModule() {
                           alignItems: 'center',
                           justifyContent: 'center'
                         }}
-                        onClick={() => setCurrentExerciseIndex(idx)}
+                        onClick={() => {
+                          setSelectedLeft(null);
+                          setSelectedRight(null);
+                          setMatchedPairs({});
+                          setHasErrorThisQuestion(false);
+                          setMatchFlashError(false);
+                          setCurrentExerciseIndex(idx);
+                        }}
                       >
                         {idx + 1}
                       </button>

@@ -4,7 +4,7 @@
  */
 
 import { staticQuestions, elementPools } from '../data/chemistryQuestions.js';
-import { englishVocabList } from '../data/englishData.js';
+import { englishVocabList, englishBlocks } from '../data/englishData.js';
 
 // 辅助函数：生成范围内的随机整数 (包含两端)
 function randomInt(min, max) {
@@ -1522,14 +1522,33 @@ const englishChoiceQuestions = [
 export function generateEnglishQuestions(topicId, count = 10) {
   const list = [];
   const dayNum = parseInt(topicId.replace('eng_topic_day', ''), 10) || 1;
-  const startIdx = (dayNum - 1) * 40;
-  const endIdx = dayNum * 40;
   
-  // 1. 提取当前 Day 切片下的 40 个基础词
-  const dayWords = englishVocabList.slice(startIdx, endIdx);
-  const currentVocabBase = dayWords.length > 0 ? dayWords : englishVocabList.slice(0, 40);
+  let candidateWords = [];
+  let currentVocabBase = [];
 
-  // 2. 从本地缓存读取已熟记（斩掉）的词与标为生词（不熟）的词
+  // 判断是否是 200 题的每周合并训练
+  if (count === 200) {
+    const dayKey = `day${dayNum}`;
+    // 找出当前 dayNum 属于哪个 block
+    const currentBlock = englishBlocks.find(b => b.days.includes(dayKey)) || englishBlocks[0];
+    
+    // 提取该 block 里所有 day 对应的单词
+    currentBlock.days.forEach(dKey => {
+      const dNum = parseInt(dKey.replace('day', ''), 10);
+      const startIdx = (dNum - 1) * 40;
+      const endIdx = dNum * 40;
+      const dayWords = englishVocabList.slice(startIdx, endIdx);
+      currentVocabBase.push(...dayWords);
+    });
+  } else {
+    // 正常单课小测
+    const startIdx = (dayNum - 1) * 40;
+    const endIdx = dayNum * 40;
+    const dayWords = englishVocabList.slice(startIdx, endIdx);
+    currentVocabBase = dayWords.length > 0 ? dayWords : englishVocabList.slice(0, 40);
+  }
+
+  // 从本地缓存读取已熟记（斩掉）的词与标为生词（不熟）的词
   let masteredWords = [];
   let unfamiliarWords = [];
   try {
@@ -1541,29 +1560,34 @@ export function generateEnglishQuestions(topicId, count = 10) {
     // 降级保护
   }
 
-  // 3. 过滤掉已经掌握斩词的集合
+  // 过滤掉已经掌握斩词的集合
   let filteredWords = currentVocabBase.filter(w => !masteredWords.includes(w.word));
 
-  // 4. 提取今日所属的生词
+  // 提取所属的生词
   let todayUnfamiliar = currentVocabBase.filter(w => unfamiliarWords.includes(w.word));
 
-  // 5. 组合候选池，将今日生词提到最前面，进行高强度针对性训练
-  let candidateWords = [...todayUnfamiliar, ...filteredWords];
+  // 组合候选池，将生词提到最前面，进行高强度针对性训练
+  candidateWords = [...todayUnfamiliar, ...filteredWords];
 
-  // 6. 兜底保护：如果候选池空了（说明本章单词全部被斩掉），使用本章原始词兜底
+  // 兜底保护：如果候选池空了（说明全部被斩掉），使用原始词兜底
   if (candidateWords.length === 0) {
     candidateWords = currentVocabBase;
   }
 
-  // 7. 候选池扩展保护：如果候选池中不重复的单词少于 4 个，用本章原始词补足
+  // 候选池扩展保护：如果候选池中不重复的单词少于 4 个，用本章原始词补足
   if (candidateWords.length < 4) {
     const needed = 4 - candidateWords.length;
     const additional = currentVocabBase.filter(w => !candidateWords.some(cw => cw.word === w.word));
     candidateWords = [...candidateWords, ...additional.slice(0, needed)];
   }
 
-  // 平分题型：一半连线，一半填空选择
-  const matchCount = Math.floor(count / 2);
+  // 平分题型比例：200题的合并练习中，前 100 题是连线题，后 100 题是句子填空题。小测全为连线题。
+  let matchCount = 0;
+  if (count === 200) {
+    matchCount = 100;
+  } else {
+    matchCount = count; // 小测全为连线题
+  }
 
   for (let i = 0; i < count; i++) {
     let qObj = {};
@@ -1573,7 +1597,10 @@ export function generateEnglishQuestions(topicId, count = 10) {
       // 匹配连线题 (Match Type)
       // 保证抽取 4 个不重复的单词
       const matchWords = [];
-      const shuffledCandidates = shuffleArray([...candidateWords]);
+      const uniqueCandidates = Array.from(new Set(candidateWords.map(w => w.word)))
+        .map(wName => candidateWords.find(w => w.word === wName));
+
+      const shuffledCandidates = shuffleArray([...uniqueCandidates]);
       for (let j = 0; j < 4; j++) {
         if (shuffledCandidates[j]) {
           matchWords.push(shuffledCandidates[j]);
@@ -1617,7 +1644,7 @@ export function generateEnglishQuestions(topicId, count = 10) {
       };
     } else {
       // 句子填空题 (Choice Type)
-      // 随机选取今日备选词中的一个单词作为填空目标
+      // 随机选取当前备选词中的一个单词作为填空目标
       const targetWord = candidateWords[i % candidateWords.length];
       const sentence = targetWord.sentence || 'It is an important word.';
       const translation = targetWord.sentence_translation || '这是一个重要的单词。';
