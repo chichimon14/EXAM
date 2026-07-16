@@ -30,7 +30,8 @@ export default function EnglishModule() {
   // 连线匹配题的专属交互状态
   const [selectedLeft, setSelectedLeft] = useState(null); // 被选中的英文 id (例如 "through")
   const [selectedRight, setSelectedRight] = useState(null); // 被选中的中文 id
-  const [matchedPairs, setMatchedPairs] = useState({}); // { [word]: true }
+  const [matchedPairs, setMatchedPairs] = useState({}); // { [word]: translation }
+  const [matchLines, setMatchLines] = useState([]); // 连线坐标数组 [{ id, x1, y1, x2, y2, isCorrect }]
   const [hasErrorThisQuestion, setHasErrorThisQuestion] = useState(false); // 当前连线题是否发生过配对错误
   const [matchFlashError, setMatchFlashError] = useState(false); // 用于触发闪红震动效的状态
 
@@ -94,6 +95,54 @@ export default function EnglishModule() {
     setTestScore(null);
   }, [selectedDayId]);
 
+  // 连线坐标动态计算效应
+  useEffect(() => {
+    const updateLines = () => {
+      const container = document.getElementById('match-container');
+      if (!container) return;
+      const containerRect = container.getBoundingClientRect();
+      const currentQ = activeTab === 'test' ? testQuestions[currentTestIndex] : exerciseQuestions[currentExerciseIndex];
+      if (!currentQ) return;
+
+      const newLines = [];
+      Object.keys(matchedPairs).forEach(engWord => {
+        const cnTrans = matchedPairs[engWord];
+        
+        const leftBtn = document.getElementById(`btn-left-${engWord}`);
+        const rightBtn = document.getElementById(`btn-right-${encodeURIComponent(cnTrans)}`);
+
+        if (leftBtn && rightBtn) {
+          const leftRect = leftBtn.getBoundingClientRect();
+          const rightRect = rightBtn.getBoundingClientRect();
+
+          const x1 = leftRect.right - containerRect.left;
+          const y1 = leftRect.top - containerRect.top + leftRect.height / 2;
+
+          const x2 = rightRect.left - containerRect.left;
+          const y2 = rightRect.top - containerRect.top + rightRect.height / 2;
+
+          const correctTranslation = currentQ.correctPairs[engWord];
+          const isCorrect = cnTrans === correctTranslation;
+
+          newLines.push({
+            id: engWord,
+            x1, y1, x2, y2,
+            isCorrect
+          });
+        }
+      });
+      setMatchLines(newLines);
+    };
+
+    const timer = setTimeout(updateLines, 50);
+    window.addEventListener('resize', updateLines);
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', updateLines);
+    };
+  }, [matchedPairs, activeTab, currentTestIndex, currentExerciseIndex, testChecked, exerciseQuestions, testQuestions]);
+
   // 切换掌握熟记状态（斩词）
   const toggleMastered = (word) => {
     let nextMastered = [];
@@ -153,16 +202,33 @@ export default function EnglishModule() {
     setMatchFlashError(false);
   };
 
-  // 200题练习自动载入
+  // 英语测试与练习词库自动载入
   useEffect(() => {
-    if (activeTab === 'exercise') {
-      const dayData = englishDays[selectedDayId] || englishDays['day1'];
-      const generated = generateEnglishQuestions(dayData.topicId, 200);
-      setExerciseQuestions(generated);
-      setExerciseAnswers({});
-      setCurrentExerciseIndex(0);
-    }
-  }, [selectedDayId, activeTab]);
+    const dayData = englishDays[selectedDayId] || englishDays['day1'];
+    
+    // 自动载入 20 题测试
+    const testGen = generateEnglishQuestions(dayData.topicId, 20);
+    setTestQuestions(testGen);
+    setTestAnswers({});
+    setCurrentTestIndex(0);
+    setSelectedTestOpt(null);
+    setTestChecked(false);
+    setTestScore(null);
+    setTestSubmitted(true); // 默认直接显示题目答题
+    
+    // 自动载入 200 题特训
+    const exGen = generateEnglishQuestions(dayData.topicId, 200);
+    setExerciseQuestions(exGen);
+    setExerciseAnswers({});
+    setCurrentExerciseIndex(0);
+
+    // 重置连线相关的全局状态
+    setSelectedLeft(null);
+    setSelectedRight(null);
+    setMatchedPairs({});
+    setHasErrorThisQuestion(false);
+    setMatchFlashError(false);
+  }, [selectedDayId]);
 
   // 高品质美音真人发音 (有道公开 TTS + 原生 Web Speech 完美兜底)
   const speakText = (text) => {
@@ -526,13 +592,21 @@ export default function EnglishModule() {
 
   // 处理中英文单词连线点击事件
   const handleMatchClick = (side, textId) => {
-    if (testChecked) return; // 已经公布解析了，不能再连了
+    // 适配 test 与 exercise
+    const currentQ = activeTab === 'test' ? testQuestions[currentTestIndex] : exerciseQuestions[currentExerciseIndex];
+    if (!currentQ || (activeTab === 'test' ? testChecked : !!exerciseAnswers[currentQ.id])) return;
 
     let nextLeft = selectedLeft;
     let nextRight = selectedRight;
+    let newMatched = { ...matchedPairs };
 
     if (side === 'left') {
-      if (matchedPairs[textId]) return; // 已配对的不能再点
+      // 如果这个英文单词已经被连过了，用户重新点击它代表想重新连，我们需要拆除它原有的连线
+      if (newMatched[textId]) {
+        delete newMatched[textId];
+        setMatchedPairs(newMatched);
+      }
+      
       if (selectedLeft === textId) {
         setSelectedLeft(null); // 反选
         return;
@@ -541,12 +615,12 @@ export default function EnglishModule() {
       nextLeft = textId;
     } else {
       // 点击右边中文
-      // 找到这个中文解释所对应的英文单词是谁 (用于判断 matchedPairs)
-      const currentQ = testQuestions[currentTestIndex];
-      const correspondingEng = Object.keys(currentQ.correctPairs).find(
-        key => currentQ.correctPairs[key] === textId
-      );
-      if (correspondingEng && matchedPairs[correspondingEng]) return; // 已配对的不能点
+      // 如果这个中文解释已经被连过了，我们需要找到和它相连的英文单词并拆除连线
+      const linkedEngKey = Object.keys(newMatched).find(key => newMatched[key] === textId);
+      if (linkedEngKey) {
+        delete newMatched[linkedEngKey];
+        setMatchedPairs(newMatched);
+      }
 
       if (selectedRight === textId) {
         setSelectedRight(null); // 反选
@@ -556,64 +630,58 @@ export default function EnglishModule() {
       nextRight = textId;
     }
 
-    // 开始匹配判定
+    // 开始匹配判定 (两边都选中时，直接连起来)
     if (nextLeft && nextRight) {
-      const currentQ = testQuestions[currentTestIndex];
-      const expectedRight = currentQ.correctPairs[nextLeft];
+      newMatched = { ...newMatched, [nextLeft]: nextRight };
+      setMatchedPairs(newMatched);
+      setSelectedLeft(null);
+      setSelectedRight(null);
 
-      if (expectedRight === nextRight) {
-        // 配对成功！
-        const newMatched = { ...matchedPairs, [nextLeft]: true };
-        setMatchedPairs(newMatched);
-        setSelectedLeft(null);
-        setSelectedRight(null);
-
-        // 检查是否 4 对全部正确连线消除完毕了！
-        if (Object.keys(newMatched).length === 4) {
-          const isCorrect = !hasErrorThisQuestion;
-          if (activeTab === 'test') {
-            const nextAnswers = { ...testAnswers, [currentQ.id]: isCorrect ? 'correct' : 'wrong' };
-            setTestAnswers(nextAnswers);
-            updateGoldCoin(isCorrect, 0.5); // 小测每题 0.5 分
-            setTestChecked(true); // 展现结题解析
-          } else {
-            // 练习模式
-            const nextAnswers = {
-              ...exerciseAnswers,
-              [currentQ.id]: { isCorrect, userOpt: 'matched' }
-            };
-            setExerciseAnswers(nextAnswers);
-            updateGoldCoin(isCorrect, 0.5); // 练习每题 0.5 分
+      // 检查是否 4 对全部连满消除完毕了！
+      if (Object.keys(newMatched).length === 4) {
+        // 一次性检验这 4 对是否全部正确
+        let isAllCorrect = true;
+        Object.keys(newMatched).forEach(engKey => {
+          const userTranslation = newMatched[engKey];
+          const correctTranslation = currentQ.correctPairs[engKey];
+          if (userTranslation !== correctTranslation) {
+            isAllCorrect = false;
           }
+        });
 
-          // 连错了一次或多次，记录到英语错题本
-          if (!isCorrect) {
-            const alreadyIn = wrongList.some(w => w.id === currentQ.id);
-            if (!alreadyIn) {
-              const wrongQ = {
-                id: currentQ.id,
-                question: `词汇连线题：${Object.keys(currentQ.correctPairs).join('，')}`,
-                options: Object.entries(currentQ.correctPairs).map(([k, v]) => `${k} ➔ ${v}`),
-                answer: '4对单词全部正确消除配对',
-                userAnswer: '配对过程中发生了错误',
-                explanation: currentQ.explanation,
-                chapterId: selectedDayId
-              };
-              const nextWrongs = [...wrongList, wrongQ];
-              setWrongList(nextWrongs);
-              localStorage.setItem('english-wrongs', JSON.stringify(nextWrongs));
-            }
+        if (activeTab === 'test') {
+          const nextAnswers = { ...testAnswers, [currentQ.id]: isAllCorrect ? 'correct' : 'wrong' };
+          setTestAnswers(nextAnswers);
+          updateGoldCoin(isAllCorrect, 0.5); // 小测每题 0.5 分
+          setTestChecked(true); // 展现结题解析
+        } else {
+          // 练习模式
+          const nextAnswers = {
+            ...exerciseAnswers,
+            [currentQ.id]: { isCorrect: isAllCorrect, userOpt: 'matched' }
+          };
+          setExerciseAnswers(nextAnswers);
+          updateGoldCoin(isAllCorrect, 0.5); // 练习每题 0.5 分
+        }
+
+        // 连错了一次或多次，记录到英语错题本
+        if (!isAllCorrect) {
+          const alreadyIn = wrongList.some(w => w.id === currentQ.id);
+          if (!alreadyIn) {
+            const wrongQ = {
+              id: currentQ.id,
+              question: `词汇连线题：${Object.keys(currentQ.correctPairs).join('，')}`,
+              options: Object.entries(currentQ.correctPairs).map(([k, v]) => `${k} ➔ ${v}`),
+              answer: '4对单词全部正确消除配对',
+              userAnswer: '一次性检测中有连线错误',
+              explanation: currentQ.explanation,
+              chapterId: selectedDayId
+            };
+            const nextWrongs = [...wrongList, wrongQ];
+            setWrongList(nextWrongs);
+            localStorage.setItem('english-wrongs', JSON.stringify(nextWrongs));
           }
         }
-      } else {
-        // 配对失败！触发红闪震动效并计错
-        setMatchFlashError(true);
-        setHasErrorThisQuestion(true);
-        setTimeout(() => {
-          setMatchFlashError(false);
-        }, 800);
-        setSelectedLeft(null);
-        setSelectedRight(null);
       }
     }
   };
@@ -1383,47 +1451,59 @@ export default function EnglishModule() {
                 {testQuestions[currentTestIndex]?.type === 'match' ? (
                   /* 连线匹配题 UI */
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '10px 0' }}>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '24px',
-                      padding: '16px',
-                      backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                      borderRadius: 'var(--radius-md)',
-                      border: '1px dashed #e2e8f0',
-                      // 如果配对失败报错，触发抖动效果
-                      animation: matchFlashError ? 'shake 0.4s ease' : 'none'
-                    }}>
+                    <div
+                      id="match-container"
+                      style={{
+                        position: 'relative',
+                        display: 'grid',
+                        gridTemplateColumns: '1.5fr 1fr 1.5fr',
+                        gap: '20px',
+                        padding: '16px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px dashed #e2e8f0',
+                        // 如果配对失败报错，触发抖动效果
+                        animation: matchFlashError ? 'shake 0.4s ease' : 'none'
+                      }}
+                    >
                       {/* 左侧英文单词列表 */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#a855f7', textAlign: 'center', marginBottom: '4px' }}>🇬🇧 英文单词/短语</div>
                         {testQuestions[currentTestIndex]?.leftOptions.map((opt) => {
-                          const isMatched = matchedPairs[opt.id];
+                          const isMatched = !!matchedPairs[opt.id];
                           const isSelected = selectedLeft === opt.id;
+                          const hasSubmitted = testChecked;
                           
                           let btnBg = '#fff';
                           let btnBorder = '1px solid #e2e8f0';
                           let btnColor = 'hsl(var(--text-primary))';
                           let opacity = 1;
 
-                          if (isMatched) {
-                            btnBg = 'hsla(var(--color-success)/0.08)';
-                            btnBorder = '1px solid hsl(var(--color-success))';
-                            btnColor = 'hsl(var(--color-success))';
-                            opacity = 0.5;
-                          } else if (isSelected) {
+                          if (isSelected) {
                             btnBg = 'rgba(168,85,247,0.12)';
                             btnBorder = '2px solid #a855f7';
                             btnColor = '#a855f7';
-                          } else if (matchFlashError && selectedLeft === opt.id) {
-                            // 刚才连错的项闪红
-                            btnBg = 'hsla(var(--color-danger)/0.1)';
-                            btnBorder = '2px solid hsl(var(--color-danger))';
+                          } else if (isMatched) {
+                            if (hasSubmitted) {
+                              const correctTranslation = testQuestions[currentTestIndex]?.correctPairs[opt.id];
+                              const userTranslation = matchedPairs[opt.id];
+                              const isPairCorrect = userTranslation === correctTranslation;
+                              
+                              btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                              btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                              btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                              opacity = 0.6;
+                            } else {
+                              btnBg = 'rgba(168,85,247,0.03)';
+                              btnBorder = '1px solid rgba(168,85,247,0.25)';
+                              btnColor = 'hsl(var(--text-primary))';
+                            }
                           }
 
                           return (
                             <button
                               key={opt.id}
+                              id={`btn-left-${opt.id}`}
                               className="btn"
                               style={{
                                 padding: '12px 16px',
@@ -1434,52 +1514,63 @@ export default function EnglishModule() {
                                 border: btnBorder,
                                 color: btnColor,
                                 opacity: opacity,
-                                cursor: isMatched ? 'default' : 'pointer',
+                                cursor: hasSubmitted ? 'default' : 'pointer',
                                 transition: 'all 0.2s ease',
                                 boxShadow: isSelected ? '0 0 12px rgba(168,85,247,0.3)' : 'none',
                                 justifyContent: 'center'
                               }}
-                              disabled={isMatched || testChecked}
+                              disabled={hasSubmitted}
                               onClick={() => handleMatchClick('left', opt.id)}
                             >
                               {opt.text}
-                              {isMatched && <span style={{ marginLeft: '6px' }}>✅</span>}
+                              {hasSubmitted && isMatched && (
+                                matchedPairs[opt.id] === testQuestions[currentTestIndex]?.correctPairs[opt.id] ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>
+                              )}
                             </button>
                           );
                         })}
                       </div>
 
+                      {/* 中间留白，为连线腾出足够空间 */}
+                      <div></div>
+
                       {/* 右侧中文翻译列表 */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#0ea5e9', textAlign: 'center', marginBottom: '4px' }}>🇨🇳 中文翻译解释</div>
                         {testQuestions[currentTestIndex]?.rightOptions.map((opt) => {
-                          // 判断这个中文翻译是否已经配对完成了 (查找其对应的英文)
-                          const currentQ = testQuestions[currentTestIndex];
-                          const correspondingEng = Object.keys(currentQ.correctPairs).find(
-                            key => currentQ.correctPairs[key] === opt.text
-                          );
-                          const isMatched = correspondingEng && matchedPairs[correspondingEng];
+                          const isMatched = Object.values(matchedPairs).includes(opt.text);
                           const isSelected = selectedRight === opt.text;
+                          const hasSubmitted = testChecked;
 
                           let btnBg = '#fff';
                           let btnBorder = '1px solid #e2e8f0';
                           let btnColor = 'hsl(var(--text-primary))';
                           let opacity = 1;
 
-                          if (isMatched) {
-                            btnBg = 'hsla(var(--color-success)/0.08)';
-                            btnBorder = '1px solid hsl(var(--color-success))';
-                            btnColor = 'hsl(var(--color-success))';
-                            opacity = 0.5;
-                          } else if (isSelected) {
+                          if (isSelected) {
                             btnBg = 'rgba(14,165,233,0.12)';
                             btnBorder = '2px solid #0ea5e9';
                             btnColor = '#0ea5e9';
+                          } else if (isMatched) {
+                            if (hasSubmitted) {
+                              const linkedEng = Object.keys(matchedPairs).find(key => matchedPairs[key] === opt.text);
+                              const isPairCorrect = linkedEng && testQuestions[currentTestIndex]?.correctPairs[linkedEng] === opt.text;
+
+                              btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                              btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                              btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                              opacity = 0.6;
+                            } else {
+                              btnBg = 'rgba(14,165,233,0.03)';
+                              btnBorder = '1px solid rgba(14,165,233,0.25)';
+                              btnColor = 'hsl(var(--text-primary))';
+                            }
                           }
 
                           return (
                             <button
                               key={opt.text}
+                              id={`btn-right-${encodeURIComponent(opt.text)}`}
                               className="btn"
                               style={{
                                 padding: '12px 16px',
@@ -1489,7 +1580,7 @@ export default function EnglishModule() {
                                 border: btnBorder,
                                 color: btnColor,
                                 opacity: opacity,
-                                cursor: isMatched ? 'default' : 'pointer',
+                                cursor: hasSubmitted ? 'default' : 'pointer',
                                 transition: 'all 0.2s ease',
                                 boxShadow: isSelected ? '0 0 12px rgba(14,165,233,0.3)' : 'none',
                                 justifyContent: 'center',
@@ -1499,15 +1590,51 @@ export default function EnglishModule() {
                                 overflow: 'hidden',
                                 whiteSpace: 'nowrap'
                               }}
-                              disabled={isMatched || testChecked}
+                              disabled={hasSubmitted}
                               onClick={() => handleMatchClick('right', opt.text)}
                             >
                               {opt.text}
-                              {isMatched && <span style={{ marginLeft: '6px' }}>✅</span>}
+                              {hasSubmitted && isMatched && (() => {
+                                const linkedEng = Object.keys(matchedPairs).find(key => matchedPairs[key] === opt.text);
+                                const isPairCorrect = linkedEng && testQuestions[currentTestIndex]?.correctPairs[linkedEng] === opt.text;
+                                return isPairCorrect ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>;
+                              })()}
                             </button>
                           );
                         })}
                       </div>
+
+                      {/* 绝对定位的 SVG 画线层 */}
+                      <svg style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        pointerEvents: 'none',
+                        zIndex: 5
+                      }}>
+                        {matchLines.map((line) => {
+                          const hasSubmitted = testChecked;
+                          let strokeColor = '#a855f7'; // 答题中：紫色连线
+                          if (hasSubmitted) {
+                            strokeColor = line.isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'; // 提交后：红绿连线
+                          }
+                          return (
+                            <line
+                              key={line.id}
+                              x1={line.x1}
+                              y1={line.y1}
+                              x2={line.x2}
+                              y2={line.y2}
+                              stroke={strokeColor}
+                              strokeWidth="3.5"
+                              strokeLinecap="round"
+                              style={{ transition: 'stroke 0.3s ease' }}
+                            />
+                          );
+                        })}
+                      </svg>
                     </div>
 
                     {/* CSS Shake Keyframe 动态注入 */}
@@ -1723,44 +1850,59 @@ export default function EnglishModule() {
                       {/* 分流渲染：连线题 (type === 'match') vs 选择题 (type === 'choice') */}
                       {exerciseQuestions[currentExerciseIndex]?.type === 'match' ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', margin: '10px 0' }}>
-                          <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: '1fr 1fr',
-                            gap: '24px',
-                            padding: '16px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                            borderRadius: 'var(--radius-md)',
-                            border: '1px dashed #e2e8f0',
-                            animation: matchFlashError ? 'shake 0.4s ease' : 'none'
-                          }}>
+                          <div
+                            id="match-container"
+                            style={{
+                              position: 'relative',
+                              display: 'grid',
+                              gridTemplateColumns: '1.5fr 1fr 1.5fr',
+                              gap: '20px',
+                              padding: '16px',
+                              backgroundColor: 'rgba(255, 255, 255, 0.4)',
+                              borderRadius: 'var(--radius-md)',
+                              border: '1px dashed #e2e8f0',
+                              animation: matchFlashError ? 'shake 0.4s ease' : 'none'
+                            }}
+                          >
                             {/* 左侧英文单词列表 */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                               <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#a855f7', textAlign: 'center', marginBottom: '4px' }}>🇬🇧 英文单词/短语</div>
                               {exerciseQuestions[currentExerciseIndex]?.leftOptions.map((opt) => {
-                                const isMatched = matchedPairs[opt.id];
+                                const isMatched = !!matchedPairs[opt.id];
                                 const isSelected = selectedLeft === opt.id;
+                                const hasSubmitted = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
                                 
                                 let btnBg = '#fff';
                                 let btnBorder = '1px solid #e2e8f0';
                                 let btnColor = 'hsl(var(--text-primary))';
                                 let opacity = 1;
 
-                                if (isMatched) {
-                                  btnBg = 'hsla(var(--color-success)/0.08)';
-                                  btnBorder = '1px solid hsl(var(--color-success))';
-                                  btnColor = 'hsl(var(--color-success))';
-                                  opacity = 0.5;
-                                } else if (isSelected) {
+                                if (isSelected) {
                                   btnBg = 'rgba(168,85,247,0.12)';
                                   btnBorder = '2px solid #a855f7';
                                   btnColor = '#a855f7';
+                                } else if (isMatched) {
+                                  if (hasSubmitted) {
+                                    const currentQ = exerciseQuestions[currentExerciseIndex];
+                                    const correctTranslation = currentQ?.correctPairs[opt.id];
+                                    const userTranslation = matchedPairs[opt.id];
+                                    const isPairCorrect = userTranslation === correctTranslation;
+                                    
+                                    btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                                    btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                                    btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                                    opacity = 0.6;
+                                  } else {
+                                    btnBg = 'rgba(168,85,247,0.03)';
+                                    btnBorder = '1px solid rgba(168,85,247,0.25)';
+                                    btnColor = 'hsl(var(--text-primary))';
+                                  }
                                 }
-
-                                const hasExerciseAns = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
 
                                 return (
                                   <button
                                     key={opt.id}
+                                    id={`btn-left-${opt.id}`}
                                     className="btn"
                                     style={{
                                       padding: '12px 16px',
@@ -1771,52 +1913,65 @@ export default function EnglishModule() {
                                       border: btnBorder,
                                       color: btnColor,
                                       opacity: opacity,
-                                      cursor: isMatched ? 'default' : 'pointer',
+                                      cursor: hasSubmitted ? 'default' : 'pointer',
                                       transition: 'all 0.2s ease',
                                       justifyContent: 'center'
                                     }}
-                                    disabled={isMatched || hasExerciseAns}
+                                    disabled={hasSubmitted}
                                     onClick={() => handleMatchClick('left', opt.id)}
                                   >
                                     {opt.text}
-                                    {isMatched && <span style={{ marginLeft: '6px' }}>✅</span>}
+                                    {hasSubmitted && isMatched && (() => {
+                                      const currentQ = exerciseQuestions[currentExerciseIndex];
+                                      const isPairCorrect = matchedPairs[opt.id] === currentQ?.correctPairs[opt.id];
+                                      return isPairCorrect ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>;
+                                    })()}
                                   </button>
                                 );
                               })}
                             </div>
 
+                            {/* 中间留白，为连线腾出足够空间 */}
+                            <div></div>
+
                             {/* 右侧中文翻译列表 */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                               <div style={{ fontSize: '0.78rem', fontWeight: 'bold', color: '#0ea5e9', textAlign: 'center', marginBottom: '4px' }}>🇨🇳 中文翻译解释</div>
                               {exerciseQuestions[currentExerciseIndex]?.rightOptions.map((opt) => {
-                                const currentQ = exerciseQuestions[currentExerciseIndex];
-                                const correspondingEng = Object.keys(currentQ.correctPairs).find(
-                                  key => currentQ.correctPairs[key] === opt.text
-                                );
-                                const isMatched = correspondingEng && matchedPairs[correspondingEng];
+                                const isMatched = Object.values(matchedPairs).includes(opt.text);
                                 const isSelected = selectedRight === opt.text;
+                                const hasSubmitted = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
 
                                 let btnBg = '#fff';
                                 let btnBorder = '1px solid #e2e8f0';
                                 let btnColor = 'hsl(var(--text-primary))';
                                 let opacity = 1;
 
-                                if (isMatched) {
-                                  btnBg = 'hsla(var(--color-success)/0.08)';
-                                  btnBorder = '1px solid hsl(var(--color-success))';
-                                  btnColor = 'hsl(var(--color-success))';
-                                  opacity = 0.5;
-                                } else if (isSelected) {
+                                if (isSelected) {
                                   btnBg = 'rgba(14,165,233,0.12)';
                                   btnBorder = '2px solid #0ea5e9';
                                   btnColor = '#0ea5e9';
-                                }
+                                } else if (isMatched) {
+                                  if (hasSubmitted) {
+                                    const currentQ = exerciseQuestions[currentExerciseIndex];
+                                    const linkedEng = Object.keys(matchedPairs).find(key => matchedPairs[key] === opt.text);
+                                    const isPairCorrect = linkedEng && currentQ?.correctPairs[linkedEng] === opt.text;
 
-                                const hasExerciseAns = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
+                                    btnBg = isPairCorrect ? 'hsla(var(--color-success)/0.08)' : 'hsla(var(--color-danger)/0.08)';
+                                    btnBorder = isPairCorrect ? '1px solid hsl(var(--color-success))' : '1px solid hsl(var(--color-danger))';
+                                    btnColor = isPairCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                                    opacity = 0.6;
+                                  } else {
+                                    btnBg = 'rgba(14,165,233,0.03)';
+                                    btnBorder = '1px solid rgba(14,165,233,0.25)';
+                                    btnColor = 'hsl(var(--text-primary))';
+                                  }
+                                }
 
                                 return (
                                   <button
                                     key={opt.text}
+                                    id={`btn-right-${encodeURIComponent(opt.text)}`}
                                     className="btn"
                                     style={{
                                       padding: '12px 16px',
@@ -1826,21 +1981,58 @@ export default function EnglishModule() {
                                       border: btnBorder,
                                       color: btnColor,
                                       opacity: opacity,
-                                      cursor: isMatched ? 'default' : 'pointer',
+                                      cursor: hasSubmitted ? 'default' : 'pointer',
                                       transition: 'all 0.2s ease',
                                       justifyContent: 'center',
                                       display: 'block',
                                       width: '100%'
                                     }}
-                                    disabled={isMatched || hasExerciseAns}
+                                    disabled={hasSubmitted}
                                     onClick={() => handleMatchClick('right', opt.text)}
                                   >
                                     {opt.text}
-                                    {isMatched && <span style={{ marginLeft: '6px' }}>✅</span>}
+                                    {hasSubmitted && isMatched && (() => {
+                                      const currentQ = exerciseQuestions[currentExerciseIndex];
+                                      const linkedEng = Object.keys(matchedPairs).find(key => matchedPairs[key] === opt.text);
+                                      const isPairCorrect = linkedEng && currentQ?.correctPairs[linkedEng] === opt.text;
+                                      return isPairCorrect ? <span style={{ marginLeft: '6px' }}>✅</span> : <span style={{ marginLeft: '6px' }}>❌</span>;
+                                    })()}
                                   </button>
                                 );
                               })}
                             </div>
+
+                            {/* 绝对定位的 SVG 画线层 */}
+                            <svg style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: '100%',
+                              pointerEvents: 'none',
+                              zIndex: 5
+                            }}>
+                              {matchLines.map((line) => {
+                                const hasSubmitted = !!exerciseAnswers[exerciseQuestions[currentExerciseIndex].id];
+                                let strokeColor = '#a855f7'; // 答题中：紫色连线
+                                if (hasSubmitted) {
+                                  strokeColor = line.isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'; // 提交后：红绿连线
+                                }
+                                return (
+                                  <line
+                                    key={line.id}
+                                    x1={line.x1}
+                                    y1={line.y1}
+                                    x2={line.x2}
+                                    y2={line.y2}
+                                    stroke={strokeColor}
+                                    strokeWidth="3.5"
+                                    strokeLinecap="round"
+                                    style={{ transition: 'stroke 0.3s ease' }}
+                                  />
+                                );
+                              })}
+                            </svg>
                           </div>
                         </div>
                       ) : (
