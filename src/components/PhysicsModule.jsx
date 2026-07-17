@@ -50,6 +50,9 @@ export default function PhysicsModule() {
   const [showBillModal, setShowBillModal] = useState(false);
   const [expandedBlockId, setExpandedBlockId] = useState(null);
 
+  // 计算当前章节/Day的今日金币积分
+  const todayGoldCoin = dayScores[selectedChapterId] !== undefined ? dayScores[selectedChapterId] : 0;
+
   // iPad 竖屏与移动端高灵敏自适应响应式状态
   const [isPortraitTablet, setIsPortraitTablet] = useState(false);
 
