@@ -10,6 +10,7 @@ const BASE_URL = `https://kvdb.io/${BUCKET_ID}`;
 // 账号定义
 export const ACCOUNTS = {
   doudou: { username: 'doudou', role: 'user', displayName: '豆豆' },
+  test: { username: 'test', role: 'user', displayName: '测试账号' },
   admin: { username: 'admin', role: 'admin', displayName: '管理员' }
 };
 

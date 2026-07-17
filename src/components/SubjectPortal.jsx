@@ -832,6 +832,7 @@ const getMockDoudouProgress = () => {
             }}>
               💡 <b>温馨提示：</b><br />
               • 学生账号：用户名 <b>doudou</b>，密码 <b>doudou</b><br />
+              • 测试账号：用户名 <b>test</b>，密码 <b>test</b><br />
               • 教师账号：用户名 <b>admin</b>，密码 <b>admin</b>
             </div>
 
