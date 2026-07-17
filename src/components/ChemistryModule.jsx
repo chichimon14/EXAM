@@ -166,7 +166,8 @@ export default function ChemistryModule() {
     const savedWrongs = localStorage.getItem('chemistry-wrongs');
     if (savedWrongs) {
       try {
-        setWrongList(JSON.parse(savedWrongs));
+        const parsed = JSON.parse(savedWrongs);
+        setWrongList(Array.isArray(parsed) ? parsed : []);
       } catch (e) {
         console.error('Failed to parse chemistry-wrongs:', e);
         setWrongList([]);
@@ -573,8 +574,9 @@ export default function ChemistryModule() {
       } else {
         weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
         
-        // 自动计错
-        const alreadyIn = wrongList.some(w => w.id === q.id);
+        // 自动计错 (强类型校验，防范 null/undefined 干扰)
+        const list = Array.isArray(wrongList) ? wrongList : [];
+        const alreadyIn = list.some(w => w && w.id === q.id);
         if (!alreadyIn) {
           let wrongQ;
           if (q.type === 'match') {
@@ -594,7 +596,7 @@ export default function ChemistryModule() {
               chapterId: selectedDayId
             };
           }
-          wrongList.push(wrongQ);
+          list.push(wrongQ);
         }
       }
     });
