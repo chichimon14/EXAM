@@ -117,6 +117,13 @@ export default function MathModule() {
 
   // 数学小测统一交卷结算逻辑
   const handleTestSubmitAll = () => {
+    // 检查是否有未作答题目
+    const unattemptedCount = testQuestions.filter(q => testAnswers[q.id] === undefined || testAnswers[q.id] === null).length;
+    if (unattemptedCount > 0) {
+      const confirmSubmit = window.confirm(`您还有 ${unattemptedCount} 道题未做，确定要交卷并结算小测吗？(未做题目将直接计为算错)`);
+      if (!confirmSubmit) return;
+    }
+
     let correctCount = 0;
     const weaknesses = [];
     const nextAnswers = { ...testAnswers };
@@ -908,7 +915,7 @@ export default function MathModule() {
               <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', flex: 1 }}>
                 
                 {/* 左栏：核心答题面板 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
                       <span>当前第 <b>{currentTestIndex + 1}</b> / {testQuestions.length} 题</span>
@@ -960,6 +967,13 @@ export default function MathModule() {
                                 [qId]: { userOpt: oIdx }
                               };
                               setTestAnswers(nextAnswers);
+
+                              // 自动跳转到下一题 (180ms 延时，让按压效果和选中态稍微闪一下)
+                              if (!testChecked && currentTestIndex < testQuestions.length - 1) {
+                                setTimeout(() => {
+                                  setCurrentTestIndex(prev => prev + 1);
+                                }, 180);
+                              }
                             }}
                           >
                             <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>

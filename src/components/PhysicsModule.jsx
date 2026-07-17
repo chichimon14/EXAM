@@ -166,6 +166,13 @@ export default function PhysicsModule() {
 
   // 物理小测统一交卷结算逻辑
   const handleQuizSubmitAll = () => {
+    // 检查是否有未作答题目
+    const unattemptedCount = currentChapterQuestions.filter(q => userAnswers[q.id] === undefined || userAnswers[q.id] === null).length;
+    if (unattemptedCount > 0) {
+      const confirmSubmit = window.confirm(`您还有 ${unattemptedCount} 道题未做，确定要交卷并结算小测吗？(未做题目将直接计为算错)`);
+      if (!confirmSubmit) return;
+    }
+
     let correctCount = 0;
     const weaknesses = [];
     const nextAnswers = { ...userAnswers };
@@ -1584,7 +1591,7 @@ export default function PhysicsModule() {
                   <div style={{ display: 'grid', gridTemplateColumns: isPortraitTablet ? '1fr' : '1.25fr 1fr', gap: '20px', flex: 1 }}>
                     
                     {/* 左栏：核心答题面板 */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>
                           <span>当前第 <b>{currentQuizIndex + 1}</b> / {currentChapterQuestions.length} 题</span>
@@ -1636,6 +1643,13 @@ export default function PhysicsModule() {
                                     [qId]: { userOpt: oIdx }
                                   };
                                   setUserAnswers(nextAnswers);
+
+                                  // 自动跳转到下一题 (180ms 延时，让按压效果和选中态稍微闪一下)
+                                  if (!quizChecked && currentQuizIndex < currentChapterQuestions.length - 1) {
+                                    setTimeout(() => {
+                                      setCurrentQuizIndex(prev => prev + 1);
+                                    }, 180);
+                                  }
                                 }}
                               >
                                 <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
