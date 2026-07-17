@@ -93,11 +93,11 @@ export default function MathModule() {
     setTestSubmitted(true);
   };
 
-  // 100题特训：根据当前 Day 的 topicId 自动生成当天的 100 道专项练习题
+  // 50题特训：根据当前 Day 的 topicId 自动生成当天的 50 道专项练习题
   useEffect(() => {
     if (activeTab === 'exercise') {
       const dayData = mathDays[selectedDayId] || mathDays['day1'];
-      const generated = generateMathQuestions(dayData.topicId, 100);
+      const generated = generateMathQuestions(dayData.topicId, 50);
       setExerciseQuestions(generated);
       setExerciseAnswers({});
       setCurrentExerciseIndex(0);
@@ -198,7 +198,7 @@ export default function MathModule() {
     setExerciseAnswers(nextAnswers);
 
     // 金币结算 (+0.5 / -0.5)
-    updateGoldCoin(isCorrect, 1.0);
+    updateGoldCoin(isCorrect, 0.5);
 
     // 做错自动收录到数学错题本
     if (!isCorrect) {
@@ -785,7 +785,7 @@ export default function MathModule() {
                   borderColor: activeTab === 'exercise' ? 'hsl(var(--color-work))' : ''
                 }}
               >
-                📝 100题每日狂练
+                📝 50题每日狂练
               </button>
             </div>
             
@@ -1175,7 +1175,7 @@ export default function MathModule() {
                   maxWidth: '440px',
                   textAlign: 'left'
                 }}>
-                  💡 <b>提分秘籍提示：</b> 恭喜你完成了今天的过关测试！别忘了，每天还有 <b>100 道专项计算题库</b> 供你狂练。挑战它们不仅能帮你稳固薄弱环节，还能<b>获得更多金币</b>哦！
+                  💡 <b>提分秘籍提示：</b> 恭喜你完成了今天的过关测试！别忘了，每天还有 <b>50 道专项计算题库</b> 供你狂练。挑战它们不仅能帮你稳固薄弱环节，还能<b>获得更多金币</b>哦！
                   <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
                     <button
                       className="btn btn-primary"
@@ -1191,7 +1191,7 @@ export default function MathModule() {
                         setTestSubmitted(false);
                       }}
                     >
-                      🚀 立即挑战 100 题狂练
+                      🚀 立即挑战 50 题狂练
                     </button>
                   </div>
                 </div>
@@ -1209,19 +1209,19 @@ export default function MathModule() {
           </div>
         )}
 
-        {/* Tab 3: 100题特训狂练 */}
+        {/* Tab 3: 50题特训狂练 */}
         {activeTab === 'exercise' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '20px', flex: 1, minHeight: '500px' }}>
               
-              {/* 左栏：100题题目展示 */}
+              {/* 左栏：50题题目展示 */}
               <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px', justifyContent: 'space-between' }}>
                 {exerciseQuestions.length > 0 && exerciseQuestions[currentExerciseIndex] ? (
                   <>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span className="badge" style={{ backgroundColor: 'hsla(var(--color-work)/0.1)', color: 'hsl(var(--color-work))', fontWeight: 'bold' }}>
-                          Day {selectedDayId.replace('day', '')} 特训 · 第 {currentExerciseIndex + 1} / 100 题
+                          Day {selectedDayId.replace('day', '')} 特训 · 第 {currentExerciseIndex + 1} / 50 题
                         </span>
                         <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
                           累计金币：{todayGoldCoin >= 0 ? `+${todayGoldCoin}` : todayGoldCoin}
@@ -1281,7 +1281,7 @@ export default function MathModule() {
                           whiteSpace: 'pre-wrap'
                         }}>
                           <div style={{ fontWeight: 'bold', color: exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个，已自动计错。'}
+                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个，已自动计错。'}
                           </div>
                           {exerciseQuestions[currentExerciseIndex].explanation}
                         </div>
@@ -1299,7 +1299,7 @@ export default function MathModule() {
                       <button
                         className="btn btn-primary"
                         style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }}
-                        disabled={currentExerciseIndex === 99}
+                        disabled={currentExerciseIndex === 49}
                         onClick={() => setCurrentExerciseIndex(prev => prev + 1)}
                       >
                         下一题
@@ -1307,16 +1307,16 @@ export default function MathModule() {
                     </div>
                   </>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>正在生成今日 100 题特训库...</div>
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>正在生成今日 50 题特训库...</div>
                 )}
               </div>
 
-              {/* 右栏：100题进度网格 */}
+              {/* 右栏：50题进度网格 */}
               <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>🎯 100题特训卡</span>
+                  <span>🎯 50题特训卡</span>
                   <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                    已完成：{Object.keys(exerciseAnswers).length} / 100
+                    已完成：{Object.keys(exerciseAnswers).length} / 50
                   </span>
                 </h4>
 
@@ -1329,7 +1329,7 @@ export default function MathModule() {
                   gap: '6px',
                   padding: '4px'
                 }}>
-                  {Array.from({ length: 100 }).map((_, idx) => {
+                  {Array.from({ length: 50 }).map((_, idx) => {
                     const q = exerciseQuestions[idx];
                     let bgColor = 'rgba(0,0,0,0.04)';
                     let textColor = 'hsl(var(--text-secondary))';

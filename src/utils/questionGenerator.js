@@ -254,6 +254,258 @@ export function generatePhysicsQuestions(chapterId, baseQuestions, count = 100) 
  * @param {number} count 需要生成的题目数 (如 100)
  */
 export function generateMathQuestions(topicId, count = 100) {
+  if (count === 50) {
+    const list = [];
+    for (let i = 0; i < 50; i++) {
+      const qIndex = i + 1;
+      const templateId = i % 7;
+      let qObj = {};
+      
+      switch (templateId) {
+        case 0: {
+          const b = randomInt(2, 3);
+          const pairs = [
+            { c_dec: 1.5, d: 2, e: 3, k: 1 },
+            { c_dec: 2.5, d: 4, e: 5, k: 2 },
+            { c_dec: 1.2, d: 5, e: 6, k: 1 },
+            { c_dec: 3.5, d: 2, e: 7, k: 1 }
+          ];
+          const p = pairs[randomInt(0, pairs.length - 1)];
+          const ans_num = 1 - p.k * b * b;
+          const ans_den = b * b;
+          const correct = simplifyFraction(ans_num, ans_den);
+          
+          const wrong1 = simplifyFraction(-1 - p.k * b * b, b * b);
+          const wrong2 = simplifyFraction(1 + p.k * b * b, b * b);
+          const wrong3 = simplifyFraction(-1 - p.k * b, b);
+          
+          const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+          while (opts.length < 4) {
+            opts.push(simplifyFraction(ans_num + randomInt(-5, 5), ans_den));
+          }
+          opts.sort(() => 0.5 - Math.random());
+          const ansIdx = opts.indexOf(correct);
+          
+          qObj = {
+            id: 300000 + qIndex * 10 + 0,
+            category: '有理数幂与乘法计算',
+            question: `【习题 ${qIndex}】计算：(-1/${b})² + ${p.c_dec} × (-${p.d}/${p.e}) = ？`,
+            options: opts,
+            answer: ansIdx,
+            explanation: `名师分步解析：\n步骤 1. 计算乘方：(-1/${b})² = 1/${b * b}。\n步骤 2. 计算乘法：将小数 ${p.c_dec} 化为分数得 ${simplifyFraction(p.c_dec * 10, 10)}，则 ${p.c_dec} × (-${p.d}/${p.e}) = ${simplifyFraction(p.c_dec * 10, 10)} × (-${p.d}/${p.e}) = -${p.k}。\n步骤 3. 进行加法：原式 = 1/${b * b} + (-${p.k}) = ${simplifyFraction(ans_num, ans_den)}。`
+          };
+          break;
+        }
+        case 1: {
+          const pairs = [
+            { a: 3, b: 4, c_dec: 0.5, d: 1, e: 8, diff_num: 1, diff_den: 4, k: -2 },
+            { a: 4, b: 5, c_dec: 0.6, d: 1, e: 10, diff_num: 1, diff_den: 5, k: -2 },
+            { a: 1, b: 2, c_dec: 0.75, d: 1, e: 12, diff_num: -1, diff_den: 4, k: 3 }
+          ];
+          const p = pairs[randomInt(0, pairs.length - 1)];
+          const f = randomInt(2, 3);
+          const ansVal = p.k - f * f;
+          const correct = `${ansVal}`;
+          
+          const wrong1 = `${p.k + f * f}`;
+          const wrong2 = `${-p.k - f * f}`;
+          const wrong3 = `${p.k - f}`;
+          
+          const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+          while (opts.length < 4) {
+            opts.push(`${ansVal + randomInt(-10, 10)}`);
+          }
+          opts.sort(() => 0.5 - Math.random());
+          const ansIdx = opts.indexOf(correct);
+          
+          qObj = {
+            id: 300000 + qIndex * 10 + 1,
+            category: '多重括号四则混合计算',
+            question: `【习题 ${qIndex}】计算：(${p.a}/${p.b} - ${p.c_dec}) ÷ (-${p.d}/${p.e}) - (-${f})² = ？`,
+            options: opts,
+            answer: ansIdx,
+            explanation: `名师分步解析：\n步骤 1. 计算括号内加减：(${p.a}/${p.b} - ${p.c_dec}) = ${simplifyFraction(p.a, p.b)} - ${simplifyFraction(p.c_dec * 10, 10)} = ${simplifyFraction(p.diff_num, p.diff_den)}。\n步骤 2. 计算除法：(${simplifyFraction(p.diff_num, p.diff_den)}) ÷ (-${p.d}/${p.e}) = ${simplifyFraction(p.diff_num, p.diff_den)} × (-${p.e}) = ${p.k}。\n步骤 3. 计算乘方：(-${f})² = ${f * f}。\n步骤 4. 最终减法：原式 = ${p.k} - ${f * f} = ${ansVal}。`
+          };
+          break;
+        }
+        case 2: {
+          const pairs = [
+            { a_dec: 0.25, b: 2, c: 3, p1_num: -1, p1_den: 6, d: 5, e: 6, f_dec: 2.5, p2_num: -1, p2_den: 3, ans_num: 1, ans_den: 6 },
+            { a_dec: 0.2, b: 5, c: 3, p1_num: -1, p1_den: 3, d: 9, e: 10, f_dec: 1.5, p2_num: -3, p2_den: 5, ans_num: 4, ans_den: 15 },
+            { a_dec: 0.75, b: 8, c: 9, p1_num: -2, p1_den: 3, d: 2, e: 5, f_dec: 0.4, p2_num: -1, p2_den: 1, ans_num: 1, ans_den: 3 }
+          ];
+          const p = pairs[randomInt(0, pairs.length - 1)];
+          const correct = simplifyFraction(p.ans_num, p.ans_den);
+          
+          const wrong1 = simplifyFraction(p.p1_num * p.p2_den + p.p2_num * p.p1_den, p.p1_den * p.p2_den);
+          const wrong2 = simplifyFraction(-p.ans_num, p.ans_den);
+          const wrong3 = simplifyFraction(p.ans_num + p.ans_den, p.ans_den);
+          
+          const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+          while (opts.length < 4) {
+            opts.push(simplifyFraction(p.ans_num + randomInt(-5, 5), p.ans_den));
+          }
+          opts.sort(() => 0.5 - Math.random());
+          const ansIdx = opts.indexOf(correct);
+          
+          qObj = {
+            id: 300000 + qIndex * 10 + 2,
+            category: '分数小数乘除混合运算',
+            question: `【习题 ${qIndex}】计算：${p.a_dec} × (-${p.b}/${p.c}) - (-${p.d}/${p.e}) ÷ ${p.f_dec} = ？`,
+            options: opts,
+            answer: ansIdx,
+            explanation: `名师分步解析：\n步骤 1. 计算乘法部分：${p.a_dec} × (-${p.b}/${p.c}) = ${simplifyFraction(p.a_dec * 100, 100)} × (-${p.b}/${p.c}) = ${simplifyFraction(p.p1_num, p.p1_den)}。\n步骤 2. 计算除法部分：(-${p.d}/${p.e}) ÷ ${p.f_dec} = (-${p.d}/${p.e}) × ${simplifyFraction(10, p.f_dec * 10)} = ${simplifyFraction(p.p2_num, p.p2_den)}。\n步骤 3. 最终减法：原式 = ${simplifyFraction(p.p1_num, p.p1_den)} - (${simplifyFraction(p.p2_num, p.p2_den)}) = ${simplifyFraction(p.ans_num, p.ans_den)}。`
+          };
+          break;
+        }
+        case 3: {
+          const pairs = [
+            { a: 3, b: 9, c_dec: 0.75, c: 3, d: 8, p2: -2, ans_num: -5, ans_den: 3 },
+            { a: 2, b: 4, c_dec: 0.5, c: 1, d: 4, p2: -2, ans_num: -3, ans_den: 2 }
+          ];
+          const p = pairs[randomInt(0, pairs.length - 1)];
+          const correct = simplifyFraction(p.ans_num, p.ans_den);
+          
+          const wrong1 = simplifyFraction(-p.ans_num, p.ans_den);
+          const wrong2 = simplifyFraction(p.ans_num - 2 * p.ans_den, p.ans_den);
+          const wrong3 = simplifyFraction(1, p.ans_den);
+          
+          const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+          while (opts.length < 4) {
+            opts.push(simplifyFraction(p.ans_num + randomInt(-5, 5), p.ans_den));
+          }
+          opts.sort(() => 0.5 - Math.random());
+          const ansIdx = opts.indexOf(correct);
+          
+          qObj = {
+            id: 300000 + qIndex * 10 + 3,
+            category: '有理数幂与除法组合计算',
+            question: `【习题 ${qIndex}】计算：(-1/${p.a})³ × (-${p.b}) + ${p.c_dec} ÷ (-${p.c}/${p.d}) = ？`,
+            options: opts,
+            answer: ansIdx,
+            explanation: `名师分步解析：\n步骤 1. 计算乘方和第一项：(-1/${p.a})³ = -1/${p.a * p.a * p.a}，接着 -1/${p.a * p.a * p.a} × (-${p.b}) = ${simplifyFraction(p.b, p.a * p.a * p.a)}。\n步骤 2. 计算除法部分：将小数 ${p.c_dec} 化为分数 ${simplifyFraction(p.c_dec * 100, 100)}，则 ${p.c_dec} ÷ (-${p.c}/${p.d}) = ${simplifyFraction(p.c_dec * 100, 100)} × (-${p.d}/${p.c}) = -${Math.abs(p.p2)}。\n步骤 3. 进行加法：原式 = ${simplifyFraction(p.b, p.a * p.a * p.a)} + (-${Math.abs(p.p2)}) = ${simplifyFraction(p.ans_num, p.ans_den)}。`
+          };
+          break;
+        }
+        case 4: {
+          const pairs = [
+            { a_dec: 0.6, b: 5, c: 2, p_prod_num: 1, p_prod_den: 1, ans_num: -2, ans_den: 1, isInt: true, ansVal: -2 },
+            { a_dec: 0.8, b: 5, c: 3, p_prod_num: 1, p_prod_den: 3, ans_num: -4, ans_den: 3, isInt: false },
+            { a_dec: 0.4, b: 5, c: 3, p_prod_num: 1, p_prod_den: 1, ans_num: -2, ans_den: 1, isInt: true, ansVal: -2 }
+          ];
+          const p = pairs[randomInt(0, pairs.length - 1)];
+          const correct = p.isInt ? `${p.ansVal}` : simplifyFraction(p.ans_num, p.ans_den);
+          
+          let wrong1, wrong2, wrong3;
+          if (p.isInt) {
+            wrong1 = "0";
+            wrong2 = "-2/3";
+            wrong3 = "2";
+          } else {
+            wrong1 = "2/3";
+            wrong2 = "-2/3";
+            wrong3 = "-4";
+          }
+          
+          const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+          while (opts.length < 4) {
+            opts.push(p.isInt ? `${p.ansVal + randomInt(-5, 5)}` : simplifyFraction(p.ans_num + randomInt(-5, 5), p.ans_den));
+          }
+          opts.sort(() => 0.5 - Math.random());
+          const ansIdx = opts.indexOf(correct);
+          
+          qObj = {
+            id: 300000 + qIndex * 10 + 4,
+            category: '无括号底数乘方大坑特训',
+            question: `【习题 ${qIndex}】计算：-1⁴ - (${p.a_dec} - 1) × (-${p.b}/${p.c}) = ？`,
+            options: opts,
+            answer: ansIdx,
+            explanation: `名师分步解析：\n步骤 1. 计算第一项乘方：-1⁴ = -1（注意：底数是 1，负号在乘方运算外，不要混淆为 (-1)⁴ = 1）。\n步骤 2. 计算括号内的减法：(${p.a_dec} - 1) = ${p.a_dec - 1}。\n步骤 3. 计算右边乘法：(${p.a_dec - 1}) × (-${p.b}/${p.c}) = ${simplifyFraction(p.p_prod_num, p.p_prod_den)}。\n步骤 4. 最后做减法：原式 = -1 - (${simplifyFraction(p.p_prod_num, p.p_prod_den)}) = ${simplifyFraction(p.ans_num, p.ans_den)}。`
+          };
+          break;
+        }
+        case 5: {
+          const pairs = [
+            { a: 5, b: 12, c: 3, d: 8, e: 1, f: 6, g: 24, p1: 10, p2: -9, p3: 4, ansVal: 5 },
+            { a: 3, b: 4, c: 5, d: 6, e: 7, f: 12, g: 12, p1: 9, p2: -10, p3: 7, ansVal: 6 },
+            { a: -5, b: 9, c: 5, d: 6, e: 2, f: 3, g: 18, p1: -10, p2: 15, p3: -12, ansVal: -7 }
+          ];
+          const p = pairs[randomInt(0, pairs.length - 1)];
+          const correct = `${p.ansVal}`;
+          
+          const wrong1 = `${p.ansVal + 2}`;
+          const wrong2 = `${-p.ansVal}`;
+          const wrong3 = `${p.ansVal - 5}`;
+          
+          const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+          while (opts.length < 4) {
+            opts.push(`${p.ansVal + randomInt(-10, 10)}`);
+          }
+          opts.sort(() => 0.5 - Math.random());
+          const ansIdx = opts.indexOf(correct);
+          
+          const exprStr = p.a === -5 
+            ? `(5/9 - 5/6 + 2/3) × (-18)` 
+            : `(-${p.a}/${p.b} + ${p.c}/${p.d} - ${p.e}/${p.f}) × (-${p.g})`;
+          
+          const step1Str = p.a === -5
+            ? `(5/9) × (-18) - (5/6) × (-18) + (2/3) × (-18)`
+            : `(-${p.a}/${p.b}) × (-${p.g}) + (${p.c}/${p.d}) × (-${p.g}) - (${p.e}/${p.f}) × (-${p.g})`;
+          
+          qObj = {
+            id: 300000 + qIndex * 10 + 5,
+            category: '有理数乘法分配律巧算',
+            question: `【习题 ${qIndex}】利用简便运算计算：${exprStr} = ？`,
+            options: opts,
+            answer: ansIdx,
+            explanation: `名师分步解析（分配律）：\n步骤 1. 利用乘法分配律将括号展开：原式 = ${step1Str}。\n步骤 2. 分步计算每一项：\n  - 第一项：${p.p1}\n  - 第二项：${p.p2}\n  - 第三项：${p.p3}\n步骤 3. 计算最终结果：${p.p1} + (${p.p2}) + (${p.p3}) = ${p.ansVal}。`
+          };
+          break;
+        }
+        case 6: {
+          const pairs = [
+            { common: 1.25, frac1: "-3/8", frac2: "-5/8", ans_num: -5, ans_den: 4, sign: '+' },
+            { common: 3.5, frac1: "-2/7", frac2: "-5/7", ans_num: -7, ans_den: 2, sign: '+' },
+            { common: 2.4, frac1: "-3/5", frac2: "2/5", ans_num: -12, ans_den: 5, sign: '-' }
+          ];
+          const p = pairs[randomInt(0, pairs.length - 1)];
+          const correct = simplifyFraction(p.ans_num, p.ans_den);
+          
+          const wrong1 = simplifyFraction(-p.ans_num, p.ans_den);
+          const wrong2 = simplifyFraction(p.ans_num * 2, p.ans_den);
+          const wrong3 = simplifyFraction(p.ans_num + p.ans_den, p.ans_den);
+          
+          const opts = Array.from(new Set([correct, wrong1, wrong2, wrong3]));
+          while (opts.length < 4) {
+            opts.push(simplifyFraction(p.ans_num + randomInt(-5, 5), p.ans_den));
+          }
+          opts.sort(() => 0.5 - Math.random());
+          const ansIdx = opts.indexOf(correct);
+          
+          const exprStr = p.sign === '+' 
+            ? `${p.common} × (${p.frac1}) + ${p.common} × (${p.frac2})`
+            : `${p.common} × (${p.frac1}) - ${p.common} × (${p.frac2})`;
+          
+          const sumStr = p.sign === '+'
+            ? `(${p.frac1}) + (${p.frac2})`
+            : `(${p.frac1}) - (${p.frac2})`;
+          
+          qObj = {
+            id: 300000 + qIndex * 10 + 6,
+            category: '有理数逆分配律提取公因数',
+            question: `【习题 ${qIndex}】利用简便运算计算：${exprStr} = ？`,
+            options: opts,
+            answer: ansIdx,
+            explanation: `名师分步解析（提取公因数）：\n步骤 1. 观察算式：两项均含有公因子 ${p.common}，利用分配律逆运算进行提取。\n步骤 2. 变形算式：原式 = ${p.common} × [${sumStr}]。\n步骤 3. 计算括号内部分：${sumStr} = -1。\n步骤 4. 计算乘积：${p.common} × (-1) = -${p.common} = ${simplifyFraction(p.ans_num, p.ans_den)}。`
+          };
+          break;
+        }
+      }
+      list.push(qObj);
+    }
+    return list;
+  }
+
   const list = [];
   
   for (let i = 0; i < count; i++) {

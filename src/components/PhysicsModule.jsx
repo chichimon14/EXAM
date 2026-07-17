@@ -151,10 +151,10 @@ export default function PhysicsModule() {
     setQuizScore(null);
   }, [selectedChapterId]);
 
-  // 当切换到练习 Tab 或章节时，动态初始化 100 道专项练习题
+  // 当切换到练习 Tab 或章节时，动态初始化 50 道专项练习题
   useEffect(() => {
     if (activeTab === 'exercise') {
-      const generated = generatePhysicsQuestions(selectedChapterId, questions, 100);
+      const generated = generatePhysicsQuestions(selectedChapterId, questions, 50);
       setExerciseQuestions(generated);
       setExerciseAnswers({});
       setCurrentExerciseIndex(0);
@@ -276,7 +276,7 @@ export default function PhysicsModule() {
     setExerciseAnswers(nextAnswers);
 
     // 金币扣减与累加 (+0.5 / -0.5)
-    updateGoldCoin(isCorrect, 1.0);
+    updateGoldCoin(isCorrect, 0.5);
 
     // 如果做错了，自动收录物理错题本
     if (!isCorrect) {
@@ -1462,7 +1462,7 @@ export default function PhysicsModule() {
                   borderColor: activeTab === 'exercise' ? 'hsl(var(--color-mech))' : ''
                 }}
               >
-                📝 100题每日狂练
+                📝 50题每日狂练
               </button>
             </div>
             
@@ -1837,7 +1837,7 @@ export default function PhysicsModule() {
           </div>
         )}
 
-        {/* Tab 2: 100题专项刷题集面板 (新增) */}
+        {/* Tab 2: 50题专项刷题集面板 (新增) */}
         {activeTab === 'exercise' && (
           <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {/* 章节切换条 */}
@@ -1854,7 +1854,7 @@ export default function PhysicsModule() {
               ))}
             </div>
 
-            {/* 100题练习双栏布局 */}
+            {/* 50题练习双栏布局 */}
             <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px', flex: 1, minHeight: '560px' }}>
               {/* 左栏：刷题卡片与即时反馈 */}
               <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', justifyContent: 'space-between' }}>
@@ -1863,7 +1863,7 @@ export default function PhysicsModule() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span className="badge badge-mech" style={{ backgroundColor: 'hsla(var(--color-mech)/0.1)', color: 'hsl(var(--color-mech))', fontWeight: 'bold' }}>
-                          第 {currentExerciseIndex + 1} / 100 题
+                          第 {currentExerciseIndex + 1} / 50 题
                         </span>
                         <span style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))' }}>
                           考点：{exerciseQuestions[currentExerciseIndex].category}
@@ -1942,7 +1942,7 @@ export default function PhysicsModule() {
                       </button>
                       <button
                         className="btn btn-primary"
-                        disabled={currentExerciseIndex === 99}
+                        disabled={currentExerciseIndex === 49}
                         onClick={() => setCurrentExerciseIndex(prev => prev + 1)}
                       >
                         下一题
@@ -1950,16 +1950,16 @@ export default function PhysicsModule() {
                     </div>
                   </>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>正在生成 100 道练习题...</div>
+                  <div style={{ textAlign: 'center', padding: '40px', color: '#a0aec0' }}>正在生成 50 道练习题...</div>
                 )}
               </div>
 
-              {/* 右栏：100题答题卡面板 */}
+              {/* 右栏：50题答题卡面板 */}
               <div className="glass-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>🎯 专项 100 题答题进度</span>
+                  <span>🎯 专项 50 题答题进度</span>
                   <span style={{ fontSize: '0.78rem', color: 'hsl(var(--text-secondary))' }}>
-                    已答：{Object.keys(exerciseAnswers).length} / 100
+                    已答：{Object.keys(exerciseAnswers).length} / 50
                   </span>
                 </h4>
 
@@ -1972,7 +1972,7 @@ export default function PhysicsModule() {
                   gap: '6px',
                   padding: '4px'
                 }}>
-                  {Array.from({ length: 100 }).map((_, idx) => {
+                  {Array.from({ length: 50 }).map((_, idx) => {
                     const q = exerciseQuestions[idx];
                     let bgColor = 'rgba(0,0,0,0.04)';
                     let textColor = 'hsl(var(--text-secondary))';
