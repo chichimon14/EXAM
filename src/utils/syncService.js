@@ -3,8 +3,8 @@
  * 针对个人/家庭复习场景设计，使用高可用、免注册公共加密 KV 存储实现多端实时同步
  */
 
-// 使用专门为本项目生成的独立随机 Bucket 桶名，保障个人数据隔离与安全性
-const BUCKET_ID = 'kvdb_exam_progress_bucket_julian_doudou_9a12bc';
+// 使用符合 kvdb.io 标准 16 位纯字母数字的随机 Bucket 桶名，保障个人数据隔离、云同步与安全性
+const BUCKET_ID = 'examdbdoudou9a12';
 const BASE_URL = `https://kvdb.io/${BUCKET_ID}`;
 
 // 账号定义

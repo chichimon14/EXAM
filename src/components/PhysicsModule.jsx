@@ -182,6 +182,18 @@ export default function PhysicsModule() {
     const nextAnswers = { ...userAnswers };
     const nextSubmissions = { ...submittedAnswers };
 
+    // 从 localStorage 同步读取最新的错题，避免闭包状态覆盖
+    let currentWrongs = [];
+    const savedWrongs = localStorage.getItem('physics-wrongs');
+    if (savedWrongs) {
+      try {
+        currentWrongs = JSON.parse(savedWrongs);
+        if (!Array.isArray(currentWrongs)) currentWrongs = [];
+      } catch (e) {
+        currentWrongs = [];
+      }
+    }
+
     currentChapterQuestions.forEach(q => {
       const saved = nextAnswers[q.id];
       const isCorrect = saved === q.answer || (saved && saved.userOpt === q.answer);
@@ -199,7 +211,7 @@ export default function PhysicsModule() {
       }
       nextSubmissions[q.id] = isCorrect;
 
-      // 物理小测（20题小测卡）每道题增减均为 0.5 金币
+      // 物理小测（20题小测卡）每道题增减均为 1.0 金币
       updateGoldCoin(isCorrect, 1.0);
 
       if (isCorrect) {
@@ -207,25 +219,24 @@ export default function PhysicsModule() {
       } else {
         weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
         
-        // 自动加入错题本 (强类型校验，防范 null/undefined 干扰)
-        const list = Array.isArray(wrongList) ? wrongList : [];
-        const alreadyIn = list.some(w => w && w.id === q.id);
+        const alreadyIn = currentWrongs.some(w => w && w.id === q.id);
         if (!alreadyIn) {
           const wrongQ = {
             ...q,
-            userAnswer: saved?.userOpt !== undefined ? saved.userOpt : saved
+            userAnswer: saved?.userOpt !== undefined ? saved.userOpt : saved,
+            wrongTime: new Date().toLocaleString('zh-CN', { hour12: false }) // 注明错题时间！
           };
-          list.push(wrongQ);
+          currentWrongs.push(wrongQ);
         }
       }
     });
 
     setUserAnswers(nextAnswers);
     setSubmittedAnswers(nextSubmissions);
-    setWrongList([...wrongList]);
+    setWrongList(currentWrongs);
     localStorage.setItem('physics-answers', JSON.stringify(nextAnswers));
     localStorage.setItem('physics-submissions', JSON.stringify(nextSubmissions));
-    localStorage.setItem('physics-wrongs', JSON.stringify(wrongList));
+    localStorage.setItem('physics-wrongs', JSON.stringify(currentWrongs));
 
     setQuizScore(correctCount);
     setQuizChecked(true);
@@ -278,12 +289,27 @@ export default function PhysicsModule() {
     // 金币扣减与累加 (+0.5 / -0.5)
     updateGoldCoin(isCorrect, 0.5);
 
-    // 如果做错了，自动收录物理错题本
+    // 如果做错了，自动收录物理错题本 (同步读写本地，彻底根治闭包覆盖丢失 Bug)
     if (!isCorrect) {
-      const alreadyIn = wrongList.some(w => w.id === currentQ.id);
+      let currentWrongs = [];
+      const savedWrongs = localStorage.getItem('physics-wrongs');
+      if (savedWrongs) {
+        try {
+          currentWrongs = JSON.parse(savedWrongs);
+          if (!Array.isArray(currentWrongs)) currentWrongs = [];
+        } catch (e) {
+          currentWrongs = [];
+        }
+      }
+
+      const alreadyIn = currentWrongs.some(w => w && w.id === currentQ.id);
       if (!alreadyIn) {
-        const wrongQ = { ...currentQ, userAnswer: optionIdx };
-        const nextWrongs = [...wrongList, wrongQ];
+        const wrongQ = {
+          ...currentQ,
+          userAnswer: optionIdx,
+          wrongTime: new Date().toLocaleString('zh-CN', { hour12: false }) // 注明错题时间！
+        };
+        const nextWrongs = [...currentWrongs, wrongQ];
         setWrongList(nextWrongs);
         localStorage.setItem('physics-wrongs', JSON.stringify(nextWrongs));
       }

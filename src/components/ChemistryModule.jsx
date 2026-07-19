@@ -566,17 +566,27 @@ export default function ChemistryModule() {
         };
       }
 
-      // 积分权重统一为 0.5 金币
+      // 积分权重统一为 1.0 金币
       updateGoldCoin(isCorrect, 1.0);
+
+      // 从 localStorage 同步读取最新的错题，避免闭包状态覆盖
+      let currentWrongs = [];
+      const savedWrongs = localStorage.getItem('chemistry-wrongs');
+      if (savedWrongs) {
+        try {
+          currentWrongs = JSON.parse(savedWrongs);
+          if (!Array.isArray(currentWrongs)) currentWrongs = [];
+        } catch (e) {
+          currentWrongs = [];
+        }
+      }
 
       if (isCorrect) {
         correctCount++;
       } else {
         weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
         
-        // 自动计错 (强类型校验，防范 null/undefined 干扰)
-        const list = Array.isArray(wrongList) ? wrongList : [];
-        const alreadyIn = list.some(w => w && w.id === q.id);
+        const alreadyIn = currentWrongs.some(w => w && w.id === q.id);
         if (!alreadyIn) {
           let wrongQ;
           if (q.type === 'match') {
@@ -587,23 +597,25 @@ export default function ChemistryModule() {
               answer: '4对元素全对消除配对',
               userAnswer: '小测交卷中有连线错误',
               explanation: q.explanation,
-              chapterId: selectedDayId
+              chapterId: selectedDayId,
+              wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
             };
           } else {
             wrongQ = {
               ...q,
               userAnswer: saved?.userOpt !== undefined ? saved.userOpt : saved,
-              chapterId: selectedDayId
+              chapterId: selectedDayId,
+              wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
             };
           }
-          list.push(wrongQ);
+          currentWrongs.push(wrongQ);
         }
       }
+      setWrongList(currentWrongs);
+      localStorage.setItem('chemistry-wrongs', JSON.stringify(currentWrongs));
     });
 
     setTestAnswers(nextAnswers);
-    setWrongList([...wrongList]);
-    localStorage.setItem('chemistry-wrongs', JSON.stringify(wrongList));
 
     const finalScore = Math.round((correctCount / testQuestions.length) * 100);
     setTestScore(finalScore);
@@ -635,10 +647,26 @@ export default function ChemistryModule() {
     updateGoldCoin(isCorrect, 0.5);
 
     if (!isCorrect) {
-      const alreadyIn = wrongList.some(w => w.id === currentQ.id);
+      let currentWrongs = [];
+      const savedWrongs = localStorage.getItem('chemistry-wrongs');
+      if (savedWrongs) {
+        try {
+          currentWrongs = JSON.parse(savedWrongs);
+          if (!Array.isArray(currentWrongs)) currentWrongs = [];
+        } catch (e) {
+          currentWrongs = [];
+        }
+      }
+
+      const alreadyIn = currentWrongs.some(w => w && w.id === currentQ.id);
       if (!alreadyIn) {
-        const wrongQ = { ...currentQ, userAnswer: optionIdx, chapterId: selectedDayId };
-        const nextWrongs = [...wrongList, wrongQ];
+        const wrongQ = {
+          ...currentQ,
+          userAnswer: optionIdx,
+          chapterId: selectedDayId,
+          wrongTime: new Date().toLocaleString('zh-CN', { hour12: false }) // 注明错题时间！
+        };
+        const nextWrongs = [...currentWrongs, wrongQ];
         setWrongList(nextWrongs);
         localStorage.setItem('chemistry-wrongs', JSON.stringify(nextWrongs));
       }

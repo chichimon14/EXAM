@@ -741,9 +741,20 @@ export default function EnglishModule() {
           updateGoldCoin(isAllCorrect, 0.5); // 练习每题 0.5 分
         }
 
-        // 连错了一次或多次，记录到英语错题本
+        // 连错了一次或多次，记录到英语错题本 (同步读写本地，彻底根治闭包覆盖丢失 Bug)
         if (!isAllCorrect) {
-          const alreadyIn = wrongList.some(w => w.id === currentQ.id);
+          let currentWrongs = [];
+          const savedWrongs = localStorage.getItem('english-wrongs');
+          if (savedWrongs) {
+            try {
+              currentWrongs = JSON.parse(savedWrongs);
+              if (!Array.isArray(currentWrongs)) currentWrongs = [];
+            } catch (e) {
+              currentWrongs = [];
+            }
+          }
+
+          const alreadyIn = currentWrongs.some(w => w && w.id === currentQ.id);
           if (!alreadyIn) {
             const wrongQ = {
               id: currentQ.id,
@@ -752,9 +763,10 @@ export default function EnglishModule() {
               answer: '4对单词全部正确消除配对',
               userAnswer: '一次性检测中有连线错误',
               explanation: currentQ.explanation,
-              chapterId: selectedDayId
+              chapterId: selectedDayId,
+              wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
             };
-            const nextWrongs = [...wrongList, wrongQ];
+            const nextWrongs = [...currentWrongs, wrongQ];
             setWrongList(nextWrongs);
             localStorage.setItem('english-wrongs', JSON.stringify(nextWrongs));
           }
@@ -808,14 +820,24 @@ export default function EnglishModule() {
       // 增减分值：做对加 0.5 分，做错扣 0.5 分 (锁分控制：如果当天已经有过积分，则不加减分)
       updateGoldCoin(isCorrect, 1.0);
 
+      // 从 localStorage 同步读取最新的错题，避免闭包状态覆盖
+      let currentWrongs = [];
+      const savedWrongs = localStorage.getItem('english-wrongs');
+      if (savedWrongs) {
+        try {
+          currentWrongs = JSON.parse(savedWrongs);
+          if (!Array.isArray(currentWrongs)) currentWrongs = [];
+        } catch (e) {
+          currentWrongs = [];
+        }
+      }
+
       if (isCorrect) {
         correctCount++;
       } else {
         weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
         
-        // 自动加入错题本 (强类型校验，防范 null/undefined 干扰)
-        const list = Array.isArray(wrongList) ? wrongList : [];
-        const alreadyIn = list.some(w => w && w.id === q.id);
+        const alreadyIn = currentWrongs.some(w => w && w.id === q.id);
         if (!alreadyIn) {
           let wrongQ;
           if (q.type === 'match') {
@@ -826,23 +848,25 @@ export default function EnglishModule() {
               answer: '4对单词全部正确消除配对',
               userAnswer: '小测交卷中有连线错误',
               explanation: q.explanation,
-              chapterId: selectedDayId
+              chapterId: selectedDayId,
+              wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
             };
           } else {
             wrongQ = {
               ...q,
               userAnswer: saved?.userOpt !== undefined ? saved.userOpt : saved,
-              chapterId: selectedDayId
+              chapterId: selectedDayId,
+              wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
             };
           }
-          list.push(wrongQ);
+          currentWrongs.push(wrongQ);
         }
       }
+      setWrongList(currentWrongs);
+      localStorage.setItem('english-wrongs', JSON.stringify(currentWrongs));
     });
 
     setTestAnswers(nextAnswers);
-    setWrongList([...wrongList]);
-    localStorage.setItem('english-wrongs', JSON.stringify(wrongList));
 
     const finalScore = Math.round((correctCount / testQuestions.length) * 100);
     setTestScore(finalScore);
@@ -874,10 +898,26 @@ export default function EnglishModule() {
     updateGoldCoin(isCorrect, 1.0);
 
     if (!isCorrect) {
-      const alreadyIn = wrongList.some(w => w.id === currentQ.id);
+      let currentWrongs = [];
+      const savedWrongs = localStorage.getItem('english-wrongs');
+      if (savedWrongs) {
+        try {
+          currentWrongs = JSON.parse(savedWrongs);
+          if (!Array.isArray(currentWrongs)) currentWrongs = [];
+        } catch (e) {
+          currentWrongs = [];
+        }
+      }
+
+      const alreadyIn = currentWrongs.some(w => w && w.id === currentQ.id);
       if (!alreadyIn) {
-        const wrongQ = { ...currentQ, userAnswer: optionIdx, chapterId: selectedDayId };
-        const nextWrongs = [...wrongList, wrongQ];
+        const wrongQ = {
+          ...currentQ,
+          userAnswer: optionIdx,
+          chapterId: selectedDayId,
+          wrongTime: new Date().toLocaleString('zh-CN', { hour12: false }) // 注明错题时间！
+        };
+        const nextWrongs = [...currentWrongs, wrongQ];
         setWrongList(nextWrongs);
         localStorage.setItem('english-wrongs', JSON.stringify(nextWrongs));
       }

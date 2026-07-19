@@ -76,10 +76,17 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, s
             <div key={q.id} className="glass-card" style={{ padding: '20px', borderLeft: '4px solid hsl(var(--color-danger))', display: 'flex', flexDirection: 'column', gap: '12px' }}>
               
               {/* 板块和章节小标识 */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span className="badge badge-mech" style={{ backgroundColor: 'hsla(var(--color-heat) / 0.1)', color: 'hsl(var(--color-heat))', border: '1px solid hsla(var(--color-heat) / 0.2)' }}>
-                  {ch ? ch.name.split('：')[0] : subject === 'physics' ? '物理' : '数学'} · {q.category}
-                </span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span className="badge badge-mech" style={{ backgroundColor: 'hsla(var(--color-heat) / 0.1)', color: 'hsl(var(--color-heat))', border: '1px solid hsla(var(--color-heat) / 0.2)' }}>
+                    {ch ? ch.name.split('：')[0] : subject === 'physics' ? '物理' : '数学'} · {q.category}
+                  </span>
+                  {q.wrongTime && (
+                    <span style={{ fontSize: '0.75rem', color: 'hsl(var(--color-danger))', opacity: 0.8, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                      📅 错题时间: {q.wrongTime}
+                    </span>
+                  )}
+                </div>
                 <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>#错题 {idx + 1}</span>
               </div>
 
