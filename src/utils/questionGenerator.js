@@ -269,10 +269,29 @@ export function generateMathQuestions(topicId, count = 100) {
   }
 
   const list = [];
+  const questionTexts = new Set();
   
   for (let i = 0; i < count; i++) {
     const qIndex = i + 1;
     let qObj = {};
+    let attempts = 0;
+
+    // 局部 randomInt 覆盖（词法作用域遮蔽），加入当前题号 i 的数学滑动偏移
+    // 这可以让所有 case 分支里面调用的 randomInt 自动产生不重复的值，无需重写 25 个大 case 的公式逻辑！
+    const randomInt = (min, max) => {
+      const baseRange = max - min + 1;
+      const step = Math.max(1, Math.floor(baseRange / 5));
+      const offset = (i * step) % baseRange;
+      let val = Math.floor(Math.random() * baseRange) + min + offset;
+      if (val > max) {
+        val = min + (val - max - 1) % baseRange;
+      }
+      return val;
+    };
+
+    do {
+      qObj = {};
+      attempts++;
 
     switch (topicId) {
       // 1. 多位数的加减法与“巧算”魔法
@@ -495,21 +514,50 @@ export function generateMathQuestions(topicId, count = 100) {
 
       // 7. 数的家族谱分类 —— 有理数与无理数
       case 'math_topic7': {
-        const irrationals = ['π', '√2', '√3', '√5', '√7'];
-        const rationals = ['0', '-3', '1/3', '3.14', '0.5', '22/7'];
-        const correct = irrationals[randomInt(0, irrationals.length - 1)];
-        
-        const distrac = shuffleArray(rationals).slice(0, 3);
-        const opts = shuffleArray([correct, ...distrac]);
+        const subtype = i % 3;
+        let question = '';
+        let correct = '';
+        let explanation = '';
+        let opts = [];
+
+        if (subtype === 0) {
+          // 选无理数（根式）
+          const irrationals = ['√2', '√3', '√5', '√7', '√8', '√10', '√11', '√12'];
+          const rationals = ['0', '-2', '1/3', '0.5', '22/7', '√4', '√16'];
+          correct = irrationals[randomInt(0, irrationals.length - 1)];
+          const distrac = shuffleArray(rationals).slice(0, 3);
+          opts = shuffleArray([correct, ...distrac]);
+          question = `【习题 ${qIndex}】下列各数中，属于“无理数”的是：`;
+          explanation = `名师分步解析：\n步骤 1. 无理数是“无限不循环小数”。\n步骤 2. 开方开不尽的根式，如 ${correct} 是无理数。\n步骤 3. 注意像 √4 = 2，√16 = 4 是整数，是有理数。`;
+        } else if (subtype === 1) {
+          // 选无理数（π 变形）
+          const irrationals = ['π', '2π', '-π', 'π/2', 'π + 3', '3 - π'];
+          const rationals = ['3.14', '3.1415926', '22/7', '0.333...', '0'];
+          correct = irrationals[randomInt(0, irrationals.length - 1)];
+          const distrac = shuffleArray(rationals).slice(0, 3);
+          opts = shuffleArray([correct, ...distrac]);
+          question = `【习题 ${qIndex}】下列各数中，属于“无理数”的是：`;
+          explanation = `名师分步解析：\n步骤 1. 圆周率 π 是无限不循环小数，因此含有 π 的四则运算结果，如 ${correct}，依然是无理数。\n步骤 2. ⚠️注意：3.14 和 3.1415926 是有限小数，22/7 是分数，它们都是有理数。`;
+        } else {
+          // 选有理数（混淆项）
+          const rationals = ['√9', '√25', '0.666...', '22/7', '-1.5', '0'];
+          const irrationals = ['π', '√2', '√3', '√5', '√7'];
+          correct = rationals[randomInt(0, rationals.length - 1)];
+          const distrac = shuffleArray(irrationals).slice(0, 3);
+          opts = shuffleArray([correct, ...distrac]);
+          question = `【习题 ${qIndex}】下列各数中，属于“有理数”的是：`;
+          explanation = `名师分步解析：\n步骤 1. 有理数是可以表示为分数形式的数，包括整数、有限小数和无限循环小数。\n步骤 2. 选项中的 ${correct} 可以写成整数或分数，属于有理数。\n步骤 3. ⚠️注意：像 √2、√3 等根式和圆周率 π 是无理数。`;
+        }
+
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
           id: parseInt(`30700${qIndex}`),
           category: '有理数无理数分类辨析',
-          question: `【习题 ${qIndex}】下列各数中，属于“无理数”的是：`,
+          question,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 有理数定义：可以表示为两个整数之比（分数形式）的数，包括整数、有限小数和无限循环小数。\n步骤 2. 无理数定义：无限不循环小数。如圆周率 π，以及开方开不尽的根式如 ${correct}。`
+          explanation
         };
         break;
       }
@@ -627,25 +675,56 @@ export function generateMathQuestions(topicId, count = 100) {
 
       // 12. 科学记数法、近似数与有效数字
       case 'math_topic12': {
-        const base = randomInt(11, 99) / 10;
-        const exp = randomInt(5, 8);
-        const num = base * Math.pow(10, exp);
-        
-        const correct = `${base} × 10^${exp}`;
-        const wrong1 = `${base * 10} × 10^${exp - 1}`;
-        const wrong2 = `${base} × 10^${exp + 1}`;
-        const wrong3 = `${base / 10} × 10^${exp + 1}`;
-        
+        const subtype = i % 2;
+        let question = '';
+        let correct = '';
+        let wrong1 = '';
+        let wrong2 = '';
+        let wrong3 = '';
+        let explanation = '';
+
+        if (subtype === 0) {
+          // 大数科学记数法
+          const base = randomInt(11, 99) / 10;
+          const exp = randomInt(5, 8);
+          const num = base * Math.pow(10, exp);
+          correct = `${base} × 10${exp === 5 ? '⁵' : exp === 6 ? '⁶' : exp === 7 ? '⁷' : '⁸'}`;
+          wrong1 = `${base * 10} × 10${(exp - 1) === 4 ? '⁴' : (exp - 1) === 5 ? '⁵' : (exp - 1) === 6 ? '⁶' : '⁷'}`;
+          wrong2 = `${base} × 10${(exp + 1) === 6 ? '⁶' : (exp + 1) === 7 ? '⁷' : (exp + 1) === 8 ? '⁸' : '⁹'}`;
+          wrong3 = `${base / 10} × 10${(exp + 1) === 6 ? '⁶' : (exp + 1) === 7 ? '⁷' : (exp + 1) === 8 ? '⁸' : '⁹'}`;
+          
+          question = `【习题 ${qIndex}】将数字 ${num.toLocaleString('zh-CN', {useGrouping:false})} 用科学记数法表示为：`;
+          explanation = `名师分步解析：\n步骤 1. 科学记数法标准形式为 a × 10ⁿ，其中 1 ≤ |a| < 10，n 为正整数。\n步骤 2. 确定系数 a：将小数点左移到只剩下一位整数，得到 a = ${base}。\n步骤 3. 确定指数 n：小数点向左移动了 ${exp} 位，所以指数为 ${exp}。\n步骤 4. 写出结果：${correct}。`;
+        } else {
+          // 小数负指数幂科学记数法 (中考高分考点)
+          const base = randomInt(11, 99) / 10;
+          const exp = randomInt(4, 6); // 代表小数点后零的个数 + 1
+          const num = (base * Math.pow(10, -exp)).toFixed(exp + 1);
+          
+          const getSuperscript = (n) => {
+            const map = { '-4': '⁻⁴', '-5': '⁻⁵', '-6': '⁻⁶', '-7': '⁻⁷' };
+            return map[n] || `⁻${n}`;
+          };
+
+          correct = `${base} × 10${getSuperscript(-exp)}`;
+          wrong1 = `${base * 10} × 10${getSuperscript(-(exp + 1))}`;
+          wrong2 = `${base} × 10${getSuperscript(-(exp - 1))}`;
+          wrong3 = `${base / 10} × 10${getSuperscript(-(exp - 1))}`;
+
+          question = `【习题 ${qIndex}】将数字 ${num} 用科学记数法表示为：`;
+          explanation = `名师分步解析：\n步骤 1. 小数科学记数法形式为 a × 10⁻ⁿ，其中 1 ≤ |a| < 10。\n步骤 2. 确定系数 a：移动小数点使首位非零数字排在个位，得到 a = ${base}。\n步骤 3. 确定指数 -n：小数点向右移动了 ${exp} 位，所以指数为 -${exp}。\n步骤 4. 写出结果：${correct}。`;
+        }
+
         const opts = shuffleArray([correct, wrong1, wrong2, wrong3]);
         const ansIdx = opts.indexOf(correct);
 
         qObj = {
           id: parseInt(`31200${qIndex}`),
           category: '科学记数法转换',
-          question: `【习题 ${qIndex}】将数字 ${num.toLocaleString('zh-CN', {useGrouping:false})} 用科学记数法表示为：`,
+          question,
           options: opts,
           answer: ansIdx,
-          explanation: `名师分步解析：\n步骤 1. 科学记数法标准形式为 a × 10^n，其中 1 ≤ |a| < 10。\n步骤 2. 确定系数 a：将小数点左移得到 a = ${base}。\n步骤 3. 确定指数 n：移动小数点的位数等于 ${exp}，所以表示为 ${correct}。`
+          explanation
         };
         break;
       }
@@ -1030,6 +1109,11 @@ export function generateMathQuestions(topicId, count = 100) {
         }
         break;
       }
+    } // 闭合 switch
+    } while (attempts < 80 && qObj.question && questionTexts.has(qObj.question));
+
+    if (qObj.question) {
+      questionTexts.add(qObj.question);
     }
     list.push(qObj);
   }

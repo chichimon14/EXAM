@@ -211,8 +211,8 @@ export default function PhysicsModule() {
       }
       nextSubmissions[q.id] = isCorrect;
 
-      // 物理小测（20题小测卡）每道题增减均为 1.0 金币
-      updateGoldCoin(isCorrect, 1.0);
+      // 物理小测（20题小测卡）每道题做对加 0.5 分，做错倒扣 0.5 分
+      updateGoldCoin(isCorrect, 0.5);
 
       if (isCorrect) {
         correctCount++;

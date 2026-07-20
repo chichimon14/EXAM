@@ -817,8 +817,8 @@ export default function EnglishModule() {
         };
       }
 
-      // 增减分值：做对加 0.5 分，做错扣 0.5 分 (锁分控制：如果当天已经有过积分，则不加减分)
-      updateGoldCoin(isCorrect, 1.0);
+      // 英语小测（过关小测卡）每道题做对加 0.5 分，做错倒扣 0.5 分
+      updateGoldCoin(isCorrect, 0.5);
 
       // 从 localStorage 同步读取最新的错题，避免闭包状态覆盖
       let currentWrongs = [];
@@ -895,7 +895,8 @@ export default function EnglishModule() {
     };
     setExerciseAnswers(nextAnswers);
 
-    updateGoldCoin(isCorrect, 1.0);
+    // 英语狂练每道题做对加 0.5 分，做错倒扣 0.5 分
+    updateGoldCoin(isCorrect, 0.5);
 
     if (!isCorrect) {
       let currentWrongs = [];

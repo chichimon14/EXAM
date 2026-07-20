@@ -220,8 +220,8 @@ export default function MathModule() {
         };
       }
 
-      // 所有小测（20题题卡）每道题做对做错均增减 1.0 金币
-      updateGoldCoin(isCorrect, 1.0);
+      // 所有小测（20题题卡）每道题做对加 0.5 分，做错倒扣 0.5 分
+      updateGoldCoin(isCorrect, 0.5);
 
       if (isCorrect) {
         correctCount++;
