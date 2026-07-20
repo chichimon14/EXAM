@@ -25,6 +25,7 @@ export default function MathModule() {
   // 100题练习状态
   const [exerciseQuestions, setExerciseQuestions] = useState([]);
   const [exerciseAnswers, setExerciseAnswers] = useState({}); // { [qId]: { isCorrect, userOpt } }
+  const [exerciseSubmitted, setExerciseSubmitted] = useState(false); // 50题特训是否已提交结算
   const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
 
   // 数学错题本状态
@@ -136,6 +137,7 @@ export default function MathModule() {
 
       const savedAnswers = localStorage.getItem(`math-exercise-answers-${selectedDayId}`);
       const savedIndex = localStorage.getItem(`math-exercise-index-${selectedDayId}`);
+      const savedSubmitted = localStorage.getItem(`math-exercise-submitted-${selectedDayId}`);
 
       if (savedAnswers) {
         try {
@@ -146,6 +148,8 @@ export default function MathModule() {
       } else {
         setExerciseAnswers({});
       }
+
+      setExerciseSubmitted(savedSubmitted === 'true');
 
       if (savedIndex) {
         const idx = parseInt(savedIndex);
@@ -255,49 +259,102 @@ export default function MathModule() {
     );
   };
 
-  // 50题练习单步点击
+  // 50题练习单步点击 (未提交时可随意改答案)
   const handleExerciseOptionClick = (optionIdx) => {
-    const currentQ = exerciseQuestions[currentExerciseIndex];
-    if (!currentQ || exerciseAnswers[currentQ.id]) return;
+    if (exerciseSubmitted) return;
 
-    const isCorrect = optionIdx === currentQ.answer;
+    const currentQ = exerciseQuestions[currentExerciseIndex];
+    if (!currentQ) return;
+
     const nextAnswers = {
       ...exerciseAnswers,
-      [currentQ.id]: { isCorrect, userOpt: optionIdx }
+      [currentQ.id]: { userOpt: optionIdx }
     };
     setExerciseAnswers(nextAnswers);
 
     // 持久化答题进度记录，防止刷新页面或切卡丢失
     localStorage.setItem(`math-exercise-answers-${selectedDayId}`, JSON.stringify(nextAnswers));
+  };
 
-    // 金币结算 (+0.5 / -0.5)
-    updateGoldCoin(isCorrect, 0.5);
+  // 50题练习统一交卷结算
+  const handleSubmitExercise = () => {
+    if (exerciseSubmitted) return;
 
-    // 做错自动收录到数学错题本 (同步读写本地，彻底根治闭包覆盖丢失 Bug)
-    if (!isCorrect) {
-      let currentWrongs = [];
-      const savedWrongs = localStorage.getItem('math-wrongs');
-      if (savedWrongs) {
-        try {
-          currentWrongs = JSON.parse(savedWrongs);
-          if (!Array.isArray(currentWrongs)) currentWrongs = [];
-        } catch (e) {
-          currentWrongs = [];
-        }
-      }
+    // 检查是否有未作答题目
+    const attemptedCount = Object.keys(exerciseAnswers).length;
+    if (attemptedCount < 50) {
+      const confirmSubmit = window.confirm(`您还有 ${50 - attemptedCount} 道题未做，确定要交卷并结算特训吗？(未做题目将直接计为算错)`);
+      if (!confirmSubmit) return;
+    }
 
-      const alreadyIn = currentWrongs.some(w => w && w.id === currentQ.id);
-      if (!alreadyIn) {
-        const wrongQ = {
-          ...currentQ,
-          userAnswer: optionIdx,
-          wrongTime: new Date().toLocaleString('zh-CN', { hour12: false }) // 注明错题时间！
-        };
-        const nextWrongs = [...currentWrongs, wrongQ];
-        setWrongList(nextWrongs);
-        localStorage.setItem('math-wrongs', JSON.stringify(nextWrongs));
+    let correctCount = 0;
+    const nextAnswers = { ...exerciseAnswers };
+    let currentWrongs = [];
+    const savedWrongs = localStorage.getItem('math-wrongs');
+    if (savedWrongs) {
+      try {
+        currentWrongs = JSON.parse(savedWrongs);
+        if (!Array.isArray(currentWrongs)) currentWrongs = [];
+      } catch (e) {
+        currentWrongs = [];
       }
     }
+
+    exerciseQuestions.forEach(q => {
+      const saved = nextAnswers[q.id];
+      const userOpt = saved && saved.userOpt !== undefined ? saved.userOpt : -1;
+      const isCorrect = userOpt === q.answer;
+
+      nextAnswers[q.id] = {
+        isCorrect,
+        userOpt
+      };
+
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        // 自动加入错题本
+        const alreadyIn = currentWrongs.some(w => w && w.id === q.id);
+        if (!alreadyIn) {
+          const wrongQ = {
+            ...q,
+            userAnswer: userOpt,
+            wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
+          };
+          currentWrongs.push(wrongQ);
+        }
+      }
+    });
+
+    // 结算金币积分 (答对每题 +0.5，答错每题 -0.5)
+    const currentScore = dayScores[selectedDayId] || 0;
+    const delta = correctCount * 0.5 - (50 - correctCount) * 0.5;
+    const newScore = Math.round(Math.max(0, currentScore + delta) * 10) / 10;
+    const nextScores = { ...dayScores, [selectedDayId]: newScore };
+    
+    // 更新状态与本地存储
+    setDayScores(nextScores);
+    localStorage.setItem(`math-score-${selectedDayId}`, newScore.toString());
+
+    setExerciseAnswers(nextAnswers);
+    localStorage.setItem(`math-exercise-answers-${selectedDayId}`, JSON.stringify(nextAnswers));
+
+    setWrongList(currentWrongs);
+    localStorage.setItem('math-wrongs', JSON.stringify(currentWrongs));
+
+    setExerciseSubmitted(true);
+    localStorage.setItem(`math-exercise-submitted-${selectedDayId}`, 'true');
+
+    // 记录学习日志
+    const dayNum = selectedDayId.replace('day', '');
+    addStudyLog(
+      'math',
+      'exercise_complete',
+      `完成数学 Day ${dayNum} 50题特训`,
+      correctCount,
+      50,
+      []
+    );
   };
 
   // 移出数学错题
@@ -314,12 +371,23 @@ export default function MathModule() {
     }
   };
 
-  // 重置指定 Day 的金币分值为 0
+  // 重置指定 Day 的金币分值为 0 并清空当天特训进度
   const handleResetDayScore = (dayId) => {
-    if (window.confirm(`您确定要清空 Day ${dayId.replace('day', '')} 的今日积分金币吗？`)) {
+    if (window.confirm(`您确定要清空 Day ${dayId.replace('day', '')} 的今日积分金币并重做当天的特训吗？`)) {
       const nextScores = { ...dayScores, [dayId]: 0 };
       setDayScores(nextScores);
       localStorage.setItem(`math-score-${dayId}`, '0');
+
+      // 清空当天练习答题进度与已交卷状态
+      localStorage.removeItem(`math-exercise-answers-${dayId}`);
+      localStorage.removeItem(`math-exercise-submitted-${dayId}`);
+      localStorage.removeItem(`math-exercise-index-${dayId}`);
+
+      if (dayId === selectedDayId) {
+        setExerciseAnswers({});
+        setExerciseSubmitted(false);
+        setCurrentExerciseIndex(0);
+      }
     }
   };
 
@@ -819,8 +887,8 @@ export default function MathModule() {
       {/* 主面板内容 */}
       <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, padding: 0, overflowY: 'auto' }}>
         
-        {/* 📘 右侧顶部横向三合一特训功能卡 */}
-        {activeTab !== 'wrongbook' && (
+        {/* 📘 右侧顶部横向特训功能导航条 (双重保障，解决 iPad 各种比例下的错题/积分入口隐藏问题) */}
+        {true && (
           <div className="glass-card" style={{
             padding: '12px 20px',
             display: 'flex',
@@ -828,9 +896,11 @@ export default function MathModule() {
             justifyContent: 'space-between',
             backgroundColor: '#ffffff',
             border: '1px solid rgba(0,0,0,0.03)',
-            borderRadius: 'var(--radius-md)'
+            borderRadius: 'var(--radius-md)',
+            flexWrap: 'wrap',
+            gap: '10px'
           }}>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button
                 className={`btn ${activeTab === 'study' ? 'btn-primary' : 'btn-secondary'}`}
                 onClick={() => setActiveTab('study')}
@@ -875,6 +945,37 @@ export default function MathModule() {
               >
                 📝 50题每日狂练
               </button>
+              <button
+                className={`btn ${activeTab === 'wrongbook' ? 'btn-primary' : 'btn-secondary'}`}
+                onClick={() => setActiveTab('wrongbook')}
+                style={{
+                  fontSize: '0.78rem',
+                  padding: '6px 16px',
+                  borderRadius: '20px',
+                  backgroundColor: activeTab === 'wrongbook' ? 'hsl(var(--color-work))' : '',
+                  borderColor: activeTab === 'wrongbook' ? 'hsl(var(--color-work))' : '',
+                  position: 'relative'
+                }}
+              >
+                ❌ 数学错题重温本
+                {wrongList.length > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-6px',
+                    backgroundColor: 'hsl(var(--color-danger))',
+                    color: '#fff',
+                    fontSize: '0.62rem',
+                    fontWeight: 'bold',
+                    padding: '1px 5px',
+                    borderRadius: '8px',
+                    lineHeight: '1',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    {wrongList.length}
+                  </span>
+                )}
+              </button>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
@@ -887,18 +988,27 @@ export default function MathModule() {
               }}>
                 🗓️ Day {selectedDayId.replace('day', '')} · {currentDayData?.name.split('：')[1]}
               </span>
-              {activeTab !== 'study' && (activeTab !== 'test' || testScore !== null) && (
-                <span style={{
+              <button
+                className="btn btn-secondary scale-up"
+                onClick={() => setShowBillModal(true)}
+                style={{
                   padding: '4px 10px',
                   backgroundColor: '#fffbeb',
                   color: '#b45309',
                   borderRadius: '12px',
                   fontWeight: 'bold',
-                  border: '1px solid #fde68a'
-                }}>
-                  🪙 今日积分：{todayGoldCoin} 金币
-                </span>
-              )}
+                  border: '1px solid #fde68a',
+                  fontSize: '0.72rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  outline: 'none'
+                }}
+                title="点击直接查看25天历史金币账单"
+              >
+                🪙 积分：{todayGoldCoin} 🪙 │ 📊 历史账单
+              </button>
             </div>
           </div>
         )}
@@ -1327,13 +1437,28 @@ export default function MathModule() {
                           const isAns = !!ansState;
 
                           let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
-                          if (isAns) {
-                            const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
-                            const isUserSelected = oIdx === ansState.userOpt;
-                            if (isCorrectOpt) {
-                              btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
-                            } else if (isUserSelected) {
-                              btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                          
+                          if (exerciseSubmitted) {
+                            // 已交卷，显示红/绿判定颜色
+                            if (isAns) {
+                              const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
+                              const isUserSelected = oIdx === ansState.userOpt;
+                              if (isCorrectOpt) {
+                                btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
+                              } else if (isUserSelected) {
+                                btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
+                              }
+                            } else {
+                              // 用户未选此项，但如果是正确项，也高亮绿色，便于对答案
+                              const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
+                              if (isCorrectOpt) {
+                                btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.03)', color: 'hsl(var(--color-success))' };
+                              }
+                            }
+                          } else {
+                            // 未交卷，仅高亮用户选中的项（黄色/橙色），且允许再次点击修改
+                            if (isAns && oIdx === ansState.userOpt) {
+                              btnStyle = { border: '2px solid hsl(var(--color-work))', backgroundColor: 'hsla(var(--color-work)/0.08)', color: 'hsl(var(--color-work))', fontWeight: 'bold' };
                             }
                           }
 
@@ -1348,7 +1473,7 @@ export default function MathModule() {
                                 fontSize: '0.82rem',
                                 ...btnStyle
                               }}
-                              disabled={isAns}
+                              disabled={exerciseSubmitted}
                               onClick={() => handleExerciseOptionClick(oIdx)}
                             >
                               <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
@@ -1358,7 +1483,7 @@ export default function MathModule() {
                         })}
                       </div>
 
-                      {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id] && (
+                      {exerciseSubmitted && exerciseAnswers[exerciseQuestions[currentExerciseIndex].id] && (
                         <div className="fade-in" style={{
                           padding: '12px',
                           backgroundColor: '#f8fafc',
@@ -1369,7 +1494,7 @@ export default function MathModule() {
                           whiteSpace: 'pre-wrap'
                         }}>
                           <div style={{ fontWeight: 'bold', color: exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！今日金币 +0.5 个' : '❌ 算错了。今日金币 -0.5 个，已自动计错。'}
+                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！' : '❌ 算错了。'}
                           </div>
                           {exerciseQuestions[currentExerciseIndex].explanation}
                         </div>
@@ -1404,7 +1529,7 @@ export default function MathModule() {
                 <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 'bold', display: 'flex', justifyContent: 'space-between' }}>
                   <span>🎯 50题特训卡</span>
                   <span style={{ fontSize: '0.75rem', color: 'hsl(var(--text-secondary))' }}>
-                    已完成：{Object.keys(exerciseAnswers).length} / 50
+                    已做：{Object.keys(exerciseAnswers).length} / 50
                   </span>
                 </h4>
 
@@ -1424,8 +1549,14 @@ export default function MathModule() {
                     let borderStyle = 'none';
 
                     if (q && exerciseAnswers[q.id]) {
-                      bgColor = exerciseAnswers[q.id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
-                      textColor = '#ffffff';
+                      if (exerciseSubmitted) {
+                        bgColor = exerciseAnswers[q.id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                        textColor = '#ffffff';
+                      } else {
+                        // 未提交，显示橙黄色代表已作答
+                        bgColor = 'hsla(var(--color-work)/0.2)';
+                        textColor = 'hsl(var(--color-work))';
+                      }
                     }
                     if (idx === currentExerciseIndex) {
                       borderStyle = '2px solid hsl(var(--color-work))';
@@ -1457,16 +1588,51 @@ export default function MathModule() {
                   })}
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', fontSize: '0.72rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px' }}>
+                <div style={{ display: 'flex', gap: '12px', fontSize: '0.72rem', color: 'hsl(var(--text-secondary))', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '10px', flexWrap: 'wrap' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.04)' }}></span>未答
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-success))' }}></span>算对
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-danger))' }}></span>算错
-                  </div>
+                  {!exerciseSubmitted ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsla(var(--color-work)/0.2)' }}></span>已选
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-success))' }}></span>算对
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-danger))' }}></span>算错
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* 📤 统一交卷结算大按钮 */}
+                <div style={{ borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '12px', marginTop: '4px' }}>
+                  <button
+                    className="btn"
+                    disabled={exerciseSubmitted}
+                    onClick={handleSubmitExercise}
+                    style={{
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '8px',
+                      backgroundColor: exerciseSubmitted ? 'rgba(0,0,0,0.04)' : 'hsl(var(--color-work))',
+                      borderColor: exerciseSubmitted ? 'transparent' : 'hsl(var(--color-work))',
+                      color: exerciseSubmitted ? 'hsl(var(--text-secondary))' : '#ffffff',
+                      fontWeight: 'bold',
+                      fontSize: '0.82rem',
+                      cursor: exerciseSubmitted ? 'default' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    {exerciseSubmitted ? '✅ 本天特训已交卷结算' : '📤 提交交卷并结算积分'}
+                  </button>
                 </div>
               </div>
 
