@@ -1156,13 +1156,13 @@ export default function MathModule() {
                       {testQuestions[currentTestIndex]?.options.map((opt, oIdx) => {
                         const qId = testQuestions[currentTestIndex].id;
                         const ansState = testAnswers[qId];
-                        const isAns = testChecked;
+                        const isSubmitted = ansState?.submitted === true;
 
                         let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
                         
                         if (ansState !== undefined && ansState !== null) {
-                          const isUserSelected = ansState.userOpt === oIdx || ansState === oIdx;
-                          if (isAns) {
+                          const isUserSelected = ansState.userOpt === oIdx;
+                          if (isSubmitted) {
                             const isCorrectOpt = oIdx === testQuestions[currentTestIndex].answer;
                             if (isCorrectOpt) {
                               btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
@@ -1171,7 +1171,7 @@ export default function MathModule() {
                             }
                           } else {
                             if (isUserSelected) {
-                              btnStyle = { border: '1px solid hsl(var(--color-work))', backgroundColor: 'hsla(var(--color-work)/0.08)', color: 'hsl(var(--color-work))' };
+                              btnStyle = { border: '2px solid hsl(var(--color-work))', backgroundColor: 'hsla(var(--color-work)/0.08)', color: 'hsl(var(--color-work))', fontWeight: 'bold' };
                             }
                           }
                         }
@@ -1181,20 +1181,13 @@ export default function MathModule() {
                             key={oIdx}
                             className="btn btn-secondary"
                             style={{ justifyContent: 'flex-start', textAlign: 'left', padding: '10px 16px', fontSize: '0.85rem', ...btnStyle }}
-                            disabled={isAns}
+                            disabled={isSubmitted || testChecked}
                             onClick={() => {
                               const nextAnswers = {
                                 ...testAnswers,
-                                [qId]: { userOpt: oIdx }
+                                [qId]: { userOpt: oIdx, submitted: false }
                               };
                               setTestAnswers(nextAnswers);
-
-                              // 自动跳转到下一题 (180ms 延时，让按压效果和选中态稍微闪一下)
-                              if (!testChecked && currentTestIndex < testQuestions.length - 1) {
-                                setTimeout(() => {
-                                  setCurrentTestIndex(prev => prev + 1);
-                                }, 180);
-                              }
                             }}
                           >
                             <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
@@ -1206,12 +1199,12 @@ export default function MathModule() {
                   </div>
 
                   {/* 解析 */}
-                  {testChecked && (
+                  {testAnswers[testQuestions[currentTestIndex]?.id]?.submitted && (
                     <div className="fade-in" style={{
                       padding: '12px',
                       backgroundColor: '#f8fafc',
                       borderLeft: `4px solid ${
-                        (testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'
+                        testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'
                       }`,
                       borderRadius: 'var(--radius-sm)',
                       fontSize: '0.78rem',
@@ -1220,10 +1213,10 @@ export default function MathModule() {
                     }}>
                       <div style={{
                         fontWeight: 'bold',
-                        color: (testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))',
+                        color: testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))',
                         marginBottom: '4px'
                       }}>
-                        {(testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' || testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === testQuestions[currentTestIndex]?.answer || testAnswers[testQuestions[currentTestIndex]?.id] === testQuestions[currentTestIndex]?.answer) ? '✅ 算对啦！今日金币 +1 个' : '❌ 算错了。今日金币 -1 个。'}
+                        {testAnswers[testQuestions[currentTestIndex]?.id]?.state === 'correct' ? '✅ 算对啦！金币 +0.5' : '❌ 算错了。金币 -0.5（倒扣）'}
                       </div>
                       {testQuestions[currentTestIndex]?.explanation}
                     </div>
@@ -1239,24 +1232,36 @@ export default function MathModule() {
                       上一题
                     </button>
 
-                    {!testChecked && (
+                    {!testAnswers[testQuestions[currentTestIndex]?.id]?.submitted ? (
                       <button
                         className="btn btn-primary"
                         style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))', fontWeight: 'bold' }}
-                        onClick={handleTestSubmitAll}
+                        disabled={testAnswers[testQuestions[currentTestIndex]?.id]?.userOpt === undefined}
+                        onClick={() => handleTestConfirmQuestion(currentTestIndex)}
                       >
-                        交卷并结算小测
+                        确认本题答案
                       </button>
+                    ) : (
+                      currentTestIndex < testQuestions.length - 1 ? (
+                        <button
+                          className="btn btn-primary"
+                          style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }}
+                          onClick={() => setCurrentTestIndex(prev => prev + 1)}
+                        >
+                          下一题
+                        </button>
+                      ) : (
+                        !testChecked && (
+                          <button
+                            className="btn btn-primary"
+                            style={{ backgroundColor: 'hsl(var(--color-success))', borderColor: 'hsl(var(--color-success))', fontWeight: 'bold' }}
+                            onClick={handleTestFinishAll}
+                          >
+                            完成并提交本次小测
+                          </button>
+                        )
+                      )
                     )}
-
-                    <button
-                      className="btn btn-primary"
-                      style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }}
-                      disabled={currentTestIndex === testQuestions.length - 1}
-                      onClick={() => setCurrentTestIndex(prev => prev + 1)}
-                    >
-                      下一题
-                    </button>
                   </div>
                 </div>
 
