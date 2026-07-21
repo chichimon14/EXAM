@@ -994,7 +994,8 @@ export default function EnglishModule() {
       flexDirection: isPortraitTablet ? 'column' : 'row',
       alignItems: 'stretch',
       gap: isPortraitTablet ? '12px' : '20px',
-      height: isPortraitTablet ? 'auto' : 'calc(100vh - 120px)'
+      height: isPortraitTablet ? 'auto' : '100%',
+      minHeight: 'unset'
     }}>
       {/* 🌲 左侧二级与三级手风琴大纲树状目录 */}
       <div className="sidebar" style={{

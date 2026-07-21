@@ -979,7 +979,7 @@ export default function ChemistryModule() {
   const todayGoldCoin = dayScores[selectedDayId] !== undefined ? dayScores[selectedDayId] : 0;
 
   return (
-    <div className="app-container fade-in" style={{ display: 'flex', alignItems: 'stretch', gap: '20px', height: 'calc(100vh - 120px)' }}>
+    <div className="app-container fade-in" style={{ display: 'flex', alignItems: 'stretch', gap: '20px', height: '100%', minHeight: 'unset' }}>
       {/* 🌲 左侧二级与三级手风琴大纲树状目录 */}
       <div className="sidebar" style={{ minWidth: '280px', maxWidth: '280px', display: 'flex', flexDirection: 'column', padding: '16px', gap: '12px', overflowY: 'auto' }}>
         

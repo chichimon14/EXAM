@@ -32,6 +32,7 @@ export default function App() {
   return (
     <div style={{
       height: '100vh',
+      height: '100dvh',
       display: 'flex',
       flexDirection: 'column',
       backgroundColor: '#fafaf6', // 高雅的亮色暖白底色
