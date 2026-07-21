@@ -906,7 +906,7 @@ export default function MathModule() {
       </div>
 
       {/* 主面板内容 */}
-      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, padding: 0, overflowY: 'auto' }}>
+      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, padding: 0, overflowY: 'auto', minHeight: 0, maxHeight: '100%' }}>
         
         {/* 📘 右侧顶部横向特训功能导航条 (双重保障，解决 iPad 各种比例下的错题/积分入口隐藏问题) */}
         {true && (

@@ -1431,7 +1431,7 @@ export default function PhysicsModule() {
       </div>
 
       {/* 主面板内容 */}
-      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, padding: 0, overflowY: 'auto' }}>
+      <div className="main-content" style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, padding: 0, overflowY: 'auto', minHeight: 0, maxHeight: '100%' }}>
         
         {/* 📘 右侧顶部横向三合一特训功能卡 */}
         {activeTab !== 'wrongbook' && activeTab !== 'diagnosis' && activeTab !== 'formulas' && (
