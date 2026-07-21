@@ -179,70 +179,70 @@ export default function MathModule() {
     localStorage.setItem(`math-score-${selectedDayId}`, newScore.toString());
   };
 
-  // 数学小测统一交卷结算逻辑
-  const handleTestSubmitAll = () => {
-    // 检查是否有未作答题目
-    const unattemptedCount = testQuestions.filter(q => testAnswers[q.id] === undefined || testAnswers[q.id] === null).length;
-    if (unattemptedCount > 0) {
-      const confirmSubmit = window.confirm(`您还有 ${unattemptedCount} 道题未做，确定要交卷并结算小测吗？(未做题目将直接计为算错)`);
-      if (!confirmSubmit) return;
-    }
+  // 数学小测单题提交确认
+  const handleTestConfirmQuestion = (qIndex) => {
+    const q = testQuestions[qIndex];
+    if (!q) return;
 
+    const ansState = testAnswers[q.id];
+    if (!ansState || ansState.userOpt === undefined) return;
+
+    const isCorrect = ansState.userOpt === q.answer;
+
+    // 1. 更新当前题目的提交状态和正确性
+    const nextAnswers = {
+      ...testAnswers,
+      [q.id]: {
+        ...ansState,
+        submitted: true,
+        state: isCorrect ? 'correct' : 'wrong'
+      }
+    };
+    setTestAnswers(nextAnswers);
+
+    // 2. 实时更新金币得分（做对加 0.5 分，做错倒扣 0.5 分）
+    updateGoldCoin(isCorrect, 0.5);
+
+    // 3. 如果算错，立即追加到错题本
+    if (!isCorrect) {
+      let currentWrongs = [];
+      const savedWrongs = localStorage.getItem('math-wrongs');
+      if (savedWrongs) {
+        try {
+          currentWrongs = JSON.parse(savedWrongs);
+          if (!Array.isArray(currentWrongs)) currentWrongs = [];
+        } catch (e) {
+          currentWrongs = [];
+        }
+      }
+      const alreadyIn = currentWrongs.some(w => w && w.id === q.id);
+      if (!alreadyIn) {
+        const wrongQ = {
+          ...q,
+          userAnswer: ansState.userOpt,
+          wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
+        };
+        currentWrongs.push(wrongQ);
+        setWrongList(currentWrongs);
+        localStorage.setItem('math-wrongs', JSON.stringify(currentWrongs));
+      }
+    }
+  };
+
+  // 数学小测完成本次测试（最终统计结算）
+  const handleTestFinishAll = () => {
     let correctCount = 0;
     const weaknesses = [];
-    const nextAnswers = { ...testAnswers };
-
-    // 从 localStorage 同步读取最新的错题，避免闭包状态覆盖
-    let currentWrongs = [];
-    const savedWrongs = localStorage.getItem('math-wrongs');
-    if (savedWrongs) {
-      try {
-        currentWrongs = JSON.parse(savedWrongs);
-        if (!Array.isArray(currentWrongs)) currentWrongs = [];
-      } catch (e) {
-        currentWrongs = [];
-      }
-    }
 
     testQuestions.forEach(q => {
-      const saved = nextAnswers[q.id];
-      const isCorrect = saved === q.answer || (saved && saved.userOpt === q.answer);
-
-      // 标记该题对错状态
-      if (saved) {
-        nextAnswers[q.id] = {
-          ...saved,
-          state: isCorrect ? 'correct' : 'wrong'
-        };
-      } else {
-        nextAnswers[q.id] = {
-          state: 'wrong'
-        };
-      }
-
-      // 所有小测（20题题卡）每道题做对加 0.5 分，做错倒扣 0.5 分
-      updateGoldCoin(isCorrect, 0.5);
-
+      const ans = testAnswers[q.id];
+      const isCorrect = ans && ans.userOpt === q.answer;
       if (isCorrect) {
         correctCount++;
       } else {
         weaknesses.push(q.knowledgePoint || q.question.substring(0, 15) + '...');
-        
-        const alreadyIn = currentWrongs.some(w => w && w.id === q.id);
-        if (!alreadyIn) {
-          const wrongQ = {
-            ...q,
-            userAnswer: saved?.userOpt !== undefined ? saved.userOpt : saved,
-            wrongTime: new Date().toLocaleString('zh-CN', { hour12: false }) // 注明错题时间！
-          };
-          currentWrongs.push(wrongQ);
-        }
       }
     });
-
-    setTestAnswers(nextAnswers);
-    setWrongList(currentWrongs);
-    localStorage.setItem('math-wrongs', JSON.stringify(currentWrongs));
 
     const finalScore = Math.round((correctCount / testQuestions.length) * 100);
     setTestScore(finalScore);
@@ -276,71 +276,92 @@ export default function MathModule() {
     localStorage.setItem(`math-exercise-answers-${selectedDayId}`, JSON.stringify(nextAnswers));
   };
 
-  // 50题练习统一交卷结算
-  const handleSubmitExercise = () => {
+  // 数学狂练单题提交确认
+  const handleExerciseConfirmQuestion = (qIndex) => {
     if (exerciseSubmitted) return;
 
-    // 检查是否有未作答题目
-    const attemptedCount = Object.keys(exerciseAnswers).length;
-    if (attemptedCount < 50) {
-      const confirmSubmit = window.confirm(`您还有 ${50 - attemptedCount} 道题未做，确定要交卷并结算特训吗？(未做题目将直接计为算错)`);
+    const q = exerciseQuestions[qIndex];
+    if (!q) return;
+
+    const ansState = exerciseAnswers[q.id];
+    if (!ansState || ansState.userOpt === undefined) return;
+
+    const isCorrect = ansState.userOpt === q.answer;
+
+    // 1. 更新当前题目的提交状态和正确性
+    const nextAnswers = {
+      ...exerciseAnswers,
+      [q.id]: {
+        ...ansState,
+        submitted: true,
+        isCorrect: isCorrect,
+        state: isCorrect ? 'correct' : 'wrong'
+      }
+    };
+    setExerciseAnswers(nextAnswers);
+
+    // 持久化答题进度记录，防止刷新页面或切卡丢失
+    localStorage.setItem(`math-exercise-answers-${selectedDayId}`, JSON.stringify(nextAnswers));
+
+    // 2. 实时更新金币得分（做对加 0.5 分，做错倒扣 0.5 分）
+    updateGoldCoin(isCorrect, 0.5);
+
+    // 3. 如果算错，立即追加到错题本
+    if (!isCorrect) {
+      let currentWrongs = [];
+      const savedWrongs = localStorage.getItem('math-wrongs');
+      if (savedWrongs) {
+        try {
+          currentWrongs = JSON.parse(savedWrongs);
+          if (!Array.isArray(currentWrongs)) currentWrongs = [];
+        } catch (e) {
+          currentWrongs = [];
+        }
+      }
+      const alreadyIn = currentWrongs.some(w => w && w.id === q.id);
+      if (!alreadyIn) {
+        const wrongQ = {
+          ...q,
+          userAnswer: ansState.userOpt,
+          wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
+        };
+        currentWrongs.push(wrongQ);
+        setWrongList(currentWrongs);
+        localStorage.setItem('math-wrongs', JSON.stringify(currentWrongs));
+      }
+    }
+  };
+
+  // 数学狂练完成本次特训（最终结算）
+  const handleExerciseFinishAll = () => {
+    if (exerciseSubmitted) return;
+
+    // 检查是否所有题目都已经提交了确认
+    const submittedCount = exerciseQuestions.filter(q => exerciseAnswers[q.id]?.submitted).length;
+    if (submittedCount < 50) {
+      const confirmSubmit = window.confirm(`您还有 ${50 - submittedCount} 道题未做或未提交确认。如果现在结算，未提交确认的题将算错（且不扣/加金币）。确定要结算特训吗？`);
       if (!confirmSubmit) return;
     }
 
     let correctCount = 0;
     const nextAnswers = { ...exerciseAnswers };
-    let currentWrongs = [];
-    const savedWrongs = localStorage.getItem('math-wrongs');
-    if (savedWrongs) {
-      try {
-        currentWrongs = JSON.parse(savedWrongs);
-        if (!Array.isArray(currentWrongs)) currentWrongs = [];
-      } catch (e) {
-        currentWrongs = [];
-      }
-    }
 
+    // 补齐所有未作答/未提交确认题目的 wrong 状态
     exerciseQuestions.forEach(q => {
-      const saved = nextAnswers[q.id];
-      const userOpt = saved && saved.userOpt !== undefined ? saved.userOpt : -1;
-      const isCorrect = userOpt === q.answer;
-
-      nextAnswers[q.id] = {
-        isCorrect,
-        userOpt
-      };
-
-      if (isCorrect) {
+      if (!nextAnswers[q.id]) {
+        nextAnswers[q.id] = { userOpt: -1, submitted: true, isCorrect: false, state: 'wrong' };
+      } else if (!nextAnswers[q.id].submitted) {
+        nextAnswers[q.id].submitted = true;
+        nextAnswers[q.id].isCorrect = false;
+        nextAnswers[q.id].state = 'wrong';
+      }
+      if (nextAnswers[q.id].isCorrect) {
         correctCount++;
-      } else {
-        // 自动加入错题本
-        const alreadyIn = currentWrongs.some(w => w && w.id === q.id);
-        if (!alreadyIn) {
-          const wrongQ = {
-            ...q,
-            userAnswer: userOpt,
-            wrongTime: new Date().toLocaleString('zh-CN', { hour12: false })
-          };
-          currentWrongs.push(wrongQ);
-        }
       }
     });
 
-    // 结算金币积分 (答对每题 +0.5，答错每题 -0.5)
-    const currentScore = dayScores[selectedDayId] || 0;
-    const delta = correctCount * 0.5 - (50 - correctCount) * 0.5;
-    const newScore = Math.round(Math.max(0, currentScore + delta) * 10) / 10;
-    const nextScores = { ...dayScores, [selectedDayId]: newScore };
-    
-    // 更新状态与本地存储
-    setDayScores(nextScores);
-    localStorage.setItem(`math-score-${selectedDayId}`, newScore.toString());
-
     setExerciseAnswers(nextAnswers);
     localStorage.setItem(`math-exercise-answers-${selectedDayId}`, JSON.stringify(nextAnswers));
-
-    setWrongList(currentWrongs);
-    localStorage.setItem('math-wrongs', JSON.stringify(currentWrongs));
 
     setExerciseSubmitted(true);
     localStorage.setItem(`math-exercise-submitted-${selectedDayId}`, 'true');
@@ -1549,8 +1570,9 @@ export default function MathModule() {
                     let borderStyle = 'none';
 
                     if (q && exerciseAnswers[q.id]) {
-                      if (exerciseSubmitted) {
-                        bgColor = exerciseAnswers[q.id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
+                      const ans = exerciseAnswers[q.id];
+                      if (ans.submitted || exerciseSubmitted) {
+                        bgColor = ans.isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))';
                         textColor = '#ffffff';
                       } else {
                         // 未提交，显示橙黄色代表已作答
@@ -1592,28 +1614,23 @@ export default function MathModule() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.04)' }}></span>未答
                   </div>
-                  {!exerciseSubmitted ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsla(var(--color-work)/0.2)' }}></span>已选
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-success))' }}></span>算对
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-danger))' }}></span>算错
-                      </div>
-                    </>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsla(var(--color-work)/0.2)' }}></span>已选(未确认)
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-success))' }}></span>算对
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'hsl(var(--color-danger))' }}></span>算错
+                  </div>
                 </div>
 
-                {/* 📤 统一交卷结算大按钮 */}
+                {/* 📤 统一结算特训大按钮 */}
                 <div style={{ borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '12px', marginTop: '4px' }}>
                   <button
                     className="btn"
                     disabled={exerciseSubmitted}
-                    onClick={handleSubmitExercise}
+                    onClick={handleExerciseFinishAll}
                     style={{
                       width: '100%',
                       padding: '10px',
@@ -1631,7 +1648,7 @@ export default function MathModule() {
                       transition: 'all 0.2s'
                     }}
                   >
-                    {exerciseSubmitted ? '✅ 本天特训已交卷结算' : '📤 提交交卷并结算积分'}
+                    {exerciseSubmitted ? '✅ 本天特训已结算归档' : '📤 结算特训并查看报告'}
                   </button>
                 </div>
               </div>
