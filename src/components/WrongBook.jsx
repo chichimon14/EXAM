@@ -73,7 +73,7 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, s
           const isChallenging = activeChallengeId === q.id;
 
           return (
-            <div key={q.id} className="glass-card" style={{ padding: '20px', borderLeft: '4px solid hsl(var(--color-danger))', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div key={q.id} className="glass-card" style={{ padding: '20px', borderLeft: '4px solid hsl(var(--color-danger))', display: 'flex', flexDirection: 'column', gap: '12px', flexShrink: 0 }}>
               
               {/* 板块和章节小标识 */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
