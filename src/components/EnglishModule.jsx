@@ -1009,7 +1009,10 @@ export default function EnglishModule() {
         backgroundColor: '#ffffff',
         borderBottom: isPortraitTablet ? '1px solid rgba(0,0,0,0.06)' : 'none',
         borderRadius: 'var(--radius-md)',
-        boxShadow: isPortraitTablet ? '0 2px 8px rgba(0,0,0,0.03)' : 'none'
+        boxShadow: isPortraitTablet ? '0 2px 8px rgba(0,0,0,0.03)' : 'none',
+        height: isPortraitTablet ? 'auto' : '100%',
+        position: 'relative',
+        top: 'unset'
       }}>
         
         {/* 学科名片 */}

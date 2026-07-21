@@ -981,7 +981,7 @@ export default function ChemistryModule() {
   return (
     <div className="app-container fade-in" style={{ display: 'flex', alignItems: 'stretch', gap: '20px', height: '100%', minHeight: 'unset' }}>
       {/* 🌲 左侧二级与三级手风琴大纲树状目录 */}
-      <div className="sidebar" style={{ minWidth: '280px', maxWidth: '280px', display: 'flex', flexDirection: 'column', padding: '16px', gap: '12px', overflowY: 'auto' }}>
+      <div className="sidebar" style={{ minWidth: '280px', maxWidth: '280px', display: 'flex', flexDirection: 'column', padding: '16px', gap: '12px', overflowY: 'auto', height: '100%', position: 'relative', top: 'unset' }}>
         
         {/* 学科名片 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingBottom: '12px', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>

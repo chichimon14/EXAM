@@ -106,7 +106,9 @@ export default function App() {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'stretch',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        minHeight: 0,
+        height: 0
       }}>
         {activeSubject === null && (
           <SubjectPortal onSelectSubject={(subj) => setActiveSubject(subj)} />
