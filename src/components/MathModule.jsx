@@ -1460,31 +1460,23 @@ export default function MathModule() {
                         {exerciseQuestions[currentExerciseIndex].options.map((opt, oIdx) => {
                           const qId = exerciseQuestions[currentExerciseIndex].id;
                           const ansState = exerciseAnswers[qId];
-                          const isAns = !!ansState;
+                          const isSubmitted = ansState?.submitted === true;
 
                           let btnStyle = { border: '1px solid #e2e8f0', backgroundColor: '#fff', color: 'hsl(var(--text-primary))' };
                           
-                          if (exerciseSubmitted) {
-                            // 已交卷，显示红/绿判定颜色
-                            if (isAns) {
+                          if (ansState !== undefined && ansState !== null) {
+                            const isUserSelected = ansState.userOpt === oIdx;
+                            if (isSubmitted || exerciseSubmitted) {
                               const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
-                              const isUserSelected = oIdx === ansState.userOpt;
                               if (isCorrectOpt) {
                                 btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.08)', color: 'hsl(var(--color-success))' };
                               } else if (isUserSelected) {
                                 btnStyle = { border: '1px solid hsl(var(--color-danger))', backgroundColor: 'hsla(var(--color-danger)/0.08)', color: 'hsl(var(--color-danger))' };
                               }
                             } else {
-                              // 用户未选此项，但如果是正确项，也高亮绿色，便于对答案
-                              const isCorrectOpt = oIdx === exerciseQuestions[currentExerciseIndex].answer;
-                              if (isCorrectOpt) {
-                                btnStyle = { border: '1px solid hsl(var(--color-success))', backgroundColor: 'hsla(var(--color-success)/0.03)', color: 'hsl(var(--color-success))' };
+                              if (isUserSelected) {
+                                btnStyle = { border: '2px solid hsl(var(--color-work))', backgroundColor: 'hsla(var(--color-work)/0.08)', color: 'hsl(var(--color-work))', fontWeight: 'bold' };
                               }
-                            }
-                          } else {
-                            // 未交卷，仅高亮用户选中的项（黄色/橙色），且允许再次点击修改
-                            if (isAns && oIdx === ansState.userOpt) {
-                              btnStyle = { border: '2px solid hsl(var(--color-work))', backgroundColor: 'hsla(var(--color-work)/0.08)', color: 'hsl(var(--color-work))', fontWeight: 'bold' };
                             }
                           }
 
@@ -1499,7 +1491,7 @@ export default function MathModule() {
                                 fontSize: '0.82rem',
                                 ...btnStyle
                               }}
-                              disabled={exerciseSubmitted}
+                              disabled={isSubmitted || exerciseSubmitted}
                               onClick={() => handleExerciseOptionClick(oIdx)}
                             >
                               <span style={{ fontWeight: 'bold', marginRight: '6px' }}>{String.fromCharCode(65 + oIdx)}.</span>
@@ -1509,20 +1501,27 @@ export default function MathModule() {
                         })}
                       </div>
 
-                      {exerciseSubmitted && exerciseAnswers[exerciseQuestions[currentExerciseIndex].id] && (
+                      {/* 解析 */}
+                      {((exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.submitted && !exerciseSubmitted) || exerciseSubmitted) && (
                         <div className="fade-in" style={{
                           padding: '12px',
                           backgroundColor: '#f8fafc',
-                          borderLeft: `4px solid ${exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'}`,
+                          borderLeft: `4px solid ${
+                            (exerciseSubmitted ? exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.isCorrect : (exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.state === 'correct')) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))'
+                          }`,
                           borderRadius: 'var(--radius-sm)',
                           fontSize: '0.78rem',
                           lineHeight: '1.6',
                           whiteSpace: 'pre-wrap'
                         }}>
-                          <div style={{ fontWeight: 'bold', color: exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))', marginBottom: '4px' }}>
-                            {exerciseAnswers[exerciseQuestions[currentExerciseIndex].id].isCorrect ? '✅ 算对了！' : '❌ 算错了。'}
+                          <div style={{
+                            fontWeight: 'bold',
+                            color: (exerciseSubmitted ? exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.isCorrect : (exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.state === 'correct')) ? 'hsl(var(--color-success))' : 'hsl(var(--color-danger))',
+                            marginBottom: '4px'
+                          }}>
+                            {(exerciseSubmitted ? exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.isCorrect : (exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.state === 'correct')) ? '✅ 算对啦！金币 +0.5' : '❌ 算错了。金币 -0.5（倒扣）'}
                           </div>
-                          {exerciseQuestions[currentExerciseIndex].explanation}
+                          {exerciseQuestions[currentExerciseIndex]?.explanation}
                         </div>
                       )}
                     </div>
@@ -1535,14 +1534,37 @@ export default function MathModule() {
                       >
                         上一题
                       </button>
-                      <button
-                        className="btn btn-primary"
-                        style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }}
-                        disabled={currentExerciseIndex === 49}
-                        onClick={() => setCurrentExerciseIndex(prev => prev + 1)}
-                      >
-                        下一题
-                      </button>
+
+                      {!exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.submitted && !exerciseSubmitted ? (
+                        <button
+                          className="btn btn-primary"
+                          style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))', fontWeight: 'bold' }}
+                          disabled={exerciseAnswers[exerciseQuestions[currentExerciseIndex]?.id]?.userOpt === undefined}
+                          onClick={() => handleExerciseConfirmQuestion(currentExerciseIndex)}
+                        >
+                          确认本题答案
+                        </button>
+                      ) : (
+                        currentExerciseIndex < 49 ? (
+                          <button
+                            className="btn btn-primary"
+                            style={{ backgroundColor: 'hsl(var(--color-work))', borderColor: 'hsl(var(--color-work))' }}
+                            onClick={() => setCurrentExerciseIndex(prev => prev + 1)}
+                          >
+                            下一题
+                          </button>
+                        ) : (
+                          !exerciseSubmitted && (
+                            <button
+                              className="btn btn-primary"
+                              style={{ backgroundColor: 'hsl(var(--color-success))', borderColor: 'hsl(var(--color-success))', fontWeight: 'bold' }}
+                              onClick={handleExerciseFinishAll}
+                            >
+                              📥 结算本次特训
+                            </button>
+                          )
+                        )
+                      )}
                     </div>
                   </>
                 ) : (

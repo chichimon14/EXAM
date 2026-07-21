@@ -45,7 +45,7 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, s
   }
 
   return (
-    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1, minHeight: 0, overflow: 'hidden' }}>
       
       {/* 头部工具栏 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
@@ -64,7 +64,7 @@ export default function WrongBook({ wrongList = [], onRemoveWrong, onClearAll, s
       </div>
 
       {/* 错题列表 */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', flex: 1, overflowY: 'auto', paddingRight: '4px' }}>
         {wrongList.map((q, idx) => {
           const ch = subject === 'physics' ? chapters[q.chapterId] : 
                      subject === 'math' ? mathDays[q.chapterId] :
