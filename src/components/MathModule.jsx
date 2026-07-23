@@ -167,6 +167,40 @@ export default function MathModule() {
     }
   }, [currentExerciseIndex, selectedDayId, activeTab]);
 
+  // 键盘左右方向键监听：支持按 ⬅️ ➡️ 快捷移动 20 题测验卡 / 50 题特训卡当前选中的题目
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // 避免输入框焦点的冲突
+      if (
+        document.activeElement &&
+        (document.activeElement.tagName === 'INPUT' ||
+          document.activeElement.tagName === 'TEXTAREA' ||
+          document.activeElement.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        if (activeTab === 'test') {
+          setCurrentTestIndex((prev) => Math.max(0, prev - 1));
+        } else if (activeTab === 'exercise') {
+          setCurrentExerciseIndex((prev) => Math.max(0, prev - 1));
+        }
+      } else if (e.key === 'ArrowRight') {
+        if (activeTab === 'test') {
+          setCurrentTestIndex((prev) => Math.min(testQuestions.length > 0 ? testQuestions.length - 1 : 19, prev + 1));
+        } else if (activeTab === 'exercise') {
+          setCurrentExerciseIndex((prev) => Math.min(exerciseQuestions.length > 0 ? exerciseQuestions.length - 1 : 49, prev + 1));
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTab, testQuestions.length, exerciseQuestions.length]);
+
   // 更新金币分值助手函数：做对 +weight，做错 -weight
   const updateGoldCoin = (isCorrect, weight = 1) => {
     const currentScore = dayScores[selectedDayId] || 0;
