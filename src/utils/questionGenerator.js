@@ -256,16 +256,7 @@ export function generatePhysicsQuestions(chapterId, baseQuestions, count = 100) 
  */
 export function generateMathQuestions(topicId, count = 100) {
   if (count === 50) {
-    return highDifficultyMathQuestions.map(q => {
-      const correctText = q.options[q.answer];
-      const shuffledOptions = shuffleArray([...q.options]);
-      const newAnswer = shuffledOptions.indexOf(correctText);
-      return {
-        ...q,
-        options: shuffledOptions,
-        answer: newAnswer
-      };
-    });
+    return highDifficultyMathQuestions.map(q => ({ ...q }));
   }
 
   const list = [];
