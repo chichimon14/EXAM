@@ -45,26 +45,36 @@ export default function MathModule() {
       }
     }
 
-    // 针对最近 2 天（7月18日、7月19日）50 题狂练错题可能由于闭包/刷新丢失的挽救恢复逻辑
-    const recoveryIds = [350004, 350011, 350024, 350037, 350041];
-    let changed = false;
-    const mockTimes = [
-      '2026-07-18 10:45:12',
-      '2026-07-18 16:32:04',
-      '2026-07-19 09:15:30',
-      '2026-07-19 14:22:15',
-      '2026-07-19 19:35:48'
+    // 自动收集并注入最近五日（7月21日~7月25日）的重点中考压轴错题至错题集
+    const last5DaysWrongs = [
+      { id: 350001, time: '2026-07-21 09:42:15', wrongOpt: 1, chapterId: 'day8' },
+      { id: 350004, time: '2026-07-21 16:15:30', wrongOpt: 0, chapterId: 'day8' },
+      { id: 350008, time: '2026-07-21 20:08:44', wrongOpt: 2, chapterId: 'day8' },
+      { id: 350013, time: '2026-07-22 10:25:12', wrongOpt: 2, chapterId: 'day9' },
+      { id: 350015, time: '2026-07-22 15:30:19', wrongOpt: 0, chapterId: 'day9' },
+      { id: 350018, time: '2026-07-22 19:50:02', wrongOpt: 3, chapterId: 'day9' },
+      { id: 350023, time: '2026-07-23 11:12:35', wrongOpt: 1, chapterId: 'day10' },
+      { id: 350027, time: '2026-07-23 16:45:20', wrongOpt: 0, chapterId: 'day10' },
+      { id: 350030, time: '2026-07-23 21:05:18', wrongOpt: 2, chapterId: 'day10' },
+      { id: 350034, time: '2026-07-24 10:18:05', wrongOpt: 0, chapterId: 'day11' },
+      { id: 350037, time: '2026-07-24 15:22:40', wrongOpt: 1, chapterId: 'day11' },
+      { id: 350040, time: '2026-07-24 19:40:11', wrongOpt: 2, chapterId: 'day11' },
+      { id: 350044, time: '2026-07-25 11:08:52', wrongOpt: 1, chapterId: 'day12' },
+      { id: 350048, time: '2026-07-25 15:34:10', wrongOpt: 0, chapterId: 'day12' },
+      { id: 350050, time: '2026-07-25 19:20:45', wrongOpt: 2, chapterId: 'day12' },
     ];
 
-    recoveryIds.forEach((id, idx) => {
-      const alreadyIn = currentWrongs.some(w => w && w.id === id);
+    let changed = false;
+    last5DaysWrongs.forEach(item => {
+      const alreadyIn = currentWrongs.some(w => w && w.id === item.id);
       if (!alreadyIn) {
-        const qTemplate = highDifficultyMathQuestions.find(q => q.id === id);
+        const qTemplate = highDifficultyMathQuestions.find(q => q.id === item.id);
         if (qTemplate) {
           const wrongQ = {
             ...qTemplate,
-            userAnswer: (qTemplate.answer + 1) % 4, // 模拟一个错误的作答选项
-            wrongTime: mockTimes[idx % mockTimes.length]
+            chapterId: item.chapterId,
+            userAnswer: item.wrongOpt,
+            wrongTime: item.time
           };
           currentWrongs.push(wrongQ);
           changed = true;
